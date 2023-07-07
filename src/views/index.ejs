@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <%- include('partials/common/head') %>
+    </head>
+<body>
+    <%- include('partials/common/navbar') %>
+    <div class=".container presentacion">
+        <div class="row row0">
+            <%- include('partials/index/title') %>
+        </div>
+        <div class="row row1">
+            <div class="col-2">
+                <%- include('partials/index/lateral_menu') %>
+            </div>
+            <!-----container-center----->
+            <div class="col-8">
+                <%- include('partials/index/container') %>
+            </div>
+            <!----- Cuadro Horario ROJO ----->
+            <div class="col-2">
+                <%- include('partials/index/horario') %>
+            </div>
+            <!---------------------------------------------------------------->
+        </div>
+    </div>
+    <div class="bienvenida">
+        <h1> Bienvenido a Zona Yummy</h1>
+        <p>
+            Puedes hacer tus pedidos de Pizzería aquí, <i style="color:darkgray">próximamente Miscelanea y Repostería.</i>
+        </p>
+    </div>
+</body>
+</html>

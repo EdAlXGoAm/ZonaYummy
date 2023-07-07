@@ -1,0 +1,270 @@
+h1 {
+    color: blue;
+    font-family: 'Tourney', cursive;
+    font-size: 35px !important;
+}
+
+html {}
+
+.presentacion {
+    margin: 22px 0px 0px 0px;
+    background-image: url("../svg/Wave1.svg");
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: 0px 70px;
+}
+
+@media (max-width: 1280px) {
+    .row0 {
+        flex-direction: column;
+    }
+    .num {
+        color: black;
+        text-decoration: none;
+        pointer-events: none;
+        cursor: default;
+        font-size: 40px;
+    }
+    .row1 {
+        flex-direction: column;
+    }
+    .c_tradi_escanda {
+        flex-direction: column;
+    }
+    .col-2 {
+        width: 100% !important;
+    }
+    .col-8 {
+        width: 100% !important;
+    }
+    .c_horario {
+        margin: 10px 0px 0px 0px !important;
+    }
+    .img_logouser {
+        display: none;
+    }
+    .btn_register {
+        display: none;
+    }
+    .btn_login {
+        display: none;
+    }
+    .btn_buttons {
+        width: 40% !important;
+        margin: 20px 0px 50px 0px !important;
+    }
+    .buttons {
+        height: auto !important;
+        margin: 10px 0px 10px 0px !important;
+    }
+    .escandimg {
+        width: 70% !important;
+    }
+}
+
+.num {
+    color: black;
+    text-decoration: none;
+    pointer-events: none;
+    cursor: default;
+}
+
+.row0 {
+    padding: 0px 30px 0px 30px;
+}
+
+.c_logoPE {
+    margin: 10px 0px 0px 0px !important;
+    border-radius: 30px;
+    text-align: center;
+}
+
+.tituloPE {
+    width: 100%;
+}
+
+.row1 {
+    padding: 0px 30px 0px 30px;
+}
+
+.buttons {
+    margin: 10px 20px 0px 20px;
+    background-color: #387ADF;
+    box-shadow: 8px 8px 4px rgb(0, 0, 0, 0.25);
+    height: 655px;
+    border-radius: 30px;
+    text-align: center;
+}
+
+.img_logouser {
+    margin: 20px 0px 0px 0px;
+    width: 50%;
+}
+
+.btn_register {
+    opacity: 0.5;
+}
+
+.btn_login {
+    opacity: 0.5;
+    margin: 20px 0px 44px 0px !important;
+}
+
+.btn_buttons {
+    width: 90%;
+    margin: 20px 0px 0px 0px;
+}
+
+.btn_buttons:hover {
+    border: 2px solid #FFF;
+    border-radius: 8px;
+}
+
+.ingr {
+    text-align: center;
+}
+
+.imgsabores_1 {
+    margin: 20px 0px 0px 0px;
+    width: 100%;
+}
+
+.escandimg {
+    margin: 20px 0px 0px 0px;
+    padding: 0px 0px 0px 20px;
+    border-radius: 10px;
+    width: 100%;
+}
+
+
+/*****INICIO*****/
+
+.c_center {
+    margin: 10px 40px 0px 40px;
+    height: auto;
+}
+
+.c_inicio {
+    margin: 0px 0px 50px 0px;
+    background-color: #FDDA16;
+    box-shadow: 8px 8px 4px rgb(0, 0, 0, 0.25);
+    height: auto;
+    border-radius: 40px
+}
+
+.c_tradi_escanda {
+    padding: 0px 10px 0px 10px;
+    margin: 0px 0px 20px 0px;
+}
+
+.c_te_aling_c {
+    text-align: center;
+}
+
+.c_infoPedir {
+    text-align: center;
+}
+
+.t_infoPedir {
+    font-family: 'Jura', sans-serif;
+    font-size: 22px;
+    color: black;
+}
+
+
+/*****End INICIO*****/
+
+
+/*****MENU*****/
+
+.c_menu {
+    margin: 0px 0px 50px 0px;
+    background-color: #d8d8d8;
+    box-shadow: 8px 8px 4px rgb(0, 0, 0, 0.25);
+    height: auto;
+    border-radius: 40px;
+}
+
+.t_titulo_row {
+    text-align: center;
+    padding: 30px;
+}
+
+
+/*Sabores*/
+
+.c_row_ingredientes {
+    padding: 0px 20px 0px 20px;
+}
+
+.c_ingrediente {
+    text-align: center;
+    margin: 0px 0px 20px 0px;
+}
+
+.ci_ingrediente {
+    width: 100%;
+    border-radius: 30px;
+    border: 5px solid #fff;
+}
+
+
+/*End Sabores*/
+
+
+/*****End MENU*****/
+
+
+/*Horario*/
+
+.c_horario {
+    margin: -136px 20px 0px 20px;
+    background-color: #F54C63;
+    box-shadow: 8px 8px 4px rgb(0, 0, 0, 0.25);
+    height: 572px;
+    border-radius: 40px;
+    text-align: center;
+    padding: 23px 0px 20px 0px;
+    height: auto;
+}
+
+.t_time {
+    font-family: 'Jura', sans-serif;
+    font-size: 22px;
+    color: white;
+}
+
+.ci_imagesHorario {
+    margin: 0px 0px 20px 0px;
+}
+
+
+/*End Horario*/
+
+.bienvenida {
+    font-family: 'Tourney', cursive;
+    font-size: 20px;
+    margin: 50px 30px 20px 30px;
+    padding: 10px;
+    border: 2px solid #ccc;
+    text-align: center;
+}
+
+.mainitems {
+    margin: 50px 30px 20px 30px;
+    padding: 10px;
+    text-align: center;
+}
+
+.mainitem_img {
+    border: 4px solid #4d4d4d;
+    border-radius: 10px;
+}
+
+.r90 {
+    -webkit-transform: rotate(90deg);
+    /*-moz-transform: rotate(90deg);
+    -o-transform: rotate(90deg);
+    -ms-transform: rotate(90deg);
+    transform: rotate(90deg);*/
+}

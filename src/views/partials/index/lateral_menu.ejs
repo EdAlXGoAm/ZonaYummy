@@ -1,0 +1,71 @@
+<div class="buttons">
+    <img src="svg/logoUser.svg" class="img_logouser" alt="LogUser">
+    <div id='btn_registro' class='c_btn_registro_usuario'>Registrarme</div>
+    <div id='btn_login' class='c_btn_login'>Iniciar Sesión</div>
+    <a href="#"><img src="svg/btn_inicio.svg" href="#" class="btn_buttons" alt="Inicio"></a>
+    <a href="#Menu"><img src="svg/btn_menu.svg" class="btn_buttons" alt="Menú"></a>
+    <a href="#Pedir"><img src="svg/btn_pedir.svg" href="#" class="btn_buttons" alt="Pedir"></a>
+</div>
+
+<!--- PopUp Registro --->
+<div id="registro_overlay" class="c_registro_overlay">
+    <div id="registro_popup" class="c_registro_popup">
+        <a href="#" id="registro_popup_close" class="c_registro_popup_close"><i class="fas fa-times"></i></a>
+        <h3>Registrate</h3>
+        <h4>Y haz tu pedido</h4>
+        <!--<form action="src/php/register.php" class="c_inputs" method="post">-->
+        <form action="" class="c_inputs">
+            <div class="form_registro">
+                <input class="c_registro_input" type="text" id="f_r_name" placeholder="Nombre">
+                <input class="c_registro_input" type="tel" id="f_r_phone" placeholder="55 1234 5678" pattern="[5]{1}[5-6]{1}[0-9]{8}">
+                <input class="c_registro_input" type="text" id="f_r_pass" placeholder="password">
+            </div>
+            <button type="button" id="btn_action_registro" class="btn_start_registro">Registrarme</button>
+            <div id="respuesta"></div>
+            <!--<input type="submit" class="btn_start_registro" value="Registrarme">-->
+        </form>
+        <script>
+            var btn_registro = document.getElementById(btn_action_registro),
+            label_res = document.getElementById(respuesta);
+            btn_registro.addEventListener('click', function() {
+                label_red.write("Hola");
+                /*var f_r_name = document.getElementById('f_r_name').value;
+                var f_r_phone = document.getElementById('f_r_phone').value;
+                var f_r_pass = document.getElementById('f_r_pass').value;
+
+                var ruta = "f_r_name="+f_r_name+"&f_r_phone="+f_r_phone+"&f_r_pass="+f_r_pass;
+                $.ajax({
+                    url: 'src/php/register.php',
+                    type: 'POST',
+                    data: ruta,
+                })
+                .done(function(res){
+                    $('#respuesta').html(res)
+                })
+                .fail(function(){
+                    console.log("error");
+                })
+                .always(function(){
+                    console.log("complete");
+                });*/
+            });
+        </script>
+    </div>
+</div>
+
+<!--- PopUp Iniciar Sesión --->
+<div id="login_overlay" class="c_login_overlay">
+    <div id="login_popup" class="c_login_popup">
+        <a href="#" id="login_popup_close" class="c_login_popup_close"><i class="fas fa-times"></i></a>
+        <h3>Inicia sesión</h3>
+        <h4>Y haz tu pedido</h4>
+        <form action="src/php/login.php" class="c_inputs" method="post">
+            <div class="form_sesion">
+                <input class="c_login_input" type="tel" name="f_l_phone" placeholder="55 1234 5678" pattern="[5]{1}[5-6]{1}[0-9]{8}">
+                <input class="c_login_input" type="password" name="f_l_pass" placeholder="••••••••">
+            </div>
+            <input type="submit" class="btn_start_login" value="Iniciar Sesión">
+        </form>
+    </div>
+</div>
+<script src="src/popups.js"></script>

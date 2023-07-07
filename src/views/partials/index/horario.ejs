@@ -1,0 +1,65 @@
+<div class="c_horario">
+    <FONT COLOR="#FFFFFF"><h2>Hora Actual</h2></FONT>
+    <div style="position: relative;" class="clockrelative">
+        <img src="img/H_reloj.png" class="clockbase" alt="img_clock">
+        <img src="img/Manecilla_hour.png" class="clockbase mane_hour" alt="img_clock">
+        <img src="img/Manecilla_min.png" class="clockbase mane_min" alt="img_clock">
+        <img src="img/Manecilla_min.png" class="clockbase mane_seg" alt="img_clock">
+    </div>
+    <script>
+        let ancho_divhorario = Math.round($( ".c_horario" ).width());
+        let ancho_reloj = Math.round($( ".clockbase" ).width());
+        marginclockleft = Math.round((ancho_divhorario-ancho_reloj)/2);
+        $('.clockbase').css('left',marginclockleft+'px');
+    </script>
+    <script>
+        function muestraReloj() {
+            var fechaHora = new Date();
+            var dia = fechaHora.getDay();
+            var horas = fechaHora.getHours();
+            var minutos = fechaHora.getMinutes();
+            var segundos = fechaHora.getSeconds();
+
+            if(horas < 10) { horas = '0' + horas; }
+            if(minutos < 10) { minutos = '0' + minutos; }
+            if(segundos < 10) { segundos = '0' + segundos; }
+
+            hoursdegrees = 360/12*horas;
+            mindegrees = 360/60*minutos;
+            segdeg = 360/60*segundos;
+
+            if(horas > 12){horas -= 12;}
+
+            $('.mane_hour').css({transform: 'rotate('+hoursdegrees+'deg)' });
+            $('.mane_min').css({transform: 'rotate('+mindegrees+'deg)' });
+            $('.mane_seg').css({transform: 'rotate('+segdeg+'deg)' });
+            ampm = 'am'
+            if(horas > 12){horas -= 12; ampm = 'pm';}
+            if(horas == 12){horas = 12; ampm = 'pm';}
+            document.getElementById("reloj").innerHTML = horas+':'+minutos+':'+segundos+' '+ampm;
+        }
+
+        window.onload = function() {
+            setInterval(muestraReloj, 1000);
+        }
+
+        open_close = 0;
+        var fechaHora_once = new Date();
+        var dia_once = fechaHora_once.getDay();
+        var horas_once = fechaHora_once.getHours();
+        var minutos_once = fechaHora_once.getMinutes();
+        if(((dia_once >= 4 && dia_once <= 6) || dia_once == 0) && (horas_once >= 13 && horas_once < 22)){
+            open_close = 1;
+        }
+        else{
+            open_close = 0;
+        }
+        document.write("<div id='reloj' class='t_time parrafosobrereloj'></div>");
+        if(open_close){
+            document.write("<img src='svg/H_OpenClose_1.svg' class='ci_imagesHorario' alt='img_OpenClose'>");}else{
+            document.write("<img src='svg/H_OpenClose_0.svg' class='ci_imagesHorario' alt='img_OpenClose'>");}
+        document.write("<FONT COLOR='#FFFFFF'><h2>Horario</h2></FONT>")
+        document.write("<p class='t_time'>1:00 pm - 10:00 pm</p>")
+    </script>
+    <img src="svg/H_dias.svg" class="ci_dias" alt="img_dias">
+</div>
