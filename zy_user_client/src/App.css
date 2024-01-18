@@ -1,0 +1,44 @@
+.LoadingScreen {
+  text-align: center;
+}
+
+.Load-logo {
+  width: 50%;
+  pointer-events: none;
+  z-index: 1; /* Añadido para asegurar que esté sobre el fondo */
+}
+.Load-bkground {
+  width: 100%; /* Modificado para ocupar todo el ancho */
+  pointer-events: none;
+  position: absolute; /* Añadido para posicionar sobre el contenedor */
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .Load-logo {
+    animation: App-logo-pulse infinite 1s linear;
+  }
+}
+
+.Load-header {
+  position: relative; /* Añadido para establecer como contenedor relativo */
+  background-color: white;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: calc(10px + 2vmin);
+  color: white;
+}
+
+@keyframes App-logo-pulse {
+  0%, 100% {
+    transform: scale(1); /* Estado inicial y final: tamaño normal */
+  }
+  40%, 60% {
+    transform: scale(1.095); /* Estado inicial y final: tamaño normal */
+  }
+  50% {
+    transform: scale(1.1); /* En el punto medio de la animación, aumenta el tamaño */
+  }
+}
