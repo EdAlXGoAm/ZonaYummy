@@ -42,3 +42,8 @@
     transform: scale(1.1); /* En el punto medio de la animación, aumenta el tamaño */
   }
 }
+
+.container-fluid {
+  margin-top: 10px;
+  margin-bottom: 20px;
+}

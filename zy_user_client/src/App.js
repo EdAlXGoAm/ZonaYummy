@@ -1,6 +1,8 @@
 
 import './App.css';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import React, { useState, useEffect } from 'react';
+import AdminPage from './routes/adminPage';
 
 const LoadingScreen = () => {
   const logoFondo = '/FondoLisoPastelVertical-min.png';
@@ -17,11 +19,13 @@ const LoadingScreen = () => {
 
 const MainScreen = () => {
   return (
-    <div className="MainScreen">
-      <p class="fs-4 fs-lg-2">Este es un texto responsivo.</p>
-    </div>
+    <div className="MainScreen"></div>
   );
-}
+};
+
+const AdminScreen = () => {
+  return(<AdminPage />);
+};
 
 const App = () => {
   const [loading, setLoading] = useState(true);
@@ -32,7 +36,14 @@ const App = () => {
     }, 1000);
   }, []);
 
-  return loading ? <LoadingScreen /> : <MainScreen />;
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={loading ? <LoadingScreen /> : <MainScreen />} />
+        <Route path="/admin" element={<AdminScreen />} />
+      </Routes>
+    </BrowserRouter>
+  )
 }
 
 export default App;

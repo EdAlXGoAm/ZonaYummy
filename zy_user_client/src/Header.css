@@ -75,11 +75,11 @@
     font-size: clamp(1rem, 1.2vw, 2.5rem);
 }
 
-.btn-outline-light {
+.nav-item > .btn-outline-light {
     background-color: #ff8cd7;
 }
 
-.btn-light {
+.nav-item > .btn-light {
     border-color: #ff8cd7;
     color: #ff8cd7;
 }
