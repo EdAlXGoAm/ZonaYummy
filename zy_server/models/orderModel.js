@@ -12,6 +12,6 @@ const orderSchema = new mongoose.Schema({
   ComandasList: [Schema.Types.Mixed]
 });
 
-const Order = mongoose.model('Order', orderSchema, 'orders');
+const Order = mongoose.model('Order', orderSchema, 'zy-orders');
 
 module.exports = Order;
