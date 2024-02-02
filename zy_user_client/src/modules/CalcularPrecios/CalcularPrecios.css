@@ -1,0 +1,69 @@
+.ing_table {
+    margin: 0px;
+    padding: 0px;
+}
+
+.IngredienteTitle {
+    padding: 10px;
+    height: 73px;;
+    margin: 0px;
+    background-color: #ffb6ee;
+    border: 1px solid #ccc;
+    box-shadow: 3px 3px 10px rgba(94, 94, 94, 0.528);
+    font-weight: bold;
+    font-size: clamp(0.65rem, 0.85vw, 2rem);
+    text-align: center;
+}
+.HeaderUnidad {
+    padding: 5px;
+    margin: 0px;
+    background-color: #d8d8d8;
+    border: 1px solid #ccc;
+    box-shadow: 3px 3px 10px rgba(94, 94, 94, 0.528);
+    font-weight: bold;
+    text-align: center;
+    font-style: italic;
+}
+.BodyUnidad {
+    padding: 5px;
+    margin: 0px;
+    background-color: white;
+    border: 1px solid #ccc;
+    box-shadow: 3px 3px 10px rgba(94, 94, 94, 0.528);
+}
+.HeaderPrice {
+    padding: 5px;
+    margin: 0px;
+    background-color: #d8d8d8;
+    border: 1px solid #ccc;
+    box-shadow: 3px 3px 10px rgba(94, 94, 94, 0.528);
+    font-weight: bold;
+    text-align: center;
+    font-style: italic;
+}
+.BodyPrice {
+    padding: 5px;
+    margin: 0px;
+    background-color: white;
+    border: 1px solid #ccc;
+    box-shadow: 3px 3px 10px rgba(94, 94, 94, 0.528);
+}
+
+.datos_ingrediente {
+    margin-bottom: 10px;
+}
+
+.CantidadUsadaLabel {
+    text-align: center;
+    font-size: clamp(0.5rem, 0.7vw, 0.9rem);
+}
+.CalculadoraTitle {
+    font-family: 'Salsa', cursive;
+    font-weight: bold;
+    text-shadow: 1px 1px 1px hsla(0, 0%, 37%, 0.528);
+    color: #00e2ea;
+}
+
+.FormCalculadora {
+    width: 100%;
+}

@@ -1,0 +1,51 @@
+.button_container {
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+    /* height: 100%; */
+}
+
+.form-group > label {
+    margin-top: 0px;
+    margin-bottom: 0px;
+}
+
+.form-group > input {
+    margin-top: 0px;
+    margin-bottom: 0px;
+}
+
+.form-group {
+    margin-top: 0px;
+    margin-bottom: 5px;
+}
+
+.componenteLabel {
+    font-size: clamp(0.9rem, 0.7vw, 2.5rem);
+}
+.itemLabel {
+    font-size: clamp(0.9rem, 0.7vw, 2.5rem);
+}
+.subTitle2 {
+    font-size: clamp(0.9rem, 0.7vw, 2.5rem);
+}
+.itemContainer {
+    padding: 0px;
+}
+.itemInputContainer {
+    padding: 0px 10px 0px 0px;
+}
+.itemInputContainerPrecio {
+    padding: 0px 10px 0px 10px;
+}
+.cantidadLabel {
+    font-size: clamp(0.8rem, 0.5vw, 2.5rem);
+}
+
+.btn-sm-cont {
+    padding: 0px 0px;
+    justify-content: left !important;
+}
+.btn-sm-cont > button {
+    font-size: clamp(0.55rem, 0.6vw, 2.5rem);
+}

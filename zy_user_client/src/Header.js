@@ -13,7 +13,7 @@ const NavbarLogo = () => {
 
 const NavbarButtonMenu = () => {
     return (
-        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+        <button className="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
             <span><FontAwesomeIcon className="navbar-toggler-icon" icon={faBars} size="lg" /></span>
         </button>
     );
@@ -22,14 +22,14 @@ const NavbarButtonMenu = () => {
 const NavbarLinks = () => {
     return (
         // navbarNav debe ir alineado a la derecha
-        <div class="ml-auto" id="navbarNav">
+        <div className="ml-auto" id="navbarNav">
             {/* Derecha */}
             <ul className="navbar-nav">
-                <li class="nav-item">
+                <li className="nav-item">
                     <a title="Inicio" className="nav-link" href="/">Inicio</a></li>
-                <li class="nav-item">
+                <li className="nav-item">
                     <a title="Menú" className="nav-link" href="/Menu/">Menú</a></li>
-                <li class="nav-item"> 
+                <li className="nav-item"> 
                     <a title="Contacto" className="nav-link" href="/Contacto/">Contacto</a></li>
             </ul>
         </div>
@@ -38,13 +38,13 @@ const NavbarLinks = () => {
 
 const NavbarSession = () => {
     return (
-        <div class="" id="navbarSession">
+        <div className="" id="navbarSession">
             <ul className="navbar-nav">
-                <li class="nav-item">
-                    <button type="button" class="btn btn-outline-light">Regístrate</button>
+                <li className="nav-item">
+                    <button type="button" className="btn btn-outline-light">Regístrate</button>
                 </li>
-                <li class="nav-item">
-                    <button type="button" class="btn btn-light">Inicia Sesión</button>
+                <li className="nav-item">
+                    <button type="button" className="btn btn-light">Inicia Sesión</button>
                 </li>
             </ul>
         </div>

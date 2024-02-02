@@ -2,8 +2,8 @@ const Producto = require("../models/productoModel");
 
 async function getAllProductos() {
     try {
-        // Obtener todas las tareas de la base de datos
-        const productosList = await Producto.find();
+        // Obtener todas las tareas de la base de datos ordenados alfabeticamente usando el valor Producto
+        const productosList = await Producto.find().sort({ Producto: 1})
         
         // Comprobar si hay tareas disponibles
         if (productosList.length === 0) {

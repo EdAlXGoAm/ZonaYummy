@@ -22,15 +22,20 @@
 }
 
 .card-title {
-    font-size: clamp(0.8rem, 1.2vw, 2.5rem);
+    font-size: clamp(1.2rem, 1.1vw, 2rem) !important;
+    text-align: center;
 }
 
 .card-subtitle {
     margin-bottom: 3px;
-    font-size: clamp(0.5rem, 1vw, 2.3rem);
+    font-size: clamp(1rem, 0.9vw, 1.5rem) !important;
 }
 
 .card-price {
     margin-bottom: 3px;
-    font-size: clamp(0.8rem, 1.2vw, 2.5rem);
+    font-size: clamp(1.2rem, 1.2vw, 2rem) !important;
+}
+
+.botones-card > .btn {
+    margin-right: 5px;
 }

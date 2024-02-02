@@ -1,34 +1,28 @@
 
 import Axios from "axios";
 
-export const addProducto = () => {
-  Axios.post("http://localhost:3010/saveOneProducto",{
-    Categoria: "Consumibles",
-    Proveedor: "Zorro",
-    Producto: "Alitas",
-    Unidad: "Volumen",
-    Precios: [
-        {
-            fecha: "2024-01-12",
-            precio: 21
-        },
-        {
-            fecha: "2024-01-15",
-            precio: 20.3
-        },
-        {
-            fecha: "2024-01-17",
-            precio: 20.3
-        }
-    ]
+export const addProducto = (producto) => {
+  return Axios.post("http://192.168.100.9:3010/saveOneProducto",{
+    Categoria: producto.Categoria,
+    Proveedor: producto.Proveedor,
+    Producto: producto.Producto,
+    Unidad: producto.Unidad,
+    Cantidad: producto.Cantidad,
+    Precios: producto.Precios
 }).then(()=>{
   alert("Producto Agregado Correctamente");
 });
-
 }
 export const getProductos = () => {
-  return Axios.get("http://localhost:3010/getAllProductos")
+  return Axios.get("http://192.168.100.9:3010/getAllProductos")
   .then((response)=>{
     return response.data;
+  });
+}
+export const deleteProductoByProducto = (producto) => {
+  return Axios.post("http://192.168.100.9:3010/deleteProductoByProducto",{
+    Producto: producto.Producto
+  }).then(()=>{
+    alert("Producto Eliminado Correctamente");
   });
 }
