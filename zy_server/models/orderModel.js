@@ -8,8 +8,7 @@ const orderSchema = new mongoose.Schema({
   OrderPrepStatus : { type: String, required: true },
   OrderCustStatus : { type: String, required: true },
   Customer: { type: String },
-  CuentaTotal: { type: Number},
-  ComandasList: [Schema.Types.Mixed]
+  CuentaTotal: { type: Number}
 });
 
 const Order = mongoose.model('Order', orderSchema, 'zy-orders');
