@@ -1,6 +1,6 @@
 import Axios from "axios";
 
-const baseURL = "http://192.168.100.9:3010/api/platillos";
+const baseURL = "http://192.168.100.38:3010/api/platillos";
 
 const platillosApi = {
     getPlatillos : async () => {
