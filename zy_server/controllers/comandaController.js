@@ -43,7 +43,7 @@ exports.addComanda = (req, res) => {
 }
 
 exports.updateComanda = (req, res) => {
-    Comanda.findOne({ ComandaId: req.body.ComandaId })
+    Comanda.findOne({ _id: req.body._id })
         .then((comanda) => {
             comanda.OrderID = req.body.OrderID;
             comanda.ComandaId = req.body.ComandaId;
