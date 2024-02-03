@@ -38,6 +38,10 @@ io.on('connection', (socket) => {
         console.log('Mensaje recibido del cliente:', data);
         socket.broadcast.emit('UpdateComandaDesdeServidor', data);
     });
+    socket.on('DeleteComandaDesdeCliente', (data) => {
+        console.log('Mensaje recibido del cliente:', data);
+        socket.broadcast.emit('DeleteComandaDesdeServidor', data);
+    });
 
     socket.on('disconnect', () => {
         console.log('Cliente desconectado');
