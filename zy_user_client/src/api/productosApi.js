@@ -1,6 +1,6 @@
 
 import Axios from "axios";
-const baseURL = `${process.env.REACT_APP_API_URL}:3010`;
+const baseURL = `${process.env.REACT_APP_API_URL}`;
 
 export const addProducto = (producto) => {
   return Axios.post(`${baseURL}/saveOneProducto`,{
