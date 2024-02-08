@@ -11,9 +11,12 @@ app.use(express.json());
 
 const server = http.createServer(app);
 
-const io = socketIo(server);
-
-io.origins('*:*');
+const io = socketIo(server, {
+    cors: {
+        origin: "*", // Configura los orígenes permitidos según tus necesidades
+        methods: ["GET", "POST"]
+    }
+});
 
 io.on('connection', (socket) => {
     console.log('Nuevo cliente conectado');
