@@ -29,6 +29,10 @@ io.on('connection', (socket) => {
         socket.broadcast.emit('OrdenEliminadaDesdeServidor',
         "Precaución. Se ha eliminado una orden.");
     });
+    socket.on('OrdenActualizadaDesdeCliente', () => {
+        socket.broadcast.emit('OrdenActualizadaDesdeServidor',
+        "Se ha actualizado una orden.");
+    });
 
     socket.on('NuevaComandaDesdeCliente', (data) => {
         console.log('Mensaje recibido del cliente:', data);

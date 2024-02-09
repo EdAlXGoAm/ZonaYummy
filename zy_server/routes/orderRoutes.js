@@ -20,4 +20,7 @@ router.delete('/delete/:id', orderController.deleteOrder);
 // Ruta para obtener el ultimo ID de todos los platillos
 router.get('/getLastOrderId/', orderController.getLastOrderId);
 
+// Ruta para obtener el ultimo ID de todos los platillos
+router.get('/getByOrderCustStatus/:OrderCustStatus', orderController.getByOrderCustStatus);
+
 module.exports = router;

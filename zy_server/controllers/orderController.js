@@ -71,3 +71,11 @@ exports.getLastOrderId = (req, res) => {
         })
         .catch((err) => res.status(400).json("Error: " + err));
 }
+
+exports.getByOrderCustStatus = (req, res) => {
+    Order.find({ OrderCustStatus: req.params.OrderCustStatus })
+        .then((orders) => {
+            res.json(orders)
+        })
+        .catch((err) => res.status(400).json("Error: " + err));
+}
