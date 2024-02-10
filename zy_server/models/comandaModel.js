@@ -8,6 +8,7 @@ const comandaSchema = new mongoose.Schema({
   Platillo: { type : String },
   Precio: { type : Number },
   Imagen: { type : String },
+  Categoria: { type : String },
   ComandaPaidStatus: { type : String },
   ComandaPrepStatus: { type : String },
   ComandaDeliverMode: { type : String },

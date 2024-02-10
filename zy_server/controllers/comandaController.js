@@ -28,6 +28,7 @@ exports.addComanda = (req, res) => {
         Platillo: req.body.Platillo,
         Precio: req.body.Precio,
         Imagen: req.body.Imagen,
+        Categoria: req.body.Categoria,
         ComandaPaidStatus: req.body.ComandaPaidStatus,
         ComandaPrepStatus: req.body.ComandaPrepStatus,
         ComandaDeliverMode: req.body.ComandaDeliverMode,
@@ -50,6 +51,7 @@ exports.updateComanda = (req, res) => {
             comanda.Platillo = req.body.Platillo;
             comanda.Precio = req.body.Precio;
             comanda.Imagen = req.body.Imagen;
+            comanda.Categoria = req.body.Categoria,
             comanda.ComandaPaidStatus = req.body.ComandaPaidStatus;
             comanda.ComandaPrepStatus = req.body.ComandaPrepStatus;
             comanda.ComandaDeliverMode = req.body.ComandaDeliverMode;
