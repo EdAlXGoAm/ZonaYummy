@@ -73,7 +73,21 @@ exports.getLastOrderId = (req, res) => {
 }
 
 exports.getByOrderCustStatus = (req, res) => {
-    Order.find({ OrderCustStatus: req.params.OrderCustStatus })
+    // Crear fecha de inicio y fin del día actual en la hora de Ciudad de México
+    const startOfDay = new Date();
+    startOfDay.setHours(0,0,0,0); // Inicio del día en UTC
+    const endOfDay = new Date();
+    endOfDay.setHours(23,59,59,999); // Final del día en UTC
+    console.log(`startOfDay: ${startOfDay}`);
+    console.log(`endOfDay: ${endOfDay}`);
+
+    Order.find({
+            OrderCustStatus: req.params.OrderCustStatus,
+            OrderDate: {
+                $gte: startOfDay,
+                $lte: endOfDay
+            }
+        })
         .then((orders) => {
             res.json(orders)
         })
