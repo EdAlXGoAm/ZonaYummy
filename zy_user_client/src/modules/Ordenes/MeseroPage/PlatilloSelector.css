@@ -1,0 +1,44 @@
+.containerArrowPlatillosButton {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.buttonArrowPlatillosSelector {
+    background-color: #ffffff;
+    outline: none !important;
+    border: none !important;
+}
+.buttonArrowPlatillosSelector:hover > svg {
+    color: #7bd3ff;
+}
+.slider_row_slide{
+    justify-content: center;
+}
+.platilloButton {
+    background-color: #ffffff;
+    border-radius: 10px;
+    flex-direction: column;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 85px;
+    height: 130px;
+    border: none;
+}
+.platilloButton:hover {
+    background-color: #FFC0CB;
+}
+.disabled {
+    opacity: 0.5;
+}
+.disabled:hover {
+    background-color: #d3d3d3;
+}
+.divImagePlatilloButton {
+    margin-bottom: 10px;
+}
+.textPlatilloButton {
+    font-size: 20px;
+    font-family: Bebas Neue;
+    text-transform: uppercase;
+}

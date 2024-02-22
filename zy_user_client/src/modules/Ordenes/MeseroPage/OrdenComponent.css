@@ -1,0 +1,86 @@
+.card {
+    width: 100%;
+    margin: 10px;
+    padding: 10px;
+    border: 5px solid #abe1e3;
+    border-radius: 10px;
+    background-color: #ffffff;
+    height: auto;
+}
+
+.toggleArrowButtons > button {
+    border-radius: 30px;
+    background-color: #8eff62;
+    outline: none;
+    border: none;
+    padding-top: 5px;
+}
+
+.toggleArrowButtons > button:hover {
+    background-color: #cfcfcf !important;
+}
+
+.orderNumText {
+    font-size: clamp(1rem, 1.2vw, 1.8rem);
+    font-weight: bold;
+    color: #000000;
+    background-color: #abe1e3;
+    border-radius: 40px;
+    padding: 0px 10px;
+    margin: 0px 10px;
+}
+
+.orderNum > button {
+    background-color: #ffffff;
+    border-radius: 10px;
+    outline: none;
+    border: none;
+
+}
+@keyframes orderNumButton_hoverAnimation {
+    0% { background-color: #ffffff; }
+    90% { background-color: #ff7676; }
+    100% { background-color: #ffffff; }
+}
+.orderNum > button:hover {
+    background-color: #ff7676;
+    /* animation: orderNumButton_hoverAnimation 0.5s ease forwards; */
+}
+.orderNum > button > svg {
+    color: #ff6969;
+}
+@keyframes orderNumButtonSvg_hoverAnimation {
+    0% { color: #ff7676; }
+    90% { color: #ffffff; }
+    100% { color: #ff7676; }
+}
+.orderNum > button:hover > svg{
+    color: #ffffff;
+    /* animation: orderNumButtonSvg_hoverAnimation 0.5s ease forwards; */
+}
+
+.orderTotalText {
+    font-size: 25px;
+    font-weight: bold;
+    margin: 0px 10px 0px 0px;
+}
+
+.orderTotal > button {
+    background-color: #ffffff;
+    border-radius: 10px;
+    outline: none;
+    border: none;
+}
+.orderTotal > button > svg {
+    padding: 3px 0px;
+    color: #39c939;
+}
+@keyframes orderTotalButton_hoverAnimation {
+    0% { background-color: #ffffff; }
+    90% { background-color: #5d5d5d; }
+    100% { background-color: #ffffff; }
+}
+.orderTotal > button:hover {
+    background-color: #5d5d5d;
+    /* animation: orderTotalButton_hoverAnimation 0.5s ease forwards; */
+}

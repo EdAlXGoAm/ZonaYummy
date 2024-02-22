@@ -1,0 +1,52 @@
+.titleOption {
+    display: flex;
+    padding-left: 10px;
+    font-weight: bold;
+    color: #00b3ff;
+    font-family: 'Salsa', cursive;
+    font-size: clamp(1rem, 1.2vw, 2.5rem);
+    margin: 0px;
+}.titleComponents {
+    display: flex;
+    padding-left: 10px;
+    font-weight: bold;
+    color: #00b3ff;
+    font-family: 'Salsa', cursive;
+    font-size: clamp(1rem, 1.2vw, 2.5rem);
+}.titleIngredientes {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    font-weight: bold;
+    color: #00b3ff;
+    font-family: 'Salsa', cursive;
+    font-size: clamp(1rem, 1.2vw, 2.5rem);
+}
+
+.personalizarTitle {
+    padding-left: 25px;
+}
+.personalizarTitle > .faButton {
+    padding-bottom: 13px;
+}
+.personalizarTitle > h2 {
+    padding: 0px 20px;
+}
+.container > div {
+    margin-top: 10px;
+    padding-left: 15px;
+    border-radius: 10px;
+    box-shadow: 2px 2px 5px #2d2d2d;
+    background-color: #fff;
+    color: #000;
+    text-align: left;
+}
+.faButton {
+    padding: 0px !important;
+}
+.conTodoBtn{
+    background-color: #fff45a;
+    border-radius: 10px;
+    box-shadow: 2px 2px 5px #2d2d2d;
+}

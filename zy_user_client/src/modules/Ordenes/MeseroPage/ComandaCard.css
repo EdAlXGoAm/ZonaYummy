@@ -1,0 +1,55 @@
+.comandaTextStyle {
+    background-color: #2d2d2d;
+    color: #ffffff;
+    border-radius: 40px;
+    padding: 0px 10px;
+    margin: 0px 10px;
+    font-size: 27px;
+    font-family: 'Salsa', cursive;
+    font-weight: bold;
+}
+
+.divStyle {
+    font-weight: bold;
+    border: 10px solid #2d2d2d;
+    border-radius: 15px;
+    padding: 15px;
+}
+
+.personalizarTitle {
+    padding-left: 25px;
+}
+
+.iconDelivery{
+    display: flex;
+    animation: cambio-color-delivery 1s infinite linear;
+    border: 1px solid black;
+    border-radius: 10px;
+    justify-content: center;
+    width: 50%;
+}
+@keyframes cambio-color-delivery {
+    0% { background-color: white; 
+        color: #fff}
+    15% { background-color: white; 
+        color: #fff}
+    35% { background-color: greenyellow; 
+        color: #000}
+    65% { background-color: greenyellow; 
+        color: #000}
+    85% { background-color: white; 
+        color: #fff}
+    100% { background-color: white; 
+        color: #fff}
+}
+.comandaCardAnimation {
+    animation: cambio-color-omandaCardAnimation 5s infinite linear;
+}
+@keyframes cambio-color-omandaCardAnimation  {
+    0% { background-color: #ffb3b3; 
+        color: #fff}
+    50% { background-color: #fe8878; 
+        color: #fff}
+    100% { background-color: #ffb3b3; 
+        color: #fff}
+}

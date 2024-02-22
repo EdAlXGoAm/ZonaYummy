@@ -1,0 +1,13 @@
+.container-fluid {
+    height: 100%; /* Ajusta este valor según necesites */
+}
+
+.contenedor-elementos {
+    display: flex;
+    flex-direction: column;
+    height: 100%; /* Ajusta este valor según necesites */
+}
+
+.fila-elemento {
+    flex: 1; /* Esto hace que cada fila-elemento ocupe un tercio del espacio disponible */
+}
