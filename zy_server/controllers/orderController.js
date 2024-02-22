@@ -82,7 +82,11 @@ exports.getByOrderCustStatus = (req, res) => {
     console.log(`endOfDay: ${endOfDay}`);
 
     Order.find({
-            OrderCustStatus: req.params.OrderCustStatus
+            OrderCustStatus: req.params.OrderCustStatus,
+            OrderDate: {
+                $gte: startOfDay,
+                $lte: endOfDay
+            }
         })
         .then((orders) => {
             res.json(orders)
