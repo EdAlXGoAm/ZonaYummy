@@ -4,6 +4,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import React, { useState, useEffect } from 'react';
 import AdminPage from './routes/adminPage';
 import MeseroPage from './routes/MeseroPage'
+import Menu from './routes/Menu';
 
 const LoadingScreen = () => {
   const logoFondo = '/FondoLisoPastelVertical-min.png';
@@ -20,7 +21,9 @@ const LoadingScreen = () => {
 
 const MainScreen = () => {
   return (
-    <div className="MainScreen"></div>
+    <div className="MainScreen">
+      <Menu />
+    </div>
   );
 };
 
@@ -47,6 +50,7 @@ const App = () => {
     <BrowserRouter>
       <Routes>
         <Route path="/" element={loading ? <LoadingScreen /> : <MainScreen />} />
+        <Route path="/Menu" element={<MainScreen />}/>
         <Route path="/2on4yummy-admin" element={<AdminScreen />} />
         <Route path="/2on4yummy-mesero" element={<MeseroScreen modeInterface={true} />} />
         <Route path="/2on4yummy-cocina" element={<MeseroScreen modeInterface={false} />} />
