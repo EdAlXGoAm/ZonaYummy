@@ -41,10 +41,10 @@ const NavbarSession = () => {
         <div className="" id="navbarSession">
             <ul className="navbar-nav">
                 <li className="nav-item">
-                    <button type="button" className="btn btn-outline-light">Regístrate</button>
+                    <button type="button" className="btn btn-outline-light" disabled>Regístrate</button>
                 </li>
                 <li className="nav-item">
-                    <button type="button" className="btn btn-light">Inicia Sesión</button>
+                    <button type="button" className="btn btn-light" disabled>Inicia Sesión</button>
                 </li>
             </ul>
         </div>
