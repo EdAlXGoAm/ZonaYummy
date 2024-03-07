@@ -8,7 +8,7 @@ import Menu from './routes/Menu';
 
 const LoadingScreen = () => {
   const logoFondo = '/FondoLisoPastelVertical-min.png';
-  const logo = '/LoadingScreen-min.png';
+  const logo = '/Ideogram/Full.png';
   return (
     <div className="LoadingScreen">
       <header className="Load-header">
