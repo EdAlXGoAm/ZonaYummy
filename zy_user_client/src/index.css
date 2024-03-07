@@ -5,8 +5,8 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-image: url(../public/FondoLisoPastelVertical-min.png);
-  
+  /* background-image: url(../public/FondoLisoPastelVertical-min.png); */
+  background: linear-gradient(to right, #2398a0, #59a3b0, #c89dbc, #e073aa, #e95a9f);
   background-size: cover;
 }
 

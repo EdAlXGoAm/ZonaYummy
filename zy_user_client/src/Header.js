@@ -3,7 +3,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faBars } from '@fortawesome/free-solid-svg-icons';
 
 const NavbarLogo = () => {
-    const logo = '/Logo Nav Bar-min.png';
+    const logo = '/ideogram/ZonaYummy.png';
     return (
         <div title="Zona Yummy" className="navbar-brand">
             <img src={logo} className="navbar-logo" alt="logo" />

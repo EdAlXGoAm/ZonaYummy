@@ -1,5 +1,5 @@
 .navbar-style {
-    background-color: #f8c6d8;
+    /* background-color: #f8c6d8; */
 }
 
 .navbar-toggler {
@@ -22,8 +22,9 @@
 }
 
 .navbar-logo {
-    height: 4.5vh;
+    height: 11vh;
     pointer-events: none;
+    padding-left: 150px;
 }
 
 .navbar-toggler {
@@ -43,7 +44,7 @@
 }
 #navbarNav > ul > li > a {
     text-decoration: none;
-    color: black;
+    color: #fff;
     font-family: 'Pacifico', cursive;
     font-size: clamp(1rem, 1.2vw, 2.5rem);
 }
@@ -51,14 +52,14 @@
 #navbarNav > ul > li {
     padding: 0px 10px 0px 10px;
     margin: 5px;
-    background-color: #ecfcff;
+    /* background-color: #ecfcff; */
     border: 1px solid;
-    border-color: #91ebff;
+    border-color: #fff;
     border-radius: 10px;
 }
 
 #navbarNav > ul > li:hover {
-    background-color: #ff8cd7;
+    background-color: #35e0ec;
 }
 
 #navbarSession {

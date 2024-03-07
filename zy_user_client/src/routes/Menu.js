@@ -48,7 +48,7 @@ const Menu = () => {
             <div className="row">
                 <div className="col-2">
                     <div className="form-group" style={{margin: 'auto', width: '50%', paddingBottom: '15px'}}>
-                        <button onClick={handlePrevPage} className="btn btn-primary">{`<<`}</button>
+                        <button onClick={handlePrevPage} className="btn btn-primary" style={{backgroundColor: '#e073aa', border: '#e073aa'}}>{`<<`}</button>
                     </div>
                 </div>
                 <div className="col-8" style={{margin: 'auto', width: '50%', paddingBottom: '15px'}}>
@@ -56,7 +56,7 @@ const Menu = () => {
                 </div>
                 <div className="col-2">
                     <div className="form-group" style={{margin: 'auto', width: '50%', paddingBottom: '15px'}}>
-                        <button onClick={handleNextPage} className="btn btn-primary">{`>>`}</button>
+                        <button onClick={handleNextPage} className="btn btn-primary" style={{backgroundColor: '#2498a0', border: '#2498a0'}}>{`>>`}</button>
                     </div>
                 </div>
             </div>
