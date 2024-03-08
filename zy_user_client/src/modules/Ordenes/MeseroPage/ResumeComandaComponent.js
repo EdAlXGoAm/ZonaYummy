@@ -313,17 +313,6 @@ const DetailsComanda = ({Comanda, updateComanda}) => {
         <div>
             <div className="card-body mb-1 divStyle" style={{backgroundColor: colorStatus}}>
 
-                <div className="row" style={{display: Comanda.Customer === undefined ? 'none' : 'flex'}}>
-                    <div className='col'>
-                    {/* Text box editable backgroudn red and text blanco BOLD */}
-                        <div className='row'>
-                            <div className='col'>
-                            <p className={`textClienteCocina colorTextClienteCocina${Comanda.OrderID % 10}`}><span>{`(${Comanda.OrderID})`} : </span>{Comanda.Customer}</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
                 <div className="row" style={{display: !Comanda.ComandaSwitchNota ? 'none' : 'flex'}}>
                     <div className='col'>
                     {/* Text box editable backgroudn red and text blanco BOLD */}
@@ -335,28 +324,34 @@ const DetailsComanda = ({Comanda, updateComanda}) => {
                     </div>
                 </div>
 
+                <div className="row" style={{display: Comanda.Customer === undefined ? 'none' : 'flex'}}>
+                    <div className='col-3'>
+                        <div className="row"><div className="col">
+                            <img src={Comanda.ComandaDeliverMode === "Delivery" ? "Ideogram/llevare.png" : "Ideogram/aquie.png" } alt="icon"className="img-fluid" style={{ width: '250px'}}></img>
+                        </div></div>
+                        <div className="row"><div className="col">
+                            <img src={Comanda.Imagen} alt="icon"className="img-fluid" style={{ width: '200px'}}></img>
+                        </div></div>
+                    </div>
+                    <div className='col-9'>
+                        <div className="row"><div className="col">
+                            <p className={`textClienteCocina colorTextClienteCocina${Comanda.OrderID % 10}`}><span>{`(${Comanda.OrderID})`} : </span>{Comanda.Customer}</p>
+                        </div></div>
+                        <div className="row"><div className="col">
+                            <h2 className="title comandaTextStyleCocina">{Comanda.Platillo}&nbsp;&nbsp;<span style={{textShadow: "0px 0px 10px red"}}>${Comanda.Precio}</span></h2>
+                        </div></div>
+                        <div className="row"><div className="col">
+                            <div><span className="titleVariantCocina">
+                                {Comanda.Details.Variants[Comanda.Details.SelectedVariant].VariantName.toUpperCase()}
+                            </span></div>
+                        </div></div>
+                    </div>
+                </div>
+
+
 
                 <div className="row mb-3">
                     <div className='col'>
-                        <div className='row mb-2'>
-                            <div className='col-2'>
-                            <img src={Comanda.Imagen} alt="icon"className="img-fluid" style={{ width: '200px'}}></img>
-                            </div>
-                            <div className="col-8">
-                                <div className="row"><div className="col">
-                                    <h2 className="title comandaTextStyleCocina">{Comanda.Platillo}&nbsp;&nbsp;<span style={{textShadow: "0px 0px 10px red"}}>${Comanda.Precio}</span></h2>
-                                </div></div>
-                                <div className="row"><div className="col">
-                                    <div><span className="titleVariantCocina">
-                                        {Comanda.Details.Variants[Comanda.Details.SelectedVariant].VariantName.toUpperCase()}
-                                    </span></div>
-                                </div></div>
-                                
-                            </div>
-                            <div className='col-2'>
-                            <img src={Comanda.ComandaDeliverMode === "Delivery" ? "iconscocina/Llevar.png" : "iconscocina/Aqui.png" } alt="icon"className="img-fluid" style={{ width: '250px'}}></img>
-                            </div>
-                        </div>
                         {Comanda.ComandaPaidStatus === "Editing" ? (
                             <div>
                                 <div style={{padding: "50px 0px"}}>
