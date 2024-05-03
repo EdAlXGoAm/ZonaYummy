@@ -303,16 +303,16 @@ const OrdenesCocina = ({modeInterface, Orders}) => {
                     const audio = new Audio("ComandaAudios/Solicitan-Pastel.wav");
                     audio.play();
                 }
-                else if (audioMsg === "Add-AMOR Hamburguesa") {
-                    const audio = new Audio("ComandaAudios/Solicitan-SanValentinHamburguesa.wav");
+                else if (audioMsg === "Add-Combo 1 Pizza") {
+                    const audio = new Audio("ComandaAudios/Combo1.wav");
                     audio.play();
                 }
-                else if (audioMsg === "Add-AMOR Alitas") {
-                    const audio = new Audio("ComandaAudios/Solicitan-SanValentinAlitas.wav");
+                else if (audioMsg === "Add-Combo 2 Burguer") {
+                    const audio = new Audio("ComandaAudios/Combo2.wav");
                     audio.play();
                 }
-                else if (audioMsg === "Add-AMOR Hot Dog") {
-                    const audio = new Audio("ComandaAudios/Solicitan-SanValentinHotDogs.wav");
+                else if (audioMsg === "Add-Combo 3 Hotdog") {
+                    const audio = new Audio("ComandaAudios/Combo3.wav");
                     audio.play();
                 }
             }
