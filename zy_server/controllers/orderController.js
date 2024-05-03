@@ -74,7 +74,7 @@ exports.getLastOrderId = (req, res) => {
 
 exports.getByOrderCustStatus = (req, res) => {
     // Crear fecha de inicio y fin del día actual en la hora de Ciudad de México
-    const startOfDay = new Date();
+    const startOfDay = new Date(); //"2024-04-27T10:00:00.000Z");
     startOfDay.setHours(0,0,0,0); // Inicio del día en UTC
     const endOfDay = new Date();
     endOfDay.setHours(23,59,59,999); // Final del día en UTC
