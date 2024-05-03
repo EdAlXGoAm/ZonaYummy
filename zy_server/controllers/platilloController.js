@@ -2,6 +2,7 @@ const Platillo = require("../models/platilloModel");
 
 exports.getPlatillos = (req, res) => {
   Platillo.find()
+    .sort({ PlatilloId: 1 })
     .then((platillos) => res.json(platillos))
     .catch((err) => res.status(400).json("Error: " + err));
 };
