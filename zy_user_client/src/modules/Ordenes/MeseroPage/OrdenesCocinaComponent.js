@@ -303,7 +303,7 @@ const OrdenesCocina = ({modeInterface, Orders}) => {
                     const audio = new Audio("ComandaAudios/Solicitan-Pastel.wav");
                     audio.play();
                 }
-                else if (audioMsg === "Add-Combo 1 Pizza") {
+                else if (audioMsg === "Add-Combo 1 Donitas") {
                     const audio = new Audio("ComandaAudios/Combo1.wav");
                     audio.play();
                 }
@@ -311,7 +311,7 @@ const OrdenesCocina = ({modeInterface, Orders}) => {
                     const audio = new Audio("ComandaAudios/Combo2.wav");
                     audio.play();
                 }
-                else if (audioMsg === "Add-Combo 3 Hotdog") {
+                else if (audioMsg === "Add-Combo 3 Alitas") {
                     const audio = new Audio("ComandaAudios/Combo3.wav");
                     audio.play();
                 }
