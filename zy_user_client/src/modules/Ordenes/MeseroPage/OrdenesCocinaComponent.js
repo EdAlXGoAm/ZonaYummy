@@ -315,6 +315,22 @@ const OrdenesCocina = ({modeInterface, Orders}) => {
                     const audio = new Audio("ComandaAudios/Combo3.wav");
                     audio.play();
                 }
+                else if (audioMsg === "Add-Nachos") {
+                    const audio = new Audio("ComandaAudios/nachos.wav");
+                    audio.play();
+                }
+                else if (audioMsg === "Add-Banana Split") {
+                    const audio = new Audio("ComandaAudios/bananasplit.wav");
+                    audio.play();
+                }
+                else if (audioMsg === "Add-Avena") {
+                    const audio = new Audio("ComandaAudios/avena.wav");
+                    audio.play();
+                }
+                else if (audioMsg === "Add-Sangria") {
+                    const audio = new Audio("ComandaAudios/sangria.wav");
+                    audio.play();
+                }
             }
         });
         return () => {
