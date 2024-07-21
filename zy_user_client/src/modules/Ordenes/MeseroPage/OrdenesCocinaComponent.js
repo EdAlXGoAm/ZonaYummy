@@ -331,6 +331,14 @@ const OrdenesCocina = ({modeInterface, Orders}) => {
                     const audio = new Audio("ComandaAudios/sangria.wav");
                     audio.play();
                 }
+                else if (audioMsg === "Add-Esquites con Suadero") {
+                    const audio = new Audio("ComandaAudios/esquitessuadero.wav");
+                    audio.play();
+                }
+                else if (audioMsg === "Add-Tortas") {
+                    const audio = new Audio("ComandaAudios/tortas.wav");
+                    audio.play();
+                }
             }
         });
         return () => {
