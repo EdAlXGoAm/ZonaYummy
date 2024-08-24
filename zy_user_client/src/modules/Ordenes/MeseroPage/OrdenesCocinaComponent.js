@@ -338,6 +338,30 @@ const OrdenesCocina = ({modeInterface, Orders}) => {
                 else if (audioMsg === "Add-Tortas") {
                     const audio = new Audio("ComandaAudios/tortas.wav");
                     audio.play();
+                } // ----------------------
+                else if (audioMsg === "Add-PROMO hamburguesa sencilla") {
+                    const audio = new Audio("ComandaAudios/PROMO1.wav");
+                    audio.play();
+                }
+                else if (audioMsg === "Add-PROMO hamburguesas suizas") {
+                    const audio = new Audio("ComandaAudios/PROMO2.wav");
+                    audio.play();
+                }
+                else if (audioMsg === "Add-PROMO Salchipulpos") {
+                    const audio = new Audio("ComandaAudios/PROMO3.wav");
+                    audio.play();
+                }
+                else if (audioMsg === "Add-PROMO Frappes") {
+                    const audio = new Audio("ComandaAudios/PROMO4.wav");
+                    audio.play();
+                }
+                else if (audioMsg === "Add-PROMO Salchi Nuggets") {
+                    const audio = new Audio("ComandaAudios/PROMO5.wav");
+                    audio.play();
+                }
+                else if (audioMsg === "Add-PROMO Dos Nuggets") {
+                    const audio = new Audio("ComandaAudios/PROMO6.wav");
+                    audio.play();
                 }
             }
         });
