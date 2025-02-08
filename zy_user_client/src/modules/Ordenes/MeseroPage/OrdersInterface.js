@@ -263,6 +263,27 @@ const OrdersInterface = ({ modeInterface }) => {
         setReloadFlag(true);
     }
 
+    // NUEVA FUNCIONALIDAD: Estados y funciones para el input de password
+    const [showPasswordModal, setShowPasswordModal] = useState(false);
+    const [passwordInput, setPasswordInput] = useState("");
+
+    const handleDoubleClick = () => {
+        setShowPasswordModal(true);
+    };
+
+    const handlePasswordAccept = () => {
+        if (passwordInput === "2on4") {
+            alert(modeInterface ? `$${TotalDia}` : '');
+        }
+        setShowPasswordModal(false);
+        setPasswordInput("");
+    };
+
+    const handlePasswordCancel = () => {
+        setShowPasswordModal(false);
+        setPasswordInput("");
+    };
+
     return (
         <div className="container-fluid" style={{backgroundColor: (reloadFlag && modeInterface) && ('#ff6d6d')}}>
             <div className="row">
@@ -272,7 +293,7 @@ const OrdersInterface = ({ modeInterface }) => {
                     </div>
                 </div>
                 <div className="col-8">
-                    <h1 style={{ color: "#ffffff" }}>Comandas</h1><ToastContainer />
+                    <h1 style={{ color: "#ffffff" }} onDoubleClick={handleDoubleClick}>Comandas</h1><ToastContainer />
                     {/* {modeInterface && (
                         <div>
                             <Button variant="primary" onClick={() => setComandasPerScreen(6)}>6</Button>
@@ -302,6 +323,45 @@ const OrdersInterface = ({ modeInterface }) => {
                 </div>
             )}
             {renderOrders()}
+            {showPasswordModal && (
+                <div 
+                    className="password-modal-overlay" 
+                    style={{
+                        position: 'fixed', 
+                        top: 0, 
+                        left: 0, 
+                        right: 0, 
+                        bottom: 0, 
+                        backgroundColor: 'rgba(0,0,0,0.5)', 
+                        display: 'flex', 
+                        justifyContent: 'center', 
+                        alignItems: 'center', 
+                        zIndex: 1000
+                    }}
+                >
+                    <div 
+                        className="password-modal" 
+                        style={{
+                            backgroundColor: '#fff', 
+                            padding: '20px', 
+                            borderRadius: '5px', 
+                            textAlign: 'center'
+                        }}
+                    >
+                        <h2>Ingrese contraseña</h2>
+                        <input 
+                            type="password" 
+                            value={passwordInput} 
+                            onChange={(e) => setPasswordInput(e.target.value)} 
+                            style={{ marginBottom: '10px', width: '100%', padding: '5px' }}
+                        />
+                        <div>
+                            <button onClick={handlePasswordAccept} style={{ marginRight: '10px' }}>Aceptar</button>
+                            <button onClick={handlePasswordCancel}>Cancelar</button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     )
 }
