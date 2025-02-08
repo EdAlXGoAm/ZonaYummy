@@ -272,7 +272,7 @@ const OrdersInterface = ({ modeInterface }) => {
                     </div>
                 </div>
                 <div className="col-8">
-                    <h1 style={{ color: "#ffffff" }}>Comandas {modeInterface && `$${TotalDia}`}</h1><ToastContainer />
+                    <h1 style={{ color: "#ffffff" }}>Comandas</h1><ToastContainer />
                     {/* {modeInterface && (
                         <div>
                             <Button variant="primary" onClick={() => setComandasPerScreen(6)}>6</Button>
