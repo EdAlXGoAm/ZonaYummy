@@ -1,5 +1,5 @@
 import './ComandaCard.css';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, memo } from 'react';
 import BootstrapSwitchButton from 'bootstrap-switch-button-react';
 import DetailsComanda from './DetailsComandaComponent';
 import ResumeComanda from './ResumeComandaComponent';
@@ -304,4 +304,4 @@ const ComandaCard = ({order, modeInterface, Comanda, updateComanda, removeComand
     );
 }
 
-export default ComandaCard;
+export default memo(ComandaCard);

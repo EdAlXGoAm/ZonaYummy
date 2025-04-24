@@ -1,5 +1,5 @@
 import './OrdenComponent.css';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faAngleUp, faAngleDown } from '@fortawesome/free-solid-svg-icons';
 import { faTrash, faCashRegister } from '@fortawesome/free-solid-svg-icons';
@@ -21,6 +21,7 @@ const Orden = ({modeInterface, iInterface, OrderID, DeleteOrder, handleOrderCust
     const [comandas, setComandas] = useState([])
     const [toggleArrowStatus, setToggleArrowStatus] = useState(true); // false: plegado, true: desplegado
     const [colorOrder, setColorOrder] = useState("#ffffff")
+    const skipNextFetch = useRef(false);
 
     const fetchOrder = () => {
         ordersApi.getOrder(OrderID)
@@ -142,8 +143,8 @@ const Orden = ({modeInterface, iInterface, OrderID, DeleteOrder, handleOrderCust
 
     useEffect(() => { // AddComanda
         socket.on('NuevaComandaDesdeServidor', (data) => {
-            console.log("Mensaje: ", data.msg)
             if (data.msg.split('-')[1] === OrderID.toString()) {
+                if (skipNextFetch.current) { skipNextFetch.current = false; return; }
                 fetchOrder();
             }
         });
@@ -155,6 +156,7 @@ const Orden = ({modeInterface, iInterface, OrderID, DeleteOrder, handleOrderCust
         socket.on('UpdateComandaDesdeServidor', (data) => {
             console.log("Mensaje: ", data.msg)
             if (data.msg.split('-')[1] === OrderID.toString()) {
+                if (skipNextFetch.current) { skipNextFetch.current = false; return; }
                 fetchOrder();
             }
         });
@@ -166,6 +168,7 @@ const Orden = ({modeInterface, iInterface, OrderID, DeleteOrder, handleOrderCust
         socket.on('DeleteComandaDesdeServidor', (data) => {
             console.log("Mensaje: ", data.msg)
             if (data.msg.split('-')[1] === OrderID.toString()) {
+                if (skipNextFetch.current) { skipNextFetch.current = false; return; }
                 fetchOrder();
             }
         });
@@ -173,58 +176,68 @@ const Orden = ({modeInterface, iInterface, OrderID, DeleteOrder, handleOrderCust
             socket.off('DeleteComandaDesdeServidor');
         };
     }, []);
-    const addComanda = (platillo) => {
-        const Comanda = {
+    const addComanda = useCallback((platillo) => {
+        const newComanda = {
             OrderID: Order.OrderID,
             ComandaId: comandas.length > 0 ? comandas[comandas.length - 1].ComandaId + 1 : 1,
             Platillo: platillo.NombrePlatillo,
             Precio: platillo.Variants[0].Precio,
             Imagen: platillo.Imagen,
             Categoria: platillo.Categoria,
-            ComandaPaidStatus: "Editing", // Paid
-            ComandaPrepStatus: "Preparing", // ReadyToServe-Served
-            ComandaDeliverMode: "Delivery", // Table-0
+            ComandaPaidStatus: "Editing",
+            ComandaPrepStatus: "Preparing",
+            ComandaDeliverMode: "Delivery",
             ComandaSwitchNota: false,
             Notas: "",
             Details: platillo
+        };
+        setComandas(prev => [...prev, newComanda]);
+        handleComandas("Add-" + Order.OrderID + "-" + newComanda.Platillo);
+        comandasApi.addComanda(newComanda)
+            .then(() => {
+                skipNextFetch.current = true;
+                fetchComandas(Order);
+            })
+            .catch(err => {
+                console.log(err);
+                notify(`Error al agregar comanda: ${err}`);
+            });
+    }, [Order, handleComandas, updateCuentaTotalOrder, comandas.length]);
+
+    const updateComanda = useCallback((comanda) => {
+        setComandas(prev => {
+            const updated = prev.map(c => c.ComandaId === comanda.ComandaId ? comanda : c);
+            updateCuentaTotalOrder(updated, Order);
+            skipNextFetch.current = true;
+            return updated;
+        });
+        handleComandas("Update-" + Order.OrderID);
+        if (!comanda._id) {
+            return;
         }
-        comandasApi.addComanda(Comanda)
-        .then((res) => {
-            const socketMsg = "Add-" + Order.OrderID + "-" + Comanda.Platillo;
-            fetchComandas(Order);
-            handleComandas(socketMsg);
-        })
-        .catch((err) => {
-            console.log(err);
-        });
-    };
-
-    const updateComanda = (comanda) => {
         comandasApi.updateComanda(comanda)
-        .then((res) => {
-            const socketMsg = "Update-" + Order.OrderID;
-            fetchComandas(Order);
-            handleComandas(socketMsg);
-        })
-        .catch((err) => {
-            console.log(err);
-        });
-    }
+            .catch(err => {
+                console.log(err);
+                notify(`Error al actualizar comanda: ${err}`);
+            });
+    }, [Order, handleComandas, updateCuentaTotalOrder]);
 
-    const removeComanda = (comanda) => {
-        const confirm = window.confirm("Eliminar Platillo");
-            if (confirm) {
-                comandasApi.deleteComanda(comanda._id)
-                .then((res) => {
-                    const socketMsg = "Del-" + Order.OrderID;
-                    fetchComandas(Order);
-                    handleComandas(socketMsg);
-                })
-                .catch((err) => {
-                    console.log(err);
-                });
-            }
-    };
+    const removeComanda = useCallback((comanda) => {
+        const confirmDel = window.confirm("Eliminar Platillo");
+        if (!confirmDel) return;
+        setComandas(prev => {
+            const updated = prev.filter(c => c._id !== comanda._id);
+            updateCuentaTotalOrder(updated, Order);
+            skipNextFetch.current = true;
+            return updated;
+        });
+        handleComandas("Del-" + Order.OrderID);
+        comandasApi.deleteComanda(comanda._id)
+            .catch(err => {
+                console.log(err);
+                notify(`Error al eliminar comanda: ${err}`);
+            });
+    }, [Order, handleComandas, updateCuentaTotalOrder]);
 
     const handleOrderCustStatusButton = () => {
         if (Order.OrderCustStatus === "InPlace") {
@@ -327,7 +340,7 @@ const Orden = ({modeInterface, iInterface, OrderID, DeleteOrder, handleOrderCust
                     <PlatilloSelector addPlatilloToOrder={addComanda} platillos={platillos} numPlatillos={numPlatillos}/>
                 )}
                 {comandas.map((comanda, indexComanda) => (
-                <div key={indexComanda}>
+                <div key={comanda._id}>
                 <ComandaCard order={Order} modeInterface={modeInterface} Comanda={comanda} updateComanda={updateComanda} removeComanda={removeComanda} />
                 </div>
                 ))}
