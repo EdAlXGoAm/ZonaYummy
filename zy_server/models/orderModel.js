@@ -11,6 +11,6 @@ const orderSchema = new mongoose.Schema({
   CuentaTotal: { type: Number}
 });
 
-const Order = mongoose.model('Order', orderSchema, 'test-zy-orders-online-02-may');
+const Order = mongoose.model('Order', orderSchema, 'zy-jorders-temp-241024');
 
 module.exports = Order;

@@ -1,5 +1,6 @@
 const mongoose = require("mongoose");
-mongoose.connect( "mongodb+srv://edalxgoam:MlFGDDQXj4IQYhnj@clusterzonayummy.vwdr0er.mongodb.net/zonayummy?retryWrites=true&w=majority", {  } );
+//mongoose.connect( "mongodb+srv://edalxgoam:MlFGDDQXj4IQYhnj@clusterzonayummy.vwdr0er.mongodb.net/zonayummy?retryWrites=true&w=majority", {  } );
+mongoose.connect( "mongodb+srv://edalxgoam:MlFGDDQXj4IQYhnj@freeedalxgoam.tmtu4.mongodb.net/zonayummy?retryWrites=true&w=majority", {  } )
 const express = require("express");
 const http = require('http');
 const socketIo = require('socket.io');
