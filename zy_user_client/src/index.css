@@ -6,7 +6,7 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   /* background-image: url(../public/FondoLisoPastelVertical-min.png); */
-  background: linear-gradient(to right, #3895b8, #428fd9, #bf6ebc, #e75d9d, #fd637a);
+  background: linear-gradient(to right, #ffffff, #fff5f7, #f0f9ff, #ffffff);
   background-size: cover;
 }
 

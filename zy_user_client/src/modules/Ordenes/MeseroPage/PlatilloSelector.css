@@ -24,6 +24,7 @@
     width: 85px;
     height: 130px;
     border: none;
+    flex: 0 0 auto;
 }
 .platilloButton:hover {
     background-color: #FFC0CB;
@@ -41,4 +42,20 @@
     font-size: 20px;
     font-family: Bebas Neue;
     text-transform: uppercase;
+}
+/* Contenedor scroll horizontal para PlatilloSelector */
+.platillo-scroll-container {
+    display: flex;
+    gap: 10px;
+    overflow-x: auto;
+    padding: 10px;
+    -webkit-overflow-scrolling: touch; /* smoother scrolling on iOS */
+}
+/* Opcional: ocultar scrollbar para limpieza visual */
+.platillo-scroll-container::-webkit-scrollbar {
+    display: none;
+}
+.platillo-scroll-container {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;     /* Firefox */
 }

@@ -285,15 +285,15 @@ const OrdersInterface = ({ modeInterface }) => {
     };
 
     return (
-        <div className="container-fluid" style={{backgroundColor: (reloadFlag && modeInterface) && ('#ff6d6d')}}>
+        <div className="container-fluid" style={{background: (reloadFlag && modeInterface) ? 'linear-gradient(to right, #e0f7fa, #b2ebf2)' : 'none'}}>
             <div className="row">
                 <div className="col-4">
-                    <div style={{color: '#fff', textAlign:'left'}}>
+                    <div style={{color: '#000000', textAlign:'left'}}>
                         <Counter30_to_0 handleReloadFlag={handleReloadFlag}/>
                     </div>
                 </div>
                 <div className="col-8">
-                    <h1 style={{ color: "#ffffff" }} onDoubleClick={handleDoubleClick}>Comandas</h1><ToastContainer />
+                    <h1 style={{ color: "#000000" }} onDoubleClick={handleDoubleClick}>Comandas</h1><ToastContainer />
                     {/* {modeInterface && (
                         <div>
                             <Button variant="primary" onClick={() => setComandasPerScreen(6)}>6</Button>
