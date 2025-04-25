@@ -9,7 +9,9 @@ import ordersApi from './../../../api/ordersApi';
 import platillosApi from './../../../api/platillosApi';
 
 import OrdenesCocina from './OrdenesCocinaComponent';
-import Counter30_to_0 from '../Global/CounterComponent'
+import Counter30To0 from '../Global/CounterComponent';
+import Calendar from 'react-calendar/dist/esm/Calendar.js';
+import 'react-calendar/dist/Calendar.css';
 
 import io from 'socket.io-client';
 const socket = io(`${process.env.REACT_APP_API_URL}`);
@@ -80,26 +82,22 @@ const OrdersInterface = ({ modeInterface }) => {
         });
     };
 
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     useEffect(() => { // fetchOrders
         fetchOrders();
         fetchPlatillos();
     }, []);
 
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     useEffect(() => {
         if (!modeInterface) {
-            // Define la función que quieres ejecutar
             const hacerAlgo = () => {
                 fetchOrders();
             };
-        
-            // Crea un intervalo que ejecuta hacerAlgo cada 5 segundos (5000 milisegundos)
             const intervalo = setInterval(hacerAlgo, 5000);
-        
-            // Limpia el intervalo cuando el componente se desmonta
-            // para evitar efectos secundarios no deseados
             return () => clearInterval(intervalo);
         }
-      }, []); // El array vacío asegura que el efecto se ejecute solo una vez al montar el componente
+    }, []); // El array vacío asegura que el efecto se ejecute solo una vez al montar el componente
 
     const [ComandasPerScreen, setComandasPerScreen] = useState(3);
     const [slide, setSlide] = useState(1);
@@ -204,15 +202,6 @@ const OrdersInterface = ({ modeInterface }) => {
             }
     };
     
-    const [TotalDia, setTotalDia] = useState(0);
-    useEffect(() => { // Total Dia calculation
-        let newTotal = 0;
-        for (let order of orders) {
-            newTotal += order.CuentaTotal;
-        }
-        setTotalDia(newTotal);
-    },[orders]);
-
     const SocketNewOrder = () => {
         socket.emit('NuevaOrdenDesdeCliente', {});
     };
@@ -222,6 +211,7 @@ const OrdersInterface = ({ modeInterface }) => {
     const SocketUpdateOrder = (OrderID) => {
         socket.emit('OrdenActualizadaDesdeCliente', {msg: OrderID});
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     useEffect(() => { //Socket NewOrder
         socket.on('NuevaOrdenDesdeServidor', (data) => {
             console.log("Mensaje: ", data)
@@ -236,6 +226,7 @@ const OrdersInterface = ({ modeInterface }) => {
             socket.off('NuevaOrdenDesdeServidor');
         };
     }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     useEffect(() => { // Socket DelOrder
         socket.on('OrdenEliminadaDesdeServidor', (data) => {
             console.log("Mensaje: ", data)
@@ -246,7 +237,8 @@ const OrdersInterface = ({ modeInterface }) => {
             socket.off('OrdenEliminadaDesdeServidor');
         };
     }, []);
-    useEffect(() => { // Socket DelOrder
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    useEffect(() => { // Socket Actualizada
         socket.on('OrdenActualizadaDesdeServidor', (data) => {
             console.log("OrdenActualizadaDesdeServidor Mensaje: ", data)
             fetchOrders();
@@ -266,6 +258,10 @@ const OrdersInterface = ({ modeInterface }) => {
     // NUEVA FUNCIONALIDAD: Estados y funciones para el input de password
     const [showPasswordModal, setShowPasswordModal] = useState(false);
     const [passwordInput, setPasswordInput] = useState("");
+    const [showCalendarModal, setShowCalendarModal] = useState(false);
+    const [selectedDate, setSelectedDate] = useState(new Date());
+    const [monthlyActiveStartDate, setMonthlyActiveStartDate] = useState(new Date());
+    const [dailySums, setDailySums] = useState({});
 
     const handleDoubleClick = () => {
         setShowPasswordModal(true);
@@ -273,7 +269,10 @@ const OrdersInterface = ({ modeInterface }) => {
 
     const handlePasswordAccept = () => {
         if (passwordInput === "2on4") {
-            alert(modeInterface ? `$${TotalDia}` : '');
+            // Mostrar modal de calendario de ventas
+            setShowCalendarModal(true);
+            setSelectedDate(new Date());
+            setMonthlyActiveStartDate(new Date());
         }
         setShowPasswordModal(false);
         setPasswordInput("");
@@ -292,12 +291,37 @@ const OrdersInterface = ({ modeInterface }) => {
         return () => window.removeEventListener('resize', handleResize);
     }, []);
 
+    // useEffect para obtener sumas diarias al cambiar mes en calendario
+    useEffect(() => {
+        if (showCalendarModal) {
+            const fetchSums = async () => {
+                const year = monthlyActiveStartDate.getFullYear();
+                const month = monthlyActiveStartDate.getMonth();
+                const daysInMonth = new Date(year, month + 1, 0).getDate();
+                const offset = -new Date().getTimezoneOffset() / 60;
+                const sums = {};
+                for (let d = 1; d <= daysInMonth; d++) {
+                    const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+                    try {
+                        const res = await ordersApi.getSumByDate(dateStr, offset);
+                        sums[dateStr] = res.totalSum;
+                    } catch (err) {
+                        console.error(err);
+                        sums[dateStr] = 0;
+                    }
+                }
+                setDailySums(sums);
+            };
+            fetchSums();
+        }
+    }, [monthlyActiveStartDate, showCalendarModal]);
+
     return (
         <div className="container-fluid" style={{background: (reloadFlag && modeInterface) ? 'linear-gradient(to right, #e0f7fa, #b2ebf2)' : 'none'}}>
             <div className="row">
                 <div className="col-4">
                     <div style={{color: '#000000', textAlign:'left'}}>
-                        <Counter30_to_0 handleReloadFlag={handleReloadFlag}/>
+                        <Counter30To0 handleReloadFlag={handleReloadFlag}/>
                     </div>
                 </div>
                 <div className="col-8">
@@ -367,6 +391,39 @@ const OrdersInterface = ({ modeInterface }) => {
                             <button onClick={handlePasswordAccept} style={{ marginRight: '10px' }}>Aceptar</button>
                             <button onClick={handlePasswordCancel}>Cancelar</button>
                         </div>
+                    </div>
+                </div>
+            )}
+            {showCalendarModal && (
+                <div className="calendar-modal-overlay" style={{
+                    position: 'fixed',
+                    top: 0, left: 0, right: 0, bottom: 0,
+                    backgroundColor: 'rgba(0,0,0,0.5)',
+                    display: 'flex',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    zIndex: 1000
+                }}>
+                    <div className="calendar-modal" style={{
+                        backgroundColor: '#fff',
+                        padding: '20px',
+                        borderRadius: '5px',
+                        textAlign: 'center'
+                    }}>
+                        <h2>Ventas diarias</h2>
+                        <Calendar
+                            onChange={setSelectedDate}
+                            value={selectedDate}
+                            onActiveStartDateChange={({ activeStartDate }) => setMonthlyActiveStartDate(activeStartDate)}
+                            tileContent={({ date, view }) => {
+                                if (view === 'month') {
+                                    const dateStr = date.toISOString().split('T')[0];
+                                    const sum = dailySums[dateStr] !== undefined ? dailySums[dateStr] : null;
+                                    return sum !== null ? <div style={{ fontSize: '0.75em', marginTop: '4px' }}>${sum}</div> : null;
+                                }
+                            }}
+                        />
+                        <button onClick={() => setShowCalendarModal(false)} style={{ marginTop: '10px' }}>Cerrar</button>
                     </div>
                 </div>
             )}

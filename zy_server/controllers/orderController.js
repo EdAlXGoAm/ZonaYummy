@@ -110,3 +110,33 @@ exports.getByOrderCustStatus = (req, res) => {
         })
         .catch((err) => res.status(400).json("Error: " + err));
 }
+
+// Función para obtener la suma de CuentaTotal de órdenes de un día específico considerando offset de zona horaria
+exports.getSumByDate = (req, res) => {
+    const dateParam = req.params.date;
+    const offsetParam = parseInt(req.params.offset, 10);
+    if (isNaN(offsetParam)) {
+        return res.status(400).json({ error: "Offset inválido" });
+    }
+    const partes = dateParam.split('-');
+    if (partes.length !== 3) {
+        return res.status(400).json({ error: "Formato de fecha inválido, use YYYY-MM-DD" });
+    }
+    const [year, month, day] = partes.map(n => parseInt(n, 10));
+    if ([year, month, day].some(isNaN)) {
+        return res.status(400).json({ error: "Fecha inválida" });
+    }
+    // Calcular inicio y fin de día en UTC según offset en horas (ej: -6)
+    const startUtc = new Date(Date.UTC(year, month - 1, day, 0 - offsetParam, 0, 0, 0));
+    const endUtc = new Date(Date.UTC(year, month - 1, day, 23 - offsetParam, 59, 59, 999));
+
+    Order.aggregate([
+        { $match: { OrderDate: { $gte: startUtc, $lte: endUtc } } },
+        { $group: { _id: null, totalSum: { $sum: "$CuentaTotal" } } }
+    ])
+    .then(result => {
+        const total = result.length > 0 ? result[0].totalSum : 0;
+        res.json({ totalSum: total });
+    })
+    .catch(err => res.status(400).json({ error: "Error: " + err }));
+};

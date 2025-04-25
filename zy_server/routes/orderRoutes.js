@@ -23,4 +23,7 @@ router.get('/getLastOrderId/', orderController.getLastOrderId);
 // Ruta para obtener el ultimo ID de todos los platillos
 router.get('/getByOrderCustStatus/:OrderCustStatus', orderController.getByOrderCustStatus);
 
+// Ruta para obtener la suma de CuentaTotal de órdenes de un día específico considerando offset de zona horaria
+router.get('/getSumByDate/:date/:offset', orderController.getSumByDate);
+
 module.exports = router;

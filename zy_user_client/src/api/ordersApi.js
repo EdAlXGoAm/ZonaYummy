@@ -94,6 +94,16 @@ const ordersApi = {
             console.error("ordersAPI error: ", error);
             throw error;
         }
+    },
+
+    getSumByDate: async (date, offset) => {
+        try {
+            const response = await Axios.get(`${baseURL}/getSumByDate/${date}/${offset}`);
+            return response.data;
+        } catch (error) {
+            console.error("ordersAPI error: ", error);
+            throw error;
+        }
     }
 }
 
