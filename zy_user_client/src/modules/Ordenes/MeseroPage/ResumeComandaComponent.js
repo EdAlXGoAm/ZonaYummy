@@ -309,9 +309,11 @@ const DetailsComanda = ({Comanda, updateComanda}) => {
         }
     },[Comanda]);
 
+    const isPending = Comanda.ComandaPaidStatus === "Pending";
+
     return (
         <div>
-            <div className="card-body mb-1 divStyle" style={{backgroundColor: colorStatus}}>
+            <div className="card-body mb-1 divStyle" style={{backgroundColor: colorStatus, ...(isPending ? {fontFamily: 'Arial, sans-serif'} : {})}}>
 
                 <div className="row" style={{display: !Comanda.ComandaSwitchNota ? 'none' : 'flex'}}>
                     <div className='col'>
@@ -466,14 +468,21 @@ const DetailsComanda = ({Comanda, updateComanda}) => {
                                 {Comanda.Details.Variants[Comanda.Details.SelectedVariant].Extras.map((extra, indexExtra) => (
                                     extra.Checked && (
                                         <div key={indexExtra} className={`col-${12/numCheckBoxPerRow}`}>
-                                            <label className="container">
-                                                <div> 
-                                                    {extra.Extra ? extra.Extra : "Nombre Ing Extra"}
-                                                    <span style={{color: "red"}}>{extra.Precio !== 0 ? (<strong> ${extra.Precio}</strong>) : ''}</span>
+                                            {isPending ? (
+                                                <div>
+                                                    <span>{extra.Extra || "Nombre Ing Extra"}</span>
+                                                    {extra.Precio !== 0 && (<strong> ${extra.Precio}</strong>)}
                                                 </div>
-                                                <input type="checkbox" id="Checked" checked={extra.Checked} onChange={(e) => handleVariantExtra(indexExtra, e)}/>
-                                                <span className="checkmark"></span>
-                                            </label>
+                                            ) : (
+                                                <label className="container">
+                                                    <div>
+                                                        {extra.Extra || "Nombre Ing Extra"}
+                                                        <span style={{color: "red"}}>{extra.Precio !== 0 ? (<strong> ${extra.Precio}</strong>) : ''}</span>
+                                                    </div>
+                                                    <input type="checkbox" id="Checked" checked={extra.Checked} onChange={(e) => handleVariantExtra(indexExtra, e)}/>
+                                                    <span className="checkmark"></span>
+                                                </label>
+                                            )}
                                         </div>
                                     )
                                 ))}
@@ -481,20 +490,30 @@ const DetailsComanda = ({Comanda, updateComanda}) => {
                                 {Comanda.Details.Variants[Comanda.Details.SelectedVariant].Adicionales.map((adicional, indexAdicional) => (
                                     adicional.Checked && (
                                         <div key={indexAdicional} className={`col-${12/numCheckBoxPerRow}`}>
-                                            <label className="container">
+                                            {isPending ? (
                                                 <div>
-                                                    {adicional.Adicional ? adicional.Adicional : "Nombre Adicional"}
-                                                    <span style={{color: "red"}}>{adicional.Precio !== 0 ? (<strong> ${adicional.Precio}</strong>) : ''}</span>
+                                                    <span>{adicional.Adicional || "Nombre Adicional"}</span>
+                                                    {adicional.Precio !== 0 && (<strong> ${adicional.Precio}</strong>)}
+                                                    <span> - {adicional.Opciones[adicional.SelectedOpcion]}</span>
                                                 </div>
-                                                <input type="checkbox" id="Checked" checked={adicional.Checked} onChange={(e) => handleVariantAdicional(indexAdicional, e)}/>
-                                                <span className="checkmark"></span>
-                                            </label>
-                                            {adicional.Checked && (
-                                                <DropDown
-                                                    opciones_in={adicional.Opciones.map((opcion, indexOpcion) => (opcion))}
-                                                    selectedValue={adicional.Opciones[adicional.SelectedOpcion]} 
-                                                    onDropdownChange={(e) => handleVariantAdicionalOpcionDropdownChange(adicional.Opciones.map((opcion, indexOpcion) => (opcion)), indexAdicional, e)}
-                                                    prefix={adicional.Opciones.map((opcion, indexOpcion) => (0))}/>
+                                            ) : (
+                                                <>
+                                                    <label className="container">
+                                                        <div>
+                                                            {adicional.Adicional || "Nombre Adicional"}
+                                                            <span style={{color: "red"}}>{adicional.Precio !== 0 ? (<strong> ${adicional.Precio}</strong>) : ''}</span>
+                                                        </div>
+                                                        <input type="checkbox" id="Checked" checked={adicional.Checked} onChange={(e) => handleVariantAdicional(indexAdicional, e)}/>
+                                                        <span className="checkmark"></span>
+                                                    </label>
+                                                    {adicional.Checked && (
+                                                        <DropDown
+                                                            opciones_in={adicional.Opciones.map((opcion) => opcion)}
+                                                            selectedValue={adicional.Opciones[adicional.SelectedOpcion]}
+                                                            onDropdownChange={(e) => handleVariantAdicionalOpcionDropdownChange(adicional.Opciones.map((opcion) => opcion), indexAdicional, e)}
+                                                            prefix={adicional.Opciones.map(() => 0)}/>
+                                                    )}
+                                                </>
                                             )}
                                         </div>
                                     )

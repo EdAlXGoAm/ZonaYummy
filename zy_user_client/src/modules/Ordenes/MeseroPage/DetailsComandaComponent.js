@@ -280,38 +280,57 @@ const DetailsComanda = ({Comanda, updateComanda}) => {
         };
     }, [componentsIsExpanded]);
 
+    const isPending = Comanda.ComandaPaidStatus === "Pending";
+
     return (
         <div>
-            <DropDown
-                opciones_in={Comanda.Details.Variants.map((variant, indexVariant) => (variant.VariantName))}
-                selectedValue={Comanda.Details.Variants[Comanda.Details.SelectedVariant].VariantName}
-                onDropdownChange={(e) => handleVariantDropdownChange(Comanda.Details.Variants.map((variant, indexVariant) => (variant.VariantName)), e)}
-                prefix={Comanda.Details.Variants.map((variant, indexVariant) => (variant.Precio))}/>
+            {isPending ? (
+                <div style={{fontFamily: 'Arial, sans-serif'}}>
+                    <span>{Comanda.Details.Variants[Comanda.Details.SelectedVariant].VariantName}</span>
+                </div>
+            ) : (
+                <DropDown
+                    opciones_in={Comanda.Details.Variants.map((variant) => variant.VariantName)}
+                    selectedValue={Comanda.Details.Variants[Comanda.Details.SelectedVariant].VariantName}
+                    onDropdownChange={(e) => handleVariantDropdownChange(Comanda.Details.Variants.map((variant) => variant.VariantName), e)}
+                    prefix={Comanda.Details.Variants.map((variant) => variant.Precio)}/>
+            )}
             {Comanda.Details.Variants[Comanda.Details.SelectedVariant].Componentes.length > 0 && (
                 <div>
                     <div className="row d-flex align-items-center personalizarTitle">
-                        <div className="faButton" onClick={toggleComponentsIsExpanded} style={{ cursor: 'pointer' }}>
-                        { componentsIsExpanded ? <FontAwesomeIcon icon={faBan} size="sm" /> : <FontAwesomeIcon icon={faPenToSquare} size="sm" /> }
-                        </div>
-                        <h2 className="titleOption" onClick={toggleComponentsIsExpanded} style={{ cursor: 'pointer' }}>Personalizar</h2>
-                    </div>
-                    {componentsIsExpanded && (
-                    <div>
-                        <div className="row" ref={containerRef}>
-                            {Comanda.Details.Variants[Comanda.Details.SelectedVariant].Componentes.map((componente, indexComponente) => (
-                                <div key={indexComponente} className={`col-${12/numCheckBoxPerRow}`}>
-                                    <label className="container">
-                                        <div>
-                                            {componente.Name ? componente.Name : "Nombre Componente"}
-                                            <span style={{color: "red"}}>{componente.Precio !== 0 ? (<strong> ${componente.Precio}</strong>) : ''}</span>
-                                        </div>
-                                        <input type="checkbox" id="Checked" checked={componente.Checked} onChange={(e) => handleVariantComponente(indexComponente, e)}/>
-                                        <span className="checkmark"></span>
-                                    </label>
+                        {!isPending && (
+                            <>
+                                <div className="faButton" onClick={toggleComponentsIsExpanded} style={{ cursor: 'pointer' }}>
+                                    { componentsIsExpanded ? <FontAwesomeIcon icon={faBan} size="sm" /> : <FontAwesomeIcon icon={faPenToSquare} size="sm" /> }
                                 </div>
-                            ))}
-                        </div>
+                                <h2 className="titleOption" onClick={toggleComponentsIsExpanded} style={{ cursor: 'pointer' }}>Personalizar</h2>
+                            </>
+                        )}
                     </div>
+                    {componentsIsExpanded && !isPending && (
+                        <div>
+                            <div className="row" ref={containerRef}>
+                                {Comanda.Details.Variants[Comanda.Details.SelectedVariant].Componentes.map((componente, indexComponente) => (
+                                    <div key={indexComponente} className={`col-${12/numCheckBoxPerRow}`}>
+                                        {isPending ? (
+                                            <div style={{fontFamily: 'Arial, sans-serif'}}>
+                                                <span>{componente.Name}</span>
+                                                {componente.Precio !== 0 && (<strong> ${componente.Precio}</strong>)}
+                                            </div>
+                                        ) : (
+                                            <label className="container">
+                                                <div>
+                                                    {componente.Name || "Nombre Componente"}
+                                                    <span style={{color: "red"}}>{componente.Precio !== 0 ? (<strong> ${componente.Precio}</strong>) : ''}</span>
+                                                </div>
+                                                <input type="checkbox" id="Checked" checked={componente.Checked} onChange={(e) => handleVariantComponente(indexComponente, e)}/>
+                                                <span className="checkmark"></span>
+                                            </label>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
                     )}
                     <hr/>
                 </div>
@@ -319,11 +338,18 @@ const DetailsComanda = ({Comanda, updateComanda}) => {
             {Comanda.Details.Variants[Comanda.Details.SelectedVariant].Opciones.map((opcion, indexOpcion) => (
                 <div key={indexOpcion}>
                 <h2 className="titleComponents">{opcion.Name.toUpperCase()}</h2>
-                <DropDown
-                    opciones_in={opcion.Items.map((item, indexItem) => (item.Name))}
-                    selectedValue={opcion.Items[opcion.SelectedItem].Name} 
-                    onDropdownChange={(e) => handleOpcionDropdownChange(opcion.Items.map((item, indexItem) => (item.Name)), indexOpcion, e)}
-                    prefix={opcion.Items.map((item, indexItem) => (item.Precio))}/>
+                {isPending ? (
+                    <div style={{fontFamily: 'Arial, sans-serif'}}>
+                        <span>{opcion.Items[opcion.SelectedItem].Name}</span>
+                        {opcion.Items[opcion.SelectedItem].Precio !== 0 && (<strong> ${opcion.Items[opcion.SelectedItem].Precio}</strong>)}
+                    </div>
+                ) : (
+                    <DropDown
+                        opciones_in={opcion.Items.map((item) => item.Name)}
+                        selectedValue={opcion.Items[opcion.SelectedItem].Name}
+                        onDropdownChange={(e) => handleOpcionDropdownChange(opcion.Items.map((item) => item.Name), indexOpcion, e)}
+                        prefix={opcion.Items.map((item) => item.Precio)}/>
+                )}
                 </div>
             ))}
             {Comanda.Details.Variants[Comanda.Details.SelectedVariant].Opciones.length > 0 && (<hr/>)}
@@ -336,21 +362,26 @@ const DetailsComanda = ({Comanda, updateComanda}) => {
                         <div>{Comanda.Details.Variants[Comanda.Details.SelectedVariant].Ingredientes.map((ingrediente, indexIngrediente) => (
                             <div key={indexIngrediente}>
                                 <div className="row"><div className="col">
-                                    <h2 className="titleOption">{ingrediente.Name}</h2>
+                                    <h2 className="titleIngredientes">{ingrediente.Name}</h2>
                                 </div></div>
-                                <div className="conTodo">
-                                    <button className="conTodoBtn" onClick={() => handleVariantIngredientesItemAll(indexIngrediente)}>
-                                        <FontAwesomeIcon style={{color: "#000000"}} icon={faListCheck} size="xl" />{` Marcar Todo`}
-                                    </button>
-                                </div>
                                 <div className="row" ref={containerRef}>
                                 {ingrediente.Items.map((item, indexItem) => (
                                     <div key={indexItem} className={`col-${12/numCheckBoxPerRow}`}>
-                                        <label className="container">
-                                            <div> {item.Name ? item.Name : "Nombre Ingrediente"} </div>
-                                            <input type="checkbox" id="Checked" checked={item.Checked} onChange={(e) => handleVariantIngredienteItem(indexIngrediente, indexItem, e)}/>
-                                            <span className="checkmark"></span>
-                                        </label>
+                                        {isPending ? (
+                                            <div style={{fontFamily: 'Arial, sans-serif'}}>
+                                                {!item.Checked ? (
+                                                    <span style={{color: 'red'}}>Sin {item.Name}</span>
+                                                ) : (
+                                                    <span style={{color: 'green'}}>{item.Name}</span>
+                                                )}
+                                            </div>
+                                        ) : (
+                                            <label className="container">
+                                                <div> {item.Name || "Nombre Ingrediente"} </div>
+                                                <input type="checkbox" id="Checked" checked={item.Checked} onChange={(e) => handleVariantIngredienteItem(indexIngrediente, indexItem, e)}/>
+                                                <span className="checkmark"></span>
+                                            </label>
+                                        )}
                                     </div>
                                 ))}
                                 </div>
