@@ -9,7 +9,7 @@ import { faTrash, faCashRegister } from '@fortawesome/free-solid-svg-icons';
 import { faAngleUp, faAngleDown } from '@fortawesome/free-solid-svg-icons';
 import { faPaperPlane, faFilePen, faFloppyDisk } from '@fortawesome/free-solid-svg-icons';
 
-const ComandaCard = ({order, modeInterface, Comanda, updateComanda, removeComanda}) => {
+const ComandaCard = ({order, modeInterface, Comanda, updateComanda, removeComanda, onBubbleToggle}) => {
 
     const [nota, setNota] = useState('');
     const [liveStatusNota, setLiveStatusNota] = useState('#33d457')
@@ -84,37 +84,44 @@ const ComandaCard = ({order, modeInterface, Comanda, updateComanda, removeComand
         fetchNota();
     },[Comanda])
 
-    const [toggleArrowStatus, setToggleArrowStatus] = useState(true); // false: plegado, true: desplegado
+    // Todas las tarjetas inician contraídas
+    const [toggleArrowStatus, setToggleArrowStatus] = useState(false); // false: plegado, true: desplegado
 
     const [colorStatus, setColorStatus] = useState('#ffffff');
     const [animOrBg, setAnimOrBg] = useState(false);
 
     useEffect(() => {
-        if (order.OrderCustStatus === "Done")
-        {
+        // Cada vez que pasa a Pending, se contrae
+        if (Comanda.ComandaPaidStatus === "Pending") {
             setToggleArrowStatus(false);
+            setColorStatus("#ffffff");
+            return;
+        }
+        // Mantener lógica de color y animación según otros estados
+        if (order.OrderCustStatus === "Done") {
             setAnimOrBg(false);
             setColorStatus("#2d2d2d");
-        }
-        else {
-            if (Comanda.ComandaPrepStatus === "ReadyToServe" && Comanda.ComandaPaidStatus === "Pending") {
-                setToggleArrowStatus(false);
-                setAnimOrBg(false);
-                setColorStatus("#00ff5e");
-            }
-            else if (Comanda.ComandaPrepStatus === "Preparing" && Comanda.ComandaPaidStatus === "Editing")
-            {
-                setToggleArrowStatus(true);
-                setAnimOrBg(true);
-                setColorStatus("#fe8878");
-            }
-            else {
-                setToggleArrowStatus(true);
-                setAnimOrBg(false);
-                setColorStatus("#ffffff");
-            }
+        } else if (Comanda.ComandaPrepStatus === "ReadyToServe" && Comanda.ComandaPaidStatus === "Pending") {
+            setAnimOrBg(false);
+            setColorStatus("#00ff5e");
+        } else if (Comanda.ComandaPrepStatus === "Preparing" && Comanda.ComandaPaidStatus === "Editing") {
+            setToggleArrowStatus(true);
+            setAnimOrBg(true);
+            setColorStatus("#fe8878");
+        } else {
+            setAnimOrBg(false);
+            setColorStatus("#ffffff");
         }
     },[Comanda]);
+
+    // Manejador para el toggle de la flecha, invoca callback si colapsa una comanda ReadyToServe
+    const handleToggleArrow = () => {
+        const newStatus = !toggleArrowStatus;
+        setToggleArrowStatus(newStatus);
+        if (!newStatus && Comanda.ComandaPrepStatus === "ReadyToServe" && typeof onBubbleToggle === 'function') {
+            onBubbleToggle(Comanda._id);
+        }
+    };
 
     return(
         <div className="row"><div className="col-12">
@@ -123,7 +130,7 @@ const ComandaCard = ({order, modeInterface, Comanda, updateComanda, removeComand
                 <div className='col'>
                     <div className='row mb-2' style={{padding: "0px 20px"}}>
                         <div className="toggleArrowButtons">
-                            <button style={{backgroundColor:  toggleArrowStatus ? "#7ed65b" : "#ffffff"}} onClick={() => setToggleArrowStatus(!toggleArrowStatus)}>
+                            <button style={{backgroundColor:  toggleArrowStatus ? "#7ed65b" : "#ffffff"}} onClick={handleToggleArrow}>
                                 <FontAwesomeIcon style={{color: toggleArrowStatus ? "#ffffff" : "#5d5d5d"}} icon={toggleArrowStatus ? faAngleUp : faAngleDown} size="2x" />
                             </button>
                         </div>

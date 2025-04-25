@@ -284,6 +284,14 @@ const OrdersInterface = ({ modeInterface }) => {
         setPasswordInput("");
     };
 
+    // Estado para detectar dispositivo móvil y actualizar al redimensionar
+    const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+    useEffect(() => {
+        const handleResize = () => setIsMobile(window.innerWidth < 768);
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
+
     return (
         <div className="container-fluid" style={{background: (reloadFlag && modeInterface) ? 'linear-gradient(to right, #e0f7fa, #b2ebf2)' : 'none'}}>
             <div className="row">
@@ -309,7 +317,7 @@ const OrdersInterface = ({ modeInterface }) => {
                     <div className="row">
                         {/* Botón para navegar entre comandas */}
                         <div className="col-2">
-                            <Button variant="success" size="lg" onClick={() => handleSlideChange(slide - 1)}>←</Button>
+                            <Button variant="success" size="lg" onClick={() => handleSlideChange(slide - 1)} disabled={isMobile}>←</Button>
                         </div>
                         {/* Botón para agregar una nueva comanda */}
                         <div className="col-8">
@@ -317,7 +325,7 @@ const OrdersInterface = ({ modeInterface }) => {
                         </div>
                         {/* Botón para navegar entre comandas */}
                         <div className="col-2">
-                            <Button variant="success" size="lg" onClick={() => handleSlideChange(slide + 1)}>→</Button>
+                            <Button variant="success" size="lg" onClick={() => handleSlideChange(slide + 1)} disabled={isMobile}>→</Button>
                         </div>
                     </div>
                 </div>

@@ -22,6 +22,7 @@ const Orden = ({modeInterface, iInterface, OrderID, DeleteOrder, handleOrderCust
     const [toggleArrowStatus, setToggleArrowStatus] = useState(true); // false: plegado, true: desplegado
     const [colorOrder, setColorOrder] = useState("#ffffff")
     const skipNextFetch = useRef(false);
+    const [expandedComandas, setExpandedComandas] = useState([]);
 
     const fetchOrder = () => {
         ordersApi.getOrder(OrderID)
@@ -293,6 +294,14 @@ const Orden = ({modeInterface, iInterface, OrderID, DeleteOrder, handleOrderCust
             });
     }
 
+    const handleBubbleToggle = (comandaId) => {
+        setExpandedComandas(prev =>
+            prev.includes(comandaId)
+                ? prev.filter(id => id !== comandaId)
+                : [...prev, comandaId]
+        );
+    };
+
     return (
         <div className="card" style={{backgroundColor: colorOrder}}>
         {/* Text box editable backgroudn red and text blanco BOLD */}
@@ -339,10 +348,41 @@ const Orden = ({modeInterface, iInterface, OrderID, DeleteOrder, handleOrderCust
                 {modeInterface && (
                     <PlatilloSelector addPlatilloToOrder={addComanda} platillos={platillos} numPlatillos={numPlatillos}/>
                 )}
-                {comandas.map((comanda, indexComanda) => (
-                <div key={comanda._id}>
-                <ComandaCard order={Order} modeInterface={modeInterface} Comanda={comanda} updateComanda={updateComanda} removeComanda={removeComanda} />
+                {/* Burbujas para comandas ReadyToServe no expandidas */}
+                <div className="bubbles-container" style={{display: 'flex', gap: '8px', margin:'8px 0'}}>
+                    {comandas
+                        .filter(c => c.ComandaPrepStatus === 'ReadyToServe' && !expandedComandas.includes(c._id))
+                        .map(c => (
+                            <div
+                                key={c._id}
+                                className="comanda-bubble"
+                                style={{
+                                    width: '60px', height: '60px', borderRadius: '50%', overflow: 'hidden', cursor: 'pointer', border: '2px solid #00ff5e'
+                                }}
+                                onClick={() => handleBubbleToggle(c._id)}
+                            >
+                                <img
+                                    src={c.Imagen}
+                                    alt={c.Platillo}
+                                    style={{width:'100%', height:'100%', objectFit:'cover'}}
+                                />
+                            </div>
+                        ))}
                 </div>
+                {/* Tarjetas para comandas no ReadyToServe o expandidas */}
+                {comandas
+                    .filter(c => c.ComandaPrepStatus !== 'ReadyToServe' || expandedComandas.includes(c._id))
+                    .map((comanda) => (
+                        <div key={comanda._id}>
+                            <ComandaCard
+                                order={Order}
+                                modeInterface={modeInterface}
+                                Comanda={comanda}
+                                updateComanda={updateComanda}
+                                removeComanda={removeComanda}
+                                onBubbleToggle={handleBubbleToggle}
+                            />
+                        </div>
                 ))}
             </div>
             )}
