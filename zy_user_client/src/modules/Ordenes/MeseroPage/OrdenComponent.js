@@ -263,12 +263,13 @@ const Orden = ({modeInterface, iInterface, OrderID, DeleteOrder, handleOrderCust
     }
 
     const [cliente, setCliente] = useState('');
-    const [colorCliente, setColorCliente] = useState('greenyellow');
+    // Colores fijos para clientes según OrderID mod 5
+    const customerColors = ['#ff5382', '#39c5ff', '#ec1cff', '#80ff10', '#fbdd31'];
+    const getCustomerBgColor = id => customerColors[id % customerColors.length];
     const [clientIcon, setClientIcon] = useState(false);
 
     const handleCliente = (e) => {
         setCliente(e.target.value);
-        setColorCliente('#ff3667');
         setClientIcon(false);
     }
 
@@ -285,7 +286,6 @@ const Orden = ({modeInterface, iInterface, OrderID, DeleteOrder, handleOrderCust
             ordersApi.updateOrder(newOrder)
             .then((res) => {
                 console.log(res);
-                setColorCliente('greenyellow')
                 setClientIcon(true);
                 socket.emit('OrdenActualizadaDesdeCliente', {msg: Order.OrderID});
             })
@@ -310,7 +310,13 @@ const Orden = ({modeInterface, iInterface, OrderID, DeleteOrder, handleOrderCust
                     <textarea className="form-control" id={`textAreaClient_${Order.OrderID}`} rows="1" placeholder="Cliente"
                     onChange={handleCliente}
                     value={cliente}
-                    style={{backgroundColor: colorCliente, color: '#000', fontWeight: 'bold', fontSize: '20px'
+                    style={{
+                        backgroundColor: getCustomerBgColor(Order.OrderID),
+                        color: '#000',
+                        fontWeight: 'bold',
+                        fontSize: '20px',
+                        paddingRight: '40px',
+                        textShadow: '-0.2px -0.2px 0 #000, 0.2px -0.2px 0 #000, -0.2px 0.2px 0 #000, 0.2px 0.2px 0 #000'
                     }}
                     ></textarea>
                 </div>
