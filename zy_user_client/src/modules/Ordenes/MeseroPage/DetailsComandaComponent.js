@@ -358,36 +358,32 @@ const DetailsComanda = ({Comanda, updateComanda}) => {
                     <div className="row"><div className="col">
                         <h2 className="titleIngredientes">INGREDIENTES</h2>
                     </div></div>
-                    {true && (
-                        <div>{Comanda.Details.Variants[Comanda.Details.SelectedVariant].Ingredientes.map((ingrediente, indexIngrediente) => (
-                            <div key={indexIngrediente}>
-                                <div className="row"><div className="col">
-                                    <h2 className="titleIngredientes">{ingrediente.Name}</h2>
-                                </div></div>
+                    {Comanda.Details.Variants[Comanda.Details.SelectedVariant].Ingredientes.map((ingrediente, indexIngrediente) => (
+                        <div key={indexIngrediente} style={{marginBottom: '1rem'}}>
+                            <h3 className="titleOption">{ingrediente.Name}</h3>
+                            {isPending ? (
+                                <ul style={{listStyleType: 'disc', paddingLeft: '20px', textAlign: 'left', fontFamily: 'Arial, sans-serif'}}>
+                                    {ingrediente.Items.map((item, indexItem) => {
+                                        const text = item.Checked ? item.Name : `Sin ${item.Name}`;
+                                        const color = item.Checked ? 'green' : 'red';
+                                        return <li key={indexItem} style={{color}}>{text}</li>;
+                                    })}
+                                </ul>
+                            ) : (
                                 <div className="row" ref={containerRef}>
-                                {ingrediente.Items.map((item, indexItem) => (
-                                    <div key={indexItem} className={`col-${12/numCheckBoxPerRow}`}>
-                                        {isPending ? (
-                                            <div style={{fontFamily: 'Arial, sans-serif'}}>
-                                                {!item.Checked ? (
-                                                    <span style={{color: 'red'}}>Sin {item.Name}</span>
-                                                ) : (
-                                                    <span style={{color: 'green'}}>{item.Name}</span>
-                                                )}
-                                            </div>
-                                        ) : (
+                                    {ingrediente.Items.map((item, indexItem) => (
+                                        <div key={indexItem} className={`col-${12/numCheckBoxPerRow}`} style={{padding: '2px'}}>
                                             <label className="container">
-                                                <div> {item.Name || "Nombre Ingrediente"} </div>
+                                                <div>{item.Name || 'Nombre Ingrediente'}</div>
                                                 <input type="checkbox" id="Checked" checked={item.Checked} onChange={(e) => handleVariantIngredienteItem(indexIngrediente, indexItem, e)}/>
                                                 <span className="checkmark"></span>
                                             </label>
-                                        )}
-                                    </div>
-                                ))}
+                                        </div>
+                                    ))}
                                 </div>
-                            </div>
-                        ))}</div>
-                    )}
+                            )}
+                        </div>
+                    ))}
                     <hr/>
                 </div>
             )}
