@@ -273,9 +273,11 @@ const Orden = ({modeInterface, iInterface, OrderID, DeleteOrder, handleOrderCust
         setClientIcon(false);
     }
 
-    useEffect (() => {
-        console.log("CARGANDO CLIENTE", Order.Customer);
-        setCliente(Order.Customer);
+    useEffect(() => {
+        const savedCliente = Order.Customer || '';
+        console.log("CARGANDO CLIENTE", savedCliente);
+        setCliente(savedCliente);
+        setClientIcon(savedCliente !== '');
     }, [Order.Customer]);
 
     const updateCliente = () => {
@@ -302,6 +304,19 @@ const Orden = ({modeInterface, iInterface, OrderID, DeleteOrder, handleOrderCust
         );
     };
 
+    // Agrego lógica para determinar dinámicamente el ícono y su color según estado
+    const savedCliente = Order.Customer || '';
+    const isEditing = cliente !== savedCliente;
+    const iconType = clientIcon ? faCheck : faFloppyDisk;
+    let iconColor;
+    if (clientIcon) {
+        iconColor = '#28a745';           // verde cuando ya está guardado
+    } else if (isEditing && cliente !== '') {
+        iconColor = '#007bff';           // azul cuando hay cambios sin guardar
+    } else {
+        iconColor = '#dc3545';           // rojo cuando está vacío y sin guardar
+    }
+
     return (
         <div className="card" style={{backgroundColor: colorOrder}}>
         {/* Text box editable backgroudn red and text blanco BOLD */}
@@ -323,7 +338,9 @@ const Orden = ({modeInterface, iInterface, OrderID, DeleteOrder, handleOrderCust
                 <div className='col-2'>
                     {/* Add Variant at Level 1 */}
                     <div className="form-group">
-                        <button type="button" className="btn btn-primary" onClick={updateCliente}>{clientIcon ? <FontAwesomeIcon icon={faCheck} size="2x" /> : <FontAwesomeIcon icon={faFloppyDisk} size="2x" /> }</button>
+                        <button type="button" className="btn btn-primary" style={{backgroundColor: iconColor}} onClick={updateCliente}>
+                            <FontAwesomeIcon icon={iconType} size="2x" style={{ color: '#fff' }} />
+                        </button>
                     </div>
                 </div>
             </div>
