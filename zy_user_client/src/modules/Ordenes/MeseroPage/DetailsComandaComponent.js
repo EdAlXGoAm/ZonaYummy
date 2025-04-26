@@ -37,10 +37,28 @@ const DetailsComanda = ({Comanda, updateComanda}) => {
 
     const handleVariantDropdownChange = (variantList, event) => {
         console.log(`Variant e: `, event)
-        // Search the index of e.target.value
+        const prevIndex = Comanda.Details.SelectedVariant;
         const newIndex = variantList.indexOf(event.value);
-        // Update the SelectedVariant
-        const newComanda = Comanda;
+        // Clonar profundamente Comanda para evitar mutaciones directas
+        const newComanda = JSON.parse(JSON.stringify(Comanda));
+        // Copiar ingredientes seleccionados de la variante anterior si existen
+        const prevIngredientes = Comanda.Details.Variants[prevIndex].Ingredientes || [];
+        const hasSelected = prevIngredientes.some(ing => ing.Items.some(item => item.Checked));
+        if (hasSelected) {
+            const newIngredientes = newComanda.Details.Variants[newIndex].Ingredientes || [];
+            prevIngredientes.forEach(prevIng => {
+                const targetIng = newIngredientes.find(ing => ing.Name === prevIng.Name);
+                if (targetIng) {
+                    prevIng.Items.forEach(prevItem => {
+                        if (prevItem.Checked) {
+                            const targetItem = targetIng.Items.find(item => item.Name === prevItem.Name);
+                            if (targetItem) targetItem.Checked = true;
+                        }
+                    });
+                }
+            });
+        }
+        // Actualizar SelectedVariant y recalcular precio
         newComanda.Details.SelectedVariant = newIndex;
         const newComandaPriced = calcularComandaPrecio(newComanda);
         updateComanda(newComandaPriced);
@@ -370,16 +388,25 @@ const DetailsComanda = ({Comanda, updateComanda}) => {
                                     })}
                                 </ul>
                             ) : (
-                                <div className="row" ref={containerRef}>
-                                    {ingrediente.Items.map((item, indexItem) => (
-                                        <div key={indexItem} className={`col-${12/numCheckBoxPerRow}`} style={{padding: '2px'}}>
-                                            <label className="container">
-                                                <div>{item.Name || 'Nombre Ingrediente'}</div>
-                                                <input type="checkbox" id="Checked" checked={item.Checked} onChange={(e) => handleVariantIngredienteItem(indexIngrediente, indexItem, e)}/>
-                                                <span className="checkmark"></span>
-                                            </label>
+                                <div>
+                                    <div className='row d-flex justify-content-center'>
+                                        <div className="conTodo">
+                                            <button className="conTodoBtn" onClick={() => handleVariantIngredientesItemAll(indexIngrediente)}>
+                                                <FontAwesomeIcon style={{color: "#000000"}} icon={faListCheck} size="xl" />{` Marcar Todo`}
+                                            </button>
                                         </div>
-                                    ))}
+                                    </div>
+                                    <div className="row" ref={containerRef}>
+                                        {ingrediente.Items.map((item, indexItem) => (
+                                            <div key={indexItem} className={`col-${12/numCheckBoxPerRow}`} style={{padding: '2px'}}>
+                                                <label className="container">
+                                                    <div>{item.Name || 'Nombre Ingrediente'}</div>
+                                                    <input type="checkbox" id="Checked" checked={item.Checked} onChange={(e) => handleVariantIngredienteItem(indexIngrediente, indexItem, e)}/>
+                                                    <span className="checkmark"></span>
+                                                </label>
+                                            </div>
+                                        ))}
+                                    </div>
                                 </div>
                             )}
                         </div>

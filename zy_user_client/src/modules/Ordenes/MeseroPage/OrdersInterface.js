@@ -169,7 +169,8 @@ const OrdersInterface = ({ modeInterface }) => {
             };
             ordersApi.addOrder(newOrder)
             .then(() => {
-                fetchOrders();
+                setOrders(prevOrders => [...prevOrders, newOrder]);
+                setNumOrders(prevNumOrders => prevNumOrders + 1);
                 SocketNewOrder();
                 const audio = new Audio("ComandaAudios/Pedido.wav");
                 audio.play();
@@ -191,7 +192,8 @@ const OrdersInterface = ({ modeInterface }) => {
             if (confirm) {
                 ordersApi.deleteOrder(OrderID)
                 .then(() => {
-                    fetchOrders();
+                    setOrders(prevOrders => prevOrders.filter(order => order.OrderID !== OrderID));
+                    setNumOrders(prevNumOrders => prevNumOrders - 1);
                     SocketDeleteOrder();
                 })
                 .catch(err => {

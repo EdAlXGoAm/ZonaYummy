@@ -40,6 +40,9 @@ const ComandaCard = ({order, modeInterface, Comanda, updateComanda, removeComand
                     ...Comanda,
                     ComandaPrepStatus: Comanda.ComandaPrepStatus === "Preparing" ? "ReadyToServe" : "Preparing"
                 }
+                if (Comanda.ComandaPrepStatus === "ReadyToServe" && typeof onBubbleToggle === 'function') {
+                    onBubbleToggle(Comanda._id);
+                }
                 updateComanda(updatedComanda);
             }
         }
@@ -91,23 +94,25 @@ const ComandaCard = ({order, modeInterface, Comanda, updateComanda, removeComand
     const [animOrBg, setAnimOrBg] = useState(false);
 
     useEffect(() => {
-        // Cada vez que pasa a Pending, se contrae
-        if (Comanda.ComandaPaidStatus === "Pending") {
-            setToggleArrowStatus(false);
-            setColorStatus("#ffffff");
-            return;
-        }
         // Mantener lógica de color y animación según otros estados
         if (order.OrderCustStatus === "Done") {
             setAnimOrBg(false);
             setColorStatus("#2d2d2d");
-        } else if (Comanda.ComandaPrepStatus === "ReadyToServe" && Comanda.ComandaPaidStatus === "Pending") {
+        }
+        // Cada vez que pasa a Preparing, se contrae
+        if (Comanda.ComandaPaidStatus === "Editing") {
+            setToggleArrowStatus(true);
+            setColorStatus("#fe8878");
+            return;
+        }
+        if (Comanda.ComandaPrepStatus === "Preparing") {
+            setToggleArrowStatus(true);
+            setColorStatus("#ffffff");
+            return;
+        }
+        if (Comanda.ComandaPrepStatus === "ReadyToServe" && Comanda.ComandaPaidStatus === "Pending") {
             setAnimOrBg(false);
             setColorStatus("#00ff5e");
-        } else if (Comanda.ComandaPrepStatus === "Preparing" && Comanda.ComandaPaidStatus === "Editing") {
-            setToggleArrowStatus(true);
-            setAnimOrBg(true);
-            setColorStatus("#fe8878");
         } else {
             setAnimOrBg(false);
             setColorStatus("#ffffff");
@@ -118,7 +123,7 @@ const ComandaCard = ({order, modeInterface, Comanda, updateComanda, removeComand
     const handleToggleArrow = () => {
         const newStatus = !toggleArrowStatus;
         setToggleArrowStatus(newStatus);
-        if (!newStatus && Comanda.ComandaPrepStatus === "ReadyToServe" && typeof onBubbleToggle === 'function') {
+        if (Comanda.ComandaPrepStatus === "ReadyToServe" && typeof onBubbleToggle === 'function') {
             onBubbleToggle(Comanda._id);
         }
     };
