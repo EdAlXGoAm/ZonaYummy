@@ -441,30 +441,40 @@ const DetailsComanda = ({Comanda, updateComanda}) => {
                                         <div className="row"><div className="col">
                                             <h2 className="titleIngredientesCocina">{ingrediente.Name}</h2>
                                         </div></div>
-                                        <div className="row" ref={containerRef}>
-                                        {ingrediente.Items.map((item, indexItem) => (
+                                        <div className="row" ref={containerRef} style={{ position: 'relative' }}>
+                                            {ingrediente.Items.map((item, indexItem) => (
                                                 <div key={indexItem} style={{padding: '2px'}} className={`col-${12/numCheckBoxPerRow}`}>
                                                     <label className="container containerIng">
                                                         <div>
-                                                            <div className="row">
-                                                                <div className="col">
-                                                                    <div className="textIngredientesCocina"> {item.Name ? item.Name : "Nombre Ingrediente"} </div>
-                                                                </div>
-                                                            </div>
-                                                            
-                                                            <div className='row mb-2'>
-                                                                <div className='col d-flex justify-content-center'>
-                                                                <img src={`iconscocina/${item.Name}.png`} alt="icon"className="img-fluid" style={{ width: 'auto', height: '55px', objectFit: 'cover'}}></img>
-                                                                {!item.Checked && (
-                                                                <div class="linea-tachado"></div>
-                                                                )}
-                                                                </div>
-                                                            </div>
+                                                            <div className="row"><div className="col">
+                                                                <div className="textIngredientesCocina">{item.Name || "Nombre Ingrediente"}</div>
+                                                            </div></div>
+                                                            <div className="row mb-2"><div className="col d-flex justify-content-center">
+                                                                <img src={`iconscocina/${item.Name}.png`} alt="icon" className="img-fluid" style={{ width: 'auto', height: '55px', objectFit: 'cover' }}/>
+                                                                {!item.Checked && !ingrediente.Items.every(i => !i.Checked) && (<div className="linea-tachado"></div>)}
+                                                            </div></div>
                                                         </div>
-                                                        
                                                     </label>
                                                 </div>
-                                        ))}
+                                            ))}
+                                            {ingrediente.Items.every(item => item.Checked) && (
+                                                <div style={{
+                                                    position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+                                                    backgroundColor: 'rgba(255,255,255,0.7)',
+                                                    display: 'flex', alignItems: 'center', justifyContent: 'center'
+                                                }}>
+                                                    <span style={{ color: 'green', fontWeight: 'bold', fontSize: '40px', fontFamily: 'Salsa, cursive' }}>CON TODO</span>
+                                                </div>
+                                            )}
+                                            {ingrediente.Items.every(item => !item.Checked) && (
+                                                <div style={{
+                                                    position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+                                                    backgroundColor: 'rgba(255,255,255,0.7)',
+                                                    display: 'flex', alignItems: 'center', justifyContent: 'center'
+                                                }}>
+                                                    <span style={{ color: 'red', fontWeight: 'bold', fontSize: '40px', fontFamily: 'Salsa, cursive' }}>NADA</span>
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                 ))}
