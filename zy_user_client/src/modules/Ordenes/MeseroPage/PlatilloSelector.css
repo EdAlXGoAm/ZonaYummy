@@ -59,3 +59,41 @@
     -ms-overflow-style: none;  /* IE and Edge */
     scrollbar-width: none;     /* Firefox */
 }
+/* Estilos para botones de categoría */
+.categoryButton {
+    background-color: #ffffff;
+    border-radius: 10px;
+    min-width: 100px;
+    height: 60px;
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    cursor: pointer;
+}
+.categoryButton:hover {
+    background-color: #e0f7fa;
+}
+.textCategoryButton {
+    font-size: 18px;
+    font-family: Bebas Neue;
+    text-transform: uppercase;
+}
+.backBubble {
+    background-color: #ffffff;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    border: none;
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    cursor: pointer;
+    margin-right: 10px;
+}
+.backBubble:hover {
+    background-color: #d3d3d3;
+}

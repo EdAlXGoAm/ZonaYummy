@@ -337,10 +337,12 @@ const DetailsComanda = ({Comanda, updateComanda}) => {
                     </div>
                     <div className='col-9'>
                         <div className="row"><div className="col">
-                            <p className={`textClienteCocina colorTextClienteCocina${Comanda.OrderID % 10}`}><span>{`(${Comanda.OrderID})`} : </span>{Comanda.Customer}</p>
+                            {/* <p className={`textClienteCocina colorTextClienteCocina${Comanda.OrderID % 10}`}><span>{`(${Comanda.OrderID})`} : </span>{Comanda.Customer}</p> */}
+                            <p className={`textClienteCocina colorTextClienteCocina${Comanda.OrderID % 10}`}>{Comanda.Customer}</p>
                         </div></div>
                         <div className="row"><div className="col">
-                            <h2 className="title comandaTextStyleCocina">{Comanda.Platillo}&nbsp;&nbsp;<span style={{textShadow: "0px 0px 10px red"}}>${Comanda.Precio}</span></h2>
+                            {/* <h2 className="title comandaTextStyleCocina">{Comanda.Platillo}&nbsp;&nbsp;<span style={{textShadow: "0px 0px 10px red"}}>${Comanda.Precio}</span></h2> */}
+                            <h2 className="title comandaTextStyleCocina" style={{fontSize: '25px'}}>{Comanda.Platillo}&nbsp;&nbsp;<span style={{textShadow: "0px 0px 10px red"}}>${Comanda.Precio}</span></h2>
                         </div></div>
                         <div className="row"><div className="col">
                             <div><span className="titleVariantCocina">

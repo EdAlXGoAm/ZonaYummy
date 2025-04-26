@@ -11,9 +11,9 @@ root.render(
   </React.StrictMode>
 );
 
-const header = ReactDOM.createRoot(document.getElementById('header'));
-header.render(
-  <React.StrictMode>
-    <Header />
-  </React.StrictMode>
-);
+// const header = ReactDOM.createRoot(document.getElementById('header'));
+// header.render(
+//   <React.StrictMode>
+//     <Header />
+//   </React.StrictMode>
+// );

@@ -374,7 +374,7 @@ const OrdenesCocina = ({modeInterface, Orders}) => {
         <div className="row contenedor-elementos">
             <div className="col-12 fila-elemento">
                 <div className="row">
-                    <div className="col-1" style={{color: '#fff', fontFamily: "'Salsa', cursive", fontSize: '30px'}}>
+                    <div className="col-1" style={{color: '#000', fontFamily: "'Salsa', cursive", fontSize: '20px'}}>
                         {`BEBIDAS -> `}
                     </div>
                     <div className="col-11">
@@ -387,7 +387,7 @@ const OrdenesCocina = ({modeInterface, Orders}) => {
         
             <div className="col-12 fila-elemento">
                 <div className="row">
-                    <div className="col-1" style={{color: '#fff', fontFamily: "'Salsa', cursive", fontSize: '30px'}}>
+                    <div className="col-1" style={{color: '#000', fontFamily: "'Salsa', cursive", fontSize: '20px'}}>
                         {`ESQUITES -> `}
                     </div>
                     <div className="col-11">
@@ -400,7 +400,7 @@ const OrdenesCocina = ({modeInterface, Orders}) => {
             
             <div className="col-12 fila-elemento">
                 <div className="row">
-                    <div className="col-1" style={{color: '#fff', fontFamily: "'Salsa', cursive", fontSize: '30px'}}>
+                    <div className="col-1" style={{color: '#000', fontFamily: "'Salsa', cursive", fontSize: '20px'}}>
                         {`COMIDA -> `}
                     </div>
                     <div className="col-11">
@@ -413,7 +413,7 @@ const OrdenesCocina = ({modeInterface, Orders}) => {
             
             <div className="col-12 fila-elemento">
                 <div className="row">
-                    <div className="col-1" style={{color: '#fff', fontFamily: "'Salsa', cursive", fontSize: '30px'}}>
+                    <div className="col-1" style={{color: '#000', fontFamily: "'Salsa', cursive", fontSize: '20px'}}>
                         {`COMIDA 2 -> `}
                     </div>
                     <div className="col-11">
@@ -426,7 +426,7 @@ const OrdenesCocina = ({modeInterface, Orders}) => {
             
             <div className="col-12 fila-elemento">
                 <div className="row">
-                    <div className="col-1" style={{color: '#fff', fontFamily: "'Salsa', cursive", fontSize: '30px'}}>
+                    <div className="col-1" style={{color: '#000', fontFamily: "'Salsa', cursive", fontSize: '20px'}}>
                         {`WAFFLES -> `}
                     </div>
                     <div className="col-11">
