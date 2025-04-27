@@ -1,4 +1,4 @@
-const Order = require("../models/orderModel");
+const Order = require("../models/orderV2Model");
 
 exports.getOrders = (req, res) => {
     Order.find()

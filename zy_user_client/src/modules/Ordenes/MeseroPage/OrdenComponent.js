@@ -1,7 +1,7 @@
 import './OrdenComponent.css';
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faAngleUp, faAngleDown } from '@fortawesome/free-solid-svg-icons';
+import { faAngleUp, faAngleDown, faHandHoldingUsd } from '@fortawesome/free-solid-svg-icons';
 import { faTrash, faCashRegister } from '@fortawesome/free-solid-svg-icons';
 import PlatilloSelector from './PlatilloSelectorComponent';
 import ComandaCard from './ComandaCardComponent'
@@ -23,6 +23,17 @@ const Orden = ({modeInterface, iInterface, OrderID, DeleteOrder, handleOrderCust
     const [colorOrder, setColorOrder] = useState("#ffffff")
     const skipNextFetch = useRef(false);
     const [expandedComandas, setExpandedComandas] = useState([]);
+    const [modalPagoVisible, setModalPagoVisible] = useState(false);
+    const [modoMontoEspecifico, setModoMontoEspecifico] = useState(false);
+    const [montoEspecifico, setMontoEspecifico] = useState(0);
+    const [itemsSeleccionadosPago, setItemsSeleccionadosPago] = useState(new Set());
+    const [orderV2, setOrderV2] = useState({ pagos: [], pagado: 0, pendiente: 0 });
+    const [paymentTab, setPaymentTab] = useState('items');
+    // Flags para controles de cobro
+    const hasMontoPago = orderV2.pagos.some(p => p.tipoPago === 'monto');
+    // Calcular pendiente: suma de precios de comandas menos lo ya cobrado
+    const computedPending = comandas.reduce((sum, c) => sum + (c.Precio || 0), 0) - (orderV2.pagado || 0);
+    const isFullyPaid = computedPending <= 0;
 
     const fetchOrder = () => {
         ordersApi.getOrder(OrderID)
@@ -66,15 +77,17 @@ const Orden = ({modeInterface, iInterface, OrderID, DeleteOrder, handleOrderCust
                 cuentaTotal = cuentaTotal + comanda.Precio;
             })
         }
-        const newOrder = {...order, CuentaTotal: cuentaTotal};
+        // Calcular el nuevo pendiente basado en la nueva cuenta total y lo ya pagado
+        const newPendiente = cuentaTotal - (order.pagado || 0);
+        const newOrder = {...order, CuentaTotal: cuentaTotal, pendiente: newPendiente}; // Actualizar también pendiente
         ordersApi.updateOrder(newOrder)
         .then(() => {
-            console.log("CuentaTotal Actualizada");
-            setOrder(newOrder);
+            console.log("CuentaTotal y Pendiente Actualizados"); // Mensaje actualizado
+            setOrder(newOrder); // Actualizar estado local con ambos valores
         })
         .catch(err => {
             console.log(err);
-            notify(`Error al actualizar CuentaTotal de orden: ${err}`);
+            notify(`Error al actualizar CuentaTotal/Pendiente de orden: ${err}`); // Mensaje actualizado
             // alert("Error al actualizar una comanda");
         });
     }
@@ -317,7 +330,100 @@ const Orden = ({modeInterface, iInterface, OrderID, DeleteOrder, handleOrderCust
         iconColor = '#dc3545';           // rojo cuando está vacío y sin guardar
     }
 
+    const confirmarCobroParcial = () => {
+        const pending = computedPending;
+        const items = modoMontoEspecifico ? [] : Array.from(itemsSeleccionadosPago);
+        const monto = modoMontoEspecifico
+          ? montoEspecifico
+          : comandas
+              .filter(c => itemsSeleccionadosPago.has(c.ComandaId))
+              .reduce((sum, c) => sum + c.Precio, 0);
+        if (monto <= 0 || monto > pending) {
+          notify('Monto inválido');
+          return;
+        }
+        ordersApi.addPayment(Order.OrderID, { monto, tipoPago: modoMontoEspecifico ? 'monto' : 'items', itemsPagados: items })
+          .then((updated) => {
+            setOrder(updated);
+            comandasApi.getComandasByOrderId(OrderID)
+              .then(res => setComandas(res))
+              .catch(err => console.log(err));
+            setModalPagoVisible(false);
+          })
+          .catch(err => notify(`Error al cobrar: ${err}`));
+    };
+
+    // Al abrir modal, limpiar selección previa y monto, y obtener la orden v2
+    useEffect(() => {
+      if (modalPagoVisible) {
+        setItemsSeleccionadosPago(new Set());
+        setMontoEspecifico(0);
+        // Fetch orderV2 first to check for existing 'monto' payments
+        ordersApi.getOrderV2(OrderID)
+          .then(data => {
+            setOrderV2(data);
+            // Check if there's a 'monto' payment AFTER fetching the data
+            const hasExistingMontoPago = data.pagos.some(p => p.tipoPago === 'monto');
+            if (hasExistingMontoPago) {
+              setPaymentTab('amount'); // Default to amount tab
+              setModoMontoEspecifico(true); // Ensure amount mode is on
+            } else {
+              setPaymentTab('items'); // Default to items tab
+              setModoMontoEspecifico(false);
+            }
+          })
+          .catch(err => console.error(err));
+      }
+    }, [modalPagoVisible, OrderID]); // Add OrderID dependency
+
+    const cobrarTodo = () => {
+      // Calcular pendiente a cobrar siempre como computedPending
+      const pending = computedPending;
+      if (pending <= 0) {
+        notify('No hay monto pendiente');
+        return;
+      }
+      ordersApi.addPayment(OrderID, { monto: pending, tipoPago: 'monto', itemsPagados: [] })
+        .then(updated => {
+          setOrder(updated);
+          setOrderV2(updated);
+          comandasApi.getComandasByOrderId(OrderID)
+            .then(res => setComandas(res))
+            .catch(err => console.log(err));
+          setModalPagoVisible(false);
+        })
+        .catch(err => notify(`Error al cobrar todo: ${err}`));
+    };
+
+    // Helper para formatear la hora en 12h (HH:mm AM/PM)
+    const format12Hour = dateStr => {
+      const d = new Date(dateStr);
+      let h = d.getHours();
+      const m = d.getMinutes();
+      const ampm = h >= 12 ? 'PM' : 'AM';
+      h %= 12;
+      h = h || 12;
+      const hh = h < 10 ? '0' + h : h;
+      const mm = m < 10 ? '0' + m : m;
+      return `${hh}:${mm} ${ampm}`;
+    };
+
+    // IDs de items ya cobrados en pagos tipo 'items'
+    const paidItemIds = new Set(orderV2.pagos
+      .filter(p => p.tipoPago === 'items')
+      .flatMap(p => p.itemsPagados || [])
+    );
+
+    // Función para seleccionar todos los ítems disponibles
+    const handleSelectAllItems = () => {
+      const availableIds = comandas
+        .filter(c => !paidItemIds.has(c.ComandaId))
+        .map(c => c.ComandaId);
+      setItemsSeleccionadosPago(new Set(availableIds));
+    };
+
     return (
+        <>
         <div className="card" style={{backgroundColor: colorOrder}}>
         {/* Text box editable backgroudn red and text blanco BOLD */}
             <div className='row'>
@@ -360,9 +466,12 @@ const Orden = ({modeInterface, iInterface, OrderID, DeleteOrder, handleOrderCust
                     </button>
                 </div>
                 <div className="col-5 d-flex align-items-center orderTotal">
-                    <div className="orderTotalText">{`Total: $${Order.CuentaTotal}`}</div>
-                    <button onClick={() => handleOrderCustStatusButton(Order)}> {/* Will allow change Paid Prep and Cust Status */}
-                        <FontAwesomeIcon icon={faCashRegister} size="2x" />
+                    <div className='orderTotalText'>{`Restante: $${Order.pendiente}`}</div>
+                    <button onClick={() => setModalPagoVisible(true)} style={{ marginRight: '8px' }}>
+                        <FontAwesomeIcon icon={faHandHoldingUsd} size='2x' />
+                    </button>
+                    <button onClick={handleOrderCustStatusButton}> {/* Will allow change Paid Prep and Cust Status */}
+                        <FontAwesomeIcon icon={faCashRegister} size='2x' />
                     </button>
                 </div>
             </div>
@@ -410,7 +519,177 @@ const Orden = ({modeInterface, iInterface, OrderID, DeleteOrder, handleOrderCust
             </div>
             )}
         </div>
-    )
+        {/* Cobro Parcial Modal */}
+        {modalPagoVisible && (
+          <div className='modal-pago-fondo'>
+            <div className='modal-pago-contenedor'>
+              <div className='modal-header'>
+                <button onClick={() => setModalPagoVisible(false)} className='text-white'>
+                  <i className='fas fa-arrow-left'></i>
+                </button>
+                <h3 className='font-bold'>Cobro Parcial</h3>
+                <div style={{ width: '1.5rem' }}></div>
+              </div>
+              <div className='modal-body'>
+                <div className='modal-summary'>
+                  <div className='flex justify-between mb-2'>
+                    <span>Total Orden:</span>
+                    <span className='font-bold'>${(Order.CuentaTotal || 0).toFixed(2)}</span>
+                  </div>
+                  <div className='flex justify-between mb-2'>
+                    <span>Pagado:</span>
+                    <span className='text-green-600 font-bold'>${orderV2.pagado.toFixed(2)}</span>
+                  </div>
+                  <div className='flex justify-between text-lg'>
+                    <span className='font-semibold'>Pendiente:</span>
+                    <span className='font-bold text-red-600'>${computedPending.toFixed(2)}</span>
+                  </div>
+                </div>
+                {/* Historial de pagos */}
+                {orderV2.pagos.length > 0 && (
+                  <div className='mb-4'>
+                    <h5 className='font-medium mb-2'>Historial de cobros</h5>
+                    <div className='overflow-auto scrollbar-hide mb-4' style={{ maxHeight: '6rem' }}>
+                      {orderV2.pagos.map((p, i) => (
+                        <div key={i} className='mb-2'>
+                          <div className='flex justify-between text-sm'>
+                            <span>{format12Hour(p.fecha)}</span>
+                            <span>${p.monto.toFixed(2)}</span>
+                          <span className='text-xs text-gray-600'>
+                            {p.tipoPago === 'items'
+                              ? `Items: ${p.itemsPagados.map(id => {
+                                  const item = comandas.find(c => c.ComandaId === id);
+                                  return item ? item.Platillo : id;
+                                }).join(', ')}`
+                              : 'Pago monto fijo'}
+                          </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {!isFullyPaid && (
+                  <>
+                    {/* Tabs de selección */}
+                    <div className='flex border-b mb-4'>
+                      {!hasMontoPago && (
+                        <div
+                          className={`payment-tab ${paymentTab === 'items' ? 'active' : ''}`}
+                          onClick={() => {
+                            setPaymentTab('items');
+                            setModoMontoEspecifico(false);
+                          }}
+                        >
+                          <i className='fas fa-list-ul mr-2'></i>Selección Ítems
+                        </div>
+                      )}
+                      <div
+                        className={`payment-tab ${paymentTab === 'amount' ? 'active' : ''}`}
+                        onClick={() => {
+                          setPaymentTab('amount');
+                          setItemsSeleccionadosPago(new Set());
+                          setModoMontoEspecifico(true);
+                        }}
+                      >
+                        <i className='fas fa-dollar-sign mr-2'></i>Ingresar Monto
+                      </div>
+                    </div>
+                    {/* Items Content */}
+                    {paymentTab === 'items' && (
+                      <div>
+                        <div className='flex justify-end mb-2'>
+                          <button
+                            className='text-sm text-blue-600 underline'
+                            onClick={handleSelectAllItems}
+                          >
+                            Seleccionar todos
+                          </button>
+                        </div>
+                        <div className='items-content scrollbar-hide mb-4'>
+                          {comandas.filter(c => !paidItemIds.has(c.ComandaId)).map(c => (
+                            <div key={c.ComandaId} className='relative'>
+                              <input
+                                type='checkbox'
+                                id={`chk_${c.ComandaId}`}
+                                className='item-checkbox'
+                                checked={itemsSeleccionadosPago.has(c.ComandaId)}
+                                onChange={e => {
+                                  const s = new Set(itemsSeleccionadosPago);
+                                  e.target.checked ? s.add(c.ComandaId) : s.delete(c.ComandaId);
+                                  setItemsSeleccionadosPago(s);
+                                }}
+                              />
+                              <label htmlFor={`chk_${c.ComandaId}`} className='item-label'>
+                                <div className='icon-container'>
+                                  <FontAwesomeIcon
+                                    icon={faCheck}
+                                    className={itemsSeleccionadosPago.has(c.ComandaId) ? 'text-green-600' : 'text-transparent'}
+                                  />
+                                </div>
+                                <div className='flex-1'><div className='font-medium'>{c.Platillo}</div></div>
+                                <div className='font-bold'>${c.Precio.toFixed(2)}</div>
+                              </label>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {/* Amount Content */}
+                    {paymentTab === 'amount' && (
+                      <div className='mb-4'>
+                        <div className='relative'>
+                          <span className='absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500'>$</span>
+                          <input
+                            type='number'
+                            className='w-full pl-8 pr-4 py-3 border rounded-lg focus:ring-blue-500 focus:border-blue-500'
+                            placeholder='0.00'
+                            max={computedPending}
+                            min='0'
+                            step='0.01'
+                            value={montoEspecifico}
+                            onChange={e => setMontoEspecifico(parseFloat(e.target.value))}
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )}
+                {/* Acciones */}
+                <div className='flex justify-end space-x-3'>
+                  {!isFullyPaid && (
+                    <>
+                      {paymentTab === 'items' && (
+                        <button
+                          className='bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition flex items-center'
+                          onClick={confirmarCobroParcial}
+                        >
+                          <i className='fas fa-check-circle mr-2'></i>Confirmar
+                        </button>
+                      )}
+                      {paymentTab === 'amount' && (
+                        <button
+                          className='bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition flex items-center'
+                          onClick={confirmarCobroParcial}
+                        >
+                          <i className='fas fa-check-circle mr-2'></i>Confirmar
+                        </button>
+                      )}
+                    </>
+                  )}
+                  <button
+                    className='bg-white border border-gray-300 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-100 transition flex items-center'
+                    onClick={() => setModalPagoVisible(false)}
+                  >
+                    <i className='fas fa-times mr-2'></i>Cancelar
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+        </>
+    );
 }
 
 export default Orden;

@@ -104,7 +104,29 @@ const ordersApi = {
             console.error("ordersAPI error: ", error);
             throw error;
         }
-    }
+    },
+
+    // Registra un pago parcial o total usando la API v2
+    addPayment: async (orderID, payment) => {
+        try {
+            const response = await Axios.post(`${baseURL}/v2/${orderID}/pagos`, payment);
+            return response.data;
+        } catch (error) {
+            console.error("ordersAPI error: ", error);
+            throw error;
+        }
+    },
+
+    // Obtener una orden con pagos desde la API v2
+    getOrderV2: async (id) => {
+        try {
+            const response = await Axios.get(`${baseURL}/v2/${id}`);
+            return response.data;
+        } catch (error) {
+            console.error("ordersAPI error: ", error);
+            throw error;
+        }
+    },
 }
 
 export default ordersApi;

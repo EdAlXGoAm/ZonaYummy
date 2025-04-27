@@ -86,9 +86,11 @@ app.post("/deleteProductoByProducto", async (req,res)=>{
 const orderRoutes = require('./routes/orderRoutes');
 const comandaRoutes = require('./routes/comandaRoutes');
 const platilloRoutes = require('./routes/platilloRoutes');
+const orderV2Routes = require('./routes/orderV2Routes');
 app.use('/api/orders', orderRoutes);
 app.use('/api/comandas', comandaRoutes);
 app.use('/api/platillos', platilloRoutes);
+app.use('/api/orders/v2', orderV2Routes);
 
 
 server.listen(3010, () => {
