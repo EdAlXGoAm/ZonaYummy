@@ -3,7 +3,8 @@ import './App.css';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import React, { useState, useEffect } from 'react';
 import AdminPage from './routes/adminPage';
-import MeseroPage from './routes/MeseroPage'
+import MeseroPage from './routes/MeseroPage';
+import MeseroPageTest from './routes/MeseroPageTest';
 import Menu from './routes/Menu';
 
 const LoadingScreen = () => {
@@ -37,6 +38,12 @@ const MeseroScreen = ({modeInterface}) => {
   );
 }
 
+const MeseroScreenTest = ({modeInterface}) => {
+  return (
+    <MeseroPageTest modeInterface={modeInterface}/>
+  );
+}
+
 const App = () => {
   const [loading, setLoading] = useState(true);
 
@@ -53,7 +60,9 @@ const App = () => {
         <Route path="/Menu" element={<MainScreen />}/>
         <Route path="/2on4yummy-admin" element={<AdminScreen />} />
         <Route path="/2on4yummy-mesero" element={<MeseroScreen modeInterface={true} />} />
+        <Route path="/2on4yummy-mesero-test" element={<MeseroScreenTest modeInterface={true} />} />
         <Route path="/2on4yummy-cocina" element={<MeseroScreen modeInterface={false} />} />
+        <Route path="/2on4yummy-cocina-test" element={<MeseroScreenTest modeInterface={false} />} />
       </Routes>
     </BrowserRouter>
   )

@@ -13,9 +13,14 @@ import { faCheck, faFloppyDisk } from '@fortawesome/free-solid-svg-icons';
 import { ToastContainer, toast} from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
+// ========== LOGGING DE RENDIMIENTO CENTRALIZADO ==========
+import performanceLogger from '../../../utils/performanceLogger';
+// Para activar DEBUG temporal: cambiar ENABLE_DEV_MODE a true en ../../../utils/performanceLogger.js
+// ========== FIN LOGGING ==========
+
 const socket = io(`${process.env.REACT_APP_API_URL}`);
 
-const Orden = ({modeInterface, iInterface, OrderID, DeleteOrder, handleOrderCustStatus, platillos, numPlatillos, handleOrderClient }) => {
+const Orden = ({modeInterface, iInterface, OrderID, DeleteOrder, handleOrderCustStatus, platillos, numPlatillos, handleOrderClient, preloadedOrder, preloadedComandas, isOptimized }) => {
     const notify = (message) => toast(message);
     const [Order, setOrder] = useState({});
     const [comandas, setComandas] = useState([])
@@ -36,13 +41,53 @@ const Orden = ({modeInterface, iInterface, OrderID, DeleteOrder, handleOrderCust
     const isFullyPaid = computedPending <= 0;
 
     const fetchOrder = () => {
+        const fetchOrderStartTime = performance.now();
+        const fetchOrderId = `fetchOrder_${OrderID}_${Date.now()}`;
+        performanceLogger.time(fetchOrderId);
+        
+        // Verificar si tenemos datos pre-cargados (OPTIMIZACIÓN)
+        if (isOptimized && preloadedOrder && preloadedComandas) {
+            performanceLogger.critical(`⚡ USANDO DATOS PRE-CARGADOS para OrderID: ${OrderID} (${preloadedComandas.length} comandas)`);
+            
+            setOrder(preloadedOrder);
+            setComandas(preloadedComandas);
+            updateCuentaTotalOrder(preloadedComandas, preloadedOrder);
+            
+            performanceLogger.timeEnd(fetchOrderId);
+            const optimizedTime = performance.now() - fetchOrderStartTime;
+            performanceLogger.log(`🚀 fetchOrder OPTIMIZADO completado en ${optimizedTime.toFixed(2)}ms (sin API calls)`);
+            return;
+        }
+        
+        // Fallback al método original si no hay datos pre-cargados
+        performanceLogger.log(`🏁 [${new Date().toISOString()}] ========== INICIANDO CICLO COMPLETO fetchOrder para OrderID: ${OrderID} ==========`);
+        
+        // Cronómetro para la API de orders
+        const orderApiCallId = `orderApiCall_${fetchOrderId}`;
+        performanceLogger.time(orderApiCallId);
+        
         ordersApi.getOrder(OrderID)
         .then((res) => {
+            performanceLogger.timeEnd(orderApiCallId);
+            const orderApiTime = performance.now() - fetchOrderStartTime;
+            performanceLogger.log(`📋 Order API Call completada en ${orderApiTime.toFixed(2)}ms`);
+            
             setOrder(res);
+            
+            // El fetchComandas ya tiene su propio monitoreo
             fetchComandas(res);
+            
+            // Solo medimos el tiempo hasta que se dispara fetchComandas
+            performanceLogger.timeEnd(fetchOrderId);
+            const totalFetchOrderTime = performance.now() - fetchOrderStartTime;
+            performanceLogger.log(`🎯 fetchOrder (sin esperar comandas) completado en ${totalFetchOrderTime.toFixed(2)}ms`);
+            performanceLogger.log(`🏁 ========== CONTINUANDO CON fetchComandas... ==========`);
         })
         .catch((err) => {
-            console.log(err);
+            performanceLogger.timeEnd(orderApiCallId);
+            performanceLogger.timeEnd(fetchOrderId);
+            const errorTime = performance.now() - fetchOrderStartTime;
+            performanceLogger.error(`❌ Error en fetchOrder después de ${errorTime.toFixed(2)}ms:`, err);
         });
     };
 
@@ -71,6 +116,13 @@ const Orden = ({modeInterface, iInterface, OrderID, DeleteOrder, handleOrderCust
     }
     
     const updateCuentaTotalOrder = (comandasDB, order) => {
+        const updateStartTime = performance.now();
+        const updateId = `updateCuentaTotal_Order_${OrderID}_${Date.now()}`;
+        performanceLogger.time(updateId);
+        performanceLogger.log(`🔄 [${new Date().toISOString()}] Iniciando updateCuentaTotalOrder para OrderID: ${OrderID}`);
+        
+        // Medición del cálculo local
+        const calcStartTime = performance.now();
         let cuentaTotal = 0;
         if (comandasDB) {
             comandasDB.forEach((comanda) => {
@@ -80,26 +132,82 @@ const Orden = ({modeInterface, iInterface, OrderID, DeleteOrder, handleOrderCust
         // Calcular el nuevo pendiente basado en la nueva cuenta total y lo ya pagado
         const newPendiente = cuentaTotal - (order.pagado || 0);
         const newOrder = {...order, CuentaTotal: cuentaTotal, pendiente: newPendiente}; // Actualizar también pendiente
+        
+        const calcTime = performance.now() - calcStartTime;
+        performanceLogger.log(`🧮 Cálculo de totales: ${calcTime.toFixed(2)}ms - Comandas procesadas: ${comandasDB ? comandasDB.length : 0}, Total: $${cuentaTotal}`);
+        
+        // Medición de la actualización en BD
+        const dbUpdateStartTime = performance.now();
+        const dbUpdateId = `dbUpdate_${updateId}`;
+        performanceLogger.time(dbUpdateId);
+        
         ordersApi.updateOrder(newOrder)
         .then(() => {
-            console.log("CuentaTotal y Pendiente Actualizados"); // Mensaje actualizado
+            performanceLogger.timeEnd(dbUpdateId);
+            performanceLogger.timeEnd(updateId);
+            
+            const dbUpdateTime = performance.now() - dbUpdateStartTime;
+            const totalUpdateTime = performance.now() - updateStartTime;
+            
+            performanceLogger.log(`💾 Actualización BD: ${dbUpdateTime.toFixed(2)}ms`);
+            performanceLogger.log(`✅ updateCuentaTotalOrder COMPLETADO - Tiempo total: ${totalUpdateTime.toFixed(2)}ms`);
+            performanceLogger.log(`📊 Desglose Update - Cálculo: ${calcTime.toFixed(2)}ms (${(calcTime/totalUpdateTime*100).toFixed(1)}%) | BD: ${dbUpdateTime.toFixed(2)}ms (${(dbUpdateTime/totalUpdateTime*100).toFixed(1)}%)`);
+            
             setOrder(newOrder); // Actualizar estado local con ambos valores
         })
         .catch(err => {
-            console.log(err);
+            performanceLogger.timeEnd(dbUpdateId);
+            performanceLogger.timeEnd(updateId);
+            
+            const errorTime = performance.now() - updateStartTime;
+            performanceLogger.error(`❌ Error en updateCuentaTotalOrder después de ${errorTime.toFixed(2)}ms:`, err);
             notify(`Error al actualizar CuentaTotal/Pendiente de orden: ${err}`); // Mensaje actualizado
             // alert("Error al actualizar una comanda");
         });
     }
 
     const fetchComandas = (order) => {
+        // Inicia el cronómetro para el proceso completo
+        const startTime = performance.now();
+        const fetchId = `fetchComandas_Order_${OrderID}_${Date.now()}`;
+        performanceLogger.time(fetchId);
+        performanceLogger.log(`🚀 [${new Date().toISOString()}] Iniciando fetchComandas para OrderID: ${OrderID}`);
+        
+        // Cronómetro específico para la llamada a la API
+        const apiCallId = `apiCall_${fetchId}`;
+        performanceLogger.time(apiCallId);
+        
         comandasApi.getComandasByOrderId(OrderID)
         .then((res) => {
+            // Finaliza el cronómetro de la llamada a la API
+            performanceLogger.timeEnd(apiCallId);
+            const apiCallTime = performance.now() - startTime;
+            performanceLogger.log(`📡 API Call completada en ${apiCallTime.toFixed(2)}ms - Comandas recibidas: ${res.length}`);
+            
+            // Inicia cronómetro para el procesamiento local
+            const processingStart = performance.now();
+            const processingId = `processing_${fetchId}`;
+            performanceLogger.time(processingId);
+            
             setComandas(res);
             updateCuentaTotalOrder(res, order);
+            
+            // Finaliza cronómetros
+            performanceLogger.timeEnd(processingId);
+            performanceLogger.timeEnd(fetchId);
+            
+            const processingTime = performance.now() - processingStart;
+            const totalTime = performance.now() - startTime;
+            
+            performanceLogger.log(`⚡ Procesamiento local: ${processingTime.toFixed(2)}ms`);
+            performanceLogger.log(`✅ fetchComandas COMPLETADO - Tiempo total: ${totalTime.toFixed(2)}ms`);
+            performanceLogger.log(`📊 Desglose - API: ${apiCallTime.toFixed(2)}ms (${(apiCallTime/totalTime*100).toFixed(1)}%) | Procesamiento: ${processingTime.toFixed(2)}ms (${(processingTime/totalTime*100).toFixed(1)}%)`);
         })
         .catch((err) => {
-            console.log(err);
+            performanceLogger.timeEnd(apiCallId);
+            performanceLogger.timeEnd(fetchId);
+            const errorTime = performance.now() - startTime;
+            performanceLogger.error(`❌ Error en fetchComandas después de ${errorTime.toFixed(2)}ms:`, err);
         });
     };
 
