@@ -12,6 +12,17 @@ const AdminPage = () => {
     const [ListaProductos, setListaProductos] = useState([]);
     const [ListaPlatillos, setListaPlatillos] = useState([]);
     const [ListaIngredientes, setListaIngredientes] = useState([]);
+    const [isModalPlatilloOpen, setIsModalPlatilloOpen] = useState(false);
+    const [editPlatilloId, setEditPlatilloId] = useState(null);
+
+    const openPlatilloModal = (platilloId = null) => {
+        setEditPlatilloId(platilloId);
+        setIsModalPlatilloOpen(true);
+    };
+    const closePlatilloModal = () => {
+        setIsModalPlatilloOpen(false);
+        setEditPlatilloId(null);
+    };
 
     const fetchProductos = () => {
         // console.log("Obteniendo ListaProductos...");
@@ -87,9 +98,33 @@ const AdminPage = () => {
     
     return(
         <div>
-            <div className="container-fluid" id="AgregarPlatillo">
-                <AddPlatilloForm/>
+            {/* Lista de Platillos (tarjetas) - Visible en la página */}
+            <div className="container-fluid" id="ListaPlatillos">
+                <AddPlatilloForm 
+                    mode="list" 
+                    onEditRequest={openPlatilloModal}
+                />
             </div>
+
+            {/* Modal con formulario de Agregar/Editar Platillo */}
+            {isModalPlatilloOpen && (
+                <div className="modal-overlay" onClick={closePlatilloModal}>
+                    <div className="modal-platillo-content" onClick={(e) => e.stopPropagation()}>
+                        <div className="modal-header">
+                            <h2>{editPlatilloId ? 'Editar Platillo' : 'Agregar Nuevo Platillo'}</h2>
+                            <button className="modal-close-btn" onClick={closePlatilloModal}>✕</button>
+                        </div>
+                        <div className="modal-body">
+                            <AddPlatilloForm 
+                                mode="form"
+                                editPlatilloId={editPlatilloId}
+                                onClose={closePlatilloModal}
+                            />
+                        </div>
+                    </div>
+                </div>
+            )}
+
             <div className="container-fluid" id="AgregarProductos">
                 <AddProductoForm addProductoBtn={addProductoBtn} />
             </div>

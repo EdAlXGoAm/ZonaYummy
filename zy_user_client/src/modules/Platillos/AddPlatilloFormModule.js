@@ -3,7 +3,13 @@ import checkbox_css from './checkbox.css'; //La ruta de este archivo es: src/css
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import platillosApi from './../../api/platillosApi';
 
-const AddPlatilloForm = () => {
+const AddPlatilloForm = ({ 
+    onClose, 
+    mode = "both", // "list" | "form" | "both"
+    onEditRequest, // callback cuando se hace clic en editar desde la lista
+    editPlatilloId = null, // ID del platillo a editar (para cargar desde afuera)
+    onPlatillosUpdate // callback para sincronizar la lista externa
+}) => {
     const [platillo, setPlatillo] = useState({
         PlatilloId: '',
         Categoria: '',
@@ -57,12 +63,23 @@ const AddPlatilloForm = () => {
             setPlatillosList(prevPlatillosList => {
                 return data;
             });
+            // Notificar a componente padre si existe callback
+            if (onPlatillosUpdate) {
+                onPlatillosUpdate(data);
+            }
         })
     };
 
     useEffect (() => {
         fetchPlatillos();
     }, []);
+
+    // Cargar platillo a editar cuando se pasa editPlatilloId desde afuera
+    useEffect(() => {
+        if (editPlatilloId !== null && editPlatilloId !== undefined) {
+            fetchPlatilloToEdit(editPlatilloId);
+        }
+    }, [editPlatilloId]);
 
     // Agrupar platillos por categoría
     const platillosAgrupados = useMemo(() => {
@@ -91,7 +108,12 @@ const AddPlatilloForm = () => {
     };
     
     const handleEditPlatillo = (id) => {
-        fetchPlatilloToEdit(id);
+        // Si hay callback onEditRequest, llamarlo (para abrir modal desde lista externa)
+        if (onEditRequest) {
+            onEditRequest(id);
+        } else {
+            fetchPlatilloToEdit(id);
+        }
     };
 
     const handleDeletePlatillo = (id) => {
@@ -770,6 +792,8 @@ const AddPlatilloForm = () => {
         fetchPlatillos();
         handleToggleButtonAction();
         fetchPlatilloId();
+        // Cerrar modal si existe la función onClose
+        if (onClose) onClose();
     }
 
     const containerRef = useRef(null);
@@ -815,11 +839,23 @@ const AddPlatilloForm = () => {
         };
     }, []);
 
+    const showList = mode === "list" || mode === "both";
+    const showForm = mode === "form" || mode === "both";
+
     return (
         <div className="row" ref={containerRef}><div className="col-12">
             {/* Grid de Platillos agrupados por Categoría */}
+            {showList && (
             <div className="platillos-container">
                 <h2 className="platillos-titulo">Lista de Platillos</h2>
+                {/* Botón para agregar nuevo platillo cuando está en modo lista */}
+                {mode === "list" && (
+                    <div className="add-platillo-btn-container">
+                        <button type="button" className="btn btn-success btn-lg add-new-platillo-btn" onClick={() => onEditRequest && onEditRequest(null)}>
+                            ➕ Agregar Nuevo Platillo
+                        </button>
+                    </div>
+                )}
                 {categoriasPlatillos.map((categoria) => (
                     <div key={categoria} className="platillo-categoria-grupo">
                         <div className="platillo-categoria-header">
@@ -843,10 +879,10 @@ const AddPlatilloForm = () => {
                                             <p className="platillo-descripcion">{item.Descripcion || 'Sin descripción'}</p>
                                         </div>
                                         <div className="platillo-card-footer">
-                                            <button className="btn btn-warning btn-sm" onClick={() => handleEditPlatillo(item.PlatilloId)}>
+                                            <button type="button" className="btn btn-warning btn-sm" onClick={() => handleEditPlatillo(item.PlatilloId)}>
                                                 Editar
                                             </button>
-                                            <button className="btn btn-danger btn-sm" onClick={() => handleDeletePlatillo(item.PlatilloId)}>
+                                            <button type="button" className="btn btn-danger btn-sm" onClick={() => handleDeletePlatillo(item.PlatilloId)}>
                                                 Eliminar
                                             </button>
                                         </div>
@@ -857,6 +893,8 @@ const AddPlatilloForm = () => {
                     </div>
                 ))}
             </div>
+            )}
+            {showForm && (
             <div className="row"><div className="col-12">
                 <form className="FormAddPlatillo" onSubmit={handleSubmit}>
                     <div className="row"><div className={`col-${numColsForPlatilloFormPart1}`}>
@@ -1218,6 +1256,7 @@ const AddPlatilloForm = () => {
 
                 </form>
             </div></div>
+            )}
         </div></div>
     );
 };
