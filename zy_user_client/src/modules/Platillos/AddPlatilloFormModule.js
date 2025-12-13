@@ -1,6 +1,6 @@
 import './AddPlatilloForm.css'
 import checkbox_css from './checkbox.css'; //La ruta de este archivo es: src/css/checkbox.css
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import platillosApi from './../../api/platillosApi';
 
 const AddPlatilloForm = () => {
@@ -63,6 +63,21 @@ const AddPlatilloForm = () => {
     useEffect (() => {
         fetchPlatillos();
     }, []);
+
+    // Agrupar platillos por categoría
+    const platillosAgrupados = useMemo(() => {
+        const grupos = {};
+        platillosList.forEach(platillo => {
+            const categoria = platillo.Categoria || 'Sin Categoría';
+            if (!grupos[categoria]) {
+                grupos[categoria] = [];
+            }
+            grupos[categoria].push(platillo);
+        });
+        return grupos;
+    }, [platillosList]);
+
+    const categoriasPlatillos = useMemo(() => Object.keys(platillosAgrupados).sort(), [platillosAgrupados]);
 
     const fetchPlatilloToEdit = (id) => {
         platillosApi.getPlatillo(id)
@@ -802,35 +817,46 @@ const AddPlatilloForm = () => {
 
     return (
         <div className="row" ref={containerRef}><div className="col-12">
-            <div className="row"><div className="col-12">
-                <table className="table table-striped">
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>Categoría</th>
-                            <th>Nombre</th>
-                            <th>Disponibilidad</th>
-                            <th>Acciones</th>
-                            {/* Otros encabezados */}
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {platillosList.map(item => (
-                            <tr key={item.PlatilloId}>
-                                <td>{item.PlatilloId}</td>
-                                <td>{item.Categoria}</td>
-                                <td>{item.NombrePlatillo}</td>
-                                <td>{item.Disponibilidad}</td>
-                                <td>
-                                    <button className="btn btn-warning" onClick={() => handleEditPlatillo(item.PlatilloId)}>Editar</button>
-                                    <button className="btn btn-danger" onClick={() => handleDeletePlatillo(item.PlatilloId)}>Eliminar</button>
-                                </td>
-                                {/* Otros datos */}
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
-            </div></div>
+            {/* Grid de Platillos agrupados por Categoría */}
+            <div className="platillos-container">
+                <h2 className="platillos-titulo">Lista de Platillos</h2>
+                {categoriasPlatillos.map((categoria) => (
+                    <div key={categoria} className="platillo-categoria-grupo">
+                        <div className="platillo-categoria-header">
+                            <h4 className="platillo-categoria-titulo">{categoria}</h4>
+                            <span className="platillo-categoria-contador">
+                                {platillosAgrupados[categoria].length} platillo{platillosAgrupados[categoria].length !== 1 ? 's' : ''}
+                            </span>
+                        </div>
+                        <div className="row platillos-grid">
+                            {platillosAgrupados[categoria].map((item) => (
+                                <div key={item.PlatilloId} className="col-12 col-sm-6 col-md-4 col-lg-2 platillo-card-wrapper">
+                                    <div className="platillo-card">
+                                        <div className="platillo-card-header">
+                                            <span className="platillo-id">#{item.PlatilloId}</span>
+                                            <span className={`platillo-disponibilidad ${item.Disponibilidad > 0 ? 'disponible' : 'no-disponible'}`}>
+                                                {item.Disponibilidad > 0 ? `Stock: ${item.Disponibilidad}` : 'Agotado'}
+                                            </span>
+                                        </div>
+                                        <div className="platillo-card-body">
+                                            <h5 className="platillo-nombre">{item.NombrePlatillo}</h5>
+                                            <p className="platillo-descripcion">{item.Descripcion || 'Sin descripción'}</p>
+                                        </div>
+                                        <div className="platillo-card-footer">
+                                            <button className="btn btn-warning btn-sm" onClick={() => handleEditPlatillo(item.PlatilloId)}>
+                                                Editar
+                                            </button>
+                                            <button className="btn btn-danger btn-sm" onClick={() => handleDeletePlatillo(item.PlatilloId)}>
+                                                Eliminar
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                ))}
+            </div>
             <div className="row"><div className="col-12">
                 <form className="FormAddPlatillo" onSubmit={handleSubmit}>
                     <div className="row"><div className={`col-${numColsForPlatilloFormPart1}`}>

@@ -108,6 +108,7 @@ const Orden = ({modeInterface, iInterface, OrderID, DeleteOrder, handleOrderCust
       }, []); // El array vacío asegura que el efecto se ejecute solo una vez al montar el componente
 
     const fetchColorOrder = () => {
+        if (!Order) return; // Verificación de seguridad
         if (Order.OrderCustStatus === "Done") {
             setColorOrder("#5d5d5d");
         } else if (Order.OrderCustStatus === "InPlace") {
@@ -229,11 +230,13 @@ const Orden = ({modeInterface, iInterface, OrderID, DeleteOrder, handleOrderCust
     }, []);
 
     useEffect(() => {
+        if (!Order || !Order.OrderID) return; // Verificación de seguridad
         fetchColorOrder();
         fetchToggleArrowStatus();
     }, [Order])
 
     const fetchToggleArrowStatus = () => {
+        if (!Order) return; // Verificación de seguridad
         if (modeInterface) {
             if (Order.OrderCustStatus === "Done") {
                 setToggleArrowStatus(false);
@@ -395,11 +398,12 @@ const Orden = ({modeInterface, iInterface, OrderID, DeleteOrder, handleOrderCust
     }
 
     useEffect(() => {
+        if (!Order) return; // Verificación de seguridad
         const savedCliente = Order.Customer || '';
         console.log("CARGANDO CLIENTE", savedCliente);
         setCliente(savedCliente);
         setClientIcon(savedCliente !== '');
-    }, [Order.Customer]);
+    }, [Order?.Customer]);
 
     const updateCliente = () => {
         const newOrder = { ...Order };
@@ -426,7 +430,7 @@ const Orden = ({modeInterface, iInterface, OrderID, DeleteOrder, handleOrderCust
     };
 
     // Agrego lógica para determinar dinámicamente el ícono y su color según estado
-    const savedCliente = Order.Customer || '';
+    const savedCliente = Order?.Customer || '';
     const isEditing = cliente !== savedCliente;
     const iconType = clientIcon ? faCheck : faFloppyDisk;
     let iconColor;
@@ -530,6 +534,11 @@ const Orden = ({modeInterface, iInterface, OrderID, DeleteOrder, handleOrderCust
       setItemsSeleccionadosPago(new Set(availableIds));
     };
 
+    // Verificación de seguridad: si Order no existe o fue eliminada, no renderizar
+    if (!Order || !Order.OrderID) {
+      return null;
+    }
+
     return (
         <>
         <div className="card" style={{backgroundColor: colorOrder}}>
@@ -569,7 +578,12 @@ const Orden = ({modeInterface, iInterface, OrderID, DeleteOrder, handleOrderCust
                 </div>
                 <div className="col-5 d-flex align-items-center orderNum">
                     <div className="orderNumText">{`Pedido: ${Order.OrderID}`}</div>
-                    <button onClick={() => DeleteOrder(Order.OrderID)}>
+                    <button 
+                        onClick={() => DeleteOrder(Order.OrderID)}
+                        disabled={true}
+                        style={{ opacity: 0.4, cursor: 'not-allowed' }}
+                        title="Eliminar orden deshabilitado"
+                    >
                         <FontAwesomeIcon icon={faTrash} size="2x" />
                     </button>
                 </div>

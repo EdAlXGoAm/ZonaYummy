@@ -6,8 +6,9 @@ import { faAngleUp, faAngleDown } from '@fortawesome/free-solid-svg-icons';
 import { faPenToSquare, faBan} from '@fortawesome/free-solid-svg-icons';
 
 import DropDown from './../x10DropDown';
+import MarqueeText from './MarqueeText';
 
-const DetailsComanda = ({Comanda, updateComanda}) => {
+const DetailsComanda = ({Comanda, updateComanda, compact = false}) => {
 
     const calcularComandaPrecio = (comanda) => {
         const indexVariante = comanda.Details.SelectedVariant;
@@ -243,31 +244,62 @@ const DetailsComanda = ({Comanda, updateComanda}) => {
     };
     
     //  CHECKBOX == RESPONSIVE ==
-    const [numCheckBoxPerRow, setNumCheckBoxPerRow] = useState (6);
+    const [numCheckBoxPerRow, setNumCheckBoxPerRow] = useState(compact ? 4 : 6);
     const containerRef = useRef(null);
+    const lastCalculatedValue = useRef(compact ? 4 : 6);
+    
     const updateNumCheckBoxPerRow = (width) => {
-        const checkBoxWidth = 150;
-        const newNumCheckBoxPerRow = Math.floor(width / checkBoxWidth)*2;
-        setNumCheckBoxPerRow(prevNumCheckBoxPerRow => {
-            return newNumCheckBoxPerRow > 0 ? newNumCheckBoxPerRow : 1;
-        });
+        const checkBoxWidth = compact ? 80 : 150; // Más pequeño en compact
+        const newNumCheckBoxPerRow = Math.floor(width / checkBoxWidth) * 2;
+        const finalValue = newNumCheckBoxPerRow > 0 ? newNumCheckBoxPerRow : (compact ? 4 : 1);
+        
+        // Solo actualizar si el valor cambió significativamente
+        if (Math.abs(finalValue - lastCalculatedValue.current) >= 1) {
+            lastCalculatedValue.current = finalValue;
+            setNumCheckBoxPerRow(finalValue);
+        }
     };
+    
     useEffect(() => {
         const resizeObserver = new ResizeObserver(entries => {
             for (let entry of entries) {
-                const { width, height } = entry.contentRect;
+                const { width } = entry.contentRect;
                 updateNumCheckBoxPerRow(width);
             }
         });
+        
         if (containerRef.current) {
             resizeObserver.observe(containerRef.current);
         }
+        
+        // Recálculo de verificación después de 500ms para corregir posibles errores iniciales
+        const verificationTimeout = setTimeout(() => {
+            if (containerRef.current) {
+                const width = containerRef.current.getBoundingClientRect().width;
+                if (width > 0) {
+                    updateNumCheckBoxPerRow(width);
+                }
+            }
+        }, 500);
+        
+        // Segundo recálculo después de 1.5s por si acaso
+        const secondVerification = setTimeout(() => {
+            if (containerRef.current) {
+                const width = containerRef.current.getBoundingClientRect().width;
+                if (width > 0) {
+                    updateNumCheckBoxPerRow(width);
+                }
+            }
+        }, 1500);
+        
         return () => {
+            clearTimeout(verificationTimeout);
+            clearTimeout(secondVerification);
             if (containerRef.current) {
                 resizeObserver.unobserve(containerRef.current);
             }
         };
-    }, [componentsIsExpanded]);
+    }, [componentsIsExpanded, compact]);
 
     const [allComponentsChecked, setAllComponentsChecked] = useState(false);
     useEffect(() => {
@@ -311,40 +343,69 @@ const DetailsComanda = ({Comanda, updateComanda}) => {
 
     const isPending = Comanda.ComandaPaidStatus === "Pending";
 
-    return (
-        <div>
-            <div className="card-body mb-1 divStyle" style={{backgroundColor: colorStatus, ...(isPending ? {fontFamily: 'Arial, sans-serif'} : {})}}>
+    // En modo compacto: priorizar lectura (platillo + variante) y minimizar íconos
+    const deliverIconWidth = compact ? '28px' : '250px';
+    const mainImageWidth = compact ? '44px' : '200px';
+    const headerFontSize = compact ? '22px' : '25px';
+    const notaFontSize = compact ? '16px' : '25px';
 
-                <div className="row" style={{display: !Comanda.ComandaSwitchNota ? 'none' : 'flex'}}>
-                    <div className='col'>
-                    {/* Text box editable backgroudn red and text blanco BOLD */}
-                        <div className='row'>
-                            <div className='col'>
-                            <p className="textNotaCocina"><span style={{fontSize: '25px'}}>Nota: </span>{Comanda.Notas}</p>
-                            </div>
-                        </div>
+    return (
+        <div className={`resume-card ${compact ? 'resume-card--compact' : ''}`} tabIndex={compact ? 0 : undefined}>
+            {/* Tooltip flotante de nota - FUERA del div con overflow */}
+            {Comanda.ComandaSwitchNota && Comanda.Notas && (
+                <div className="nota-flotante-wrapper">
+                    <div className="nota-flotante-fixed">
+                        <svg 
+                            className="nota-flotante-icon"
+                            xmlns="http://www.w3.org/2000/svg" 
+                            width={compact ? "18" : "24"} 
+                            height={compact ? "18" : "24"} 
+                            viewBox="0 0 24 24" 
+                            fill="#ff4444" 
+                            stroke="#ffffff" 
+                            strokeWidth="1.5"
+                        >
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                            <polyline points="14 2 14 8 20 8" stroke="#ffffff" fill="none"></polyline>
+                        </svg>
+                        <span className="nota-flotante-texto" style={{fontSize: compact ? '13px' : '16px'}}>
+                            {Comanda.Notas}
+                        </span>
                     </div>
                 </div>
+            )}
+            
+            <div className="card-body mb-1 divStyle" style={{backgroundColor: colorStatus, ...(isPending ? {fontFamily: 'Arial, sans-serif'} : {})}}>
+
 
                 <div className="row" style={{display: Comanda.Customer === undefined ? 'none' : 'flex'}}>
                     <div className='col-3'>
                         <div className="row"><div className="col">
-                            <img src={Comanda.ComandaDeliverMode === "Delivery" ? "Ideogram/llevare.png" : "Ideogram/aquie.png" } alt="icon"className="img-fluid" style={{ width: '250px'}}></img>
+                            <img
+                                src={Comanda.ComandaDeliverMode === "Delivery" ? "Ideogram/llevare.png" : "Ideogram/aquie.png" }
+                                alt="icon"
+                                className="img-fluid resume-deliver-icon"
+                                style={{ width: deliverIconWidth }}
+                            />
                         </div></div>
                         <div className="row"><div className="col">
-                            <img src={Comanda.Imagen} alt="icon"className="img-fluid" style={{ width: '200px'}}></img>
+                            <img
+                                src={Comanda.Imagen}
+                                alt="icon"
+                                className="img-fluid resume-main-image"
+                                style={{ width: mainImageWidth }}
+                            />
                         </div></div>
                     </div>
                     <div className='col-9'>
                         <div className="row"><div className="col">
-                            {/* <p className={`textClienteCocina colorTextClienteCocina${Comanda.OrderID % 10}`}><span>{`(${Comanda.OrderID})`} : </span>{Comanda.Customer}</p> */}
-                            <p className={`textClienteCocina colorTextClienteCocina${Comanda.OrderID % 10}`} style={{fontSize: '25px'}}>
+                            <p className={`textClienteCocina colorTextClienteCocina${Comanda.OrderID % 10}`} style={{fontSize: headerFontSize}}>
                                 {Comanda.Customer ? Comanda.Customer : `Cliente ${Comanda.OrderID}`}
                             </p>
                         </div></div>
                         <div className="row"><div className="col">
                             {/* <h2 className="title comandaTextStyleCocina">{Comanda.Platillo}&nbsp;&nbsp;<span style={{textShadow: "0px 0px 10px red"}}>${Comanda.Precio}</span></h2> */}
-                            <h2 className="title comandaTextStyleCocina" style={{fontSize: '25px'}}>{Comanda.Platillo}&nbsp;&nbsp;<span style={{textShadow: "0px 0px 10px red"}}>${Comanda.Precio}</span></h2>
+                            <h2 className="title comandaTextStyleCocina" style={{fontSize: headerFontSize}}>{Comanda.Platillo}&nbsp;&nbsp;<span style={{textShadow: "0px 0px 10px red"}}>${Comanda.Precio}</span></h2>
                         </div></div>
                         <div className="row"><div className="col">
                             <div><span className="titleVariantCocina">
@@ -377,6 +438,7 @@ const DetailsComanda = ({Comanda, updateComanda}) => {
                                             <div>
                                                 <div className='row mb-2'>
                                                     <div className='col textoComponentsCocina' style={{fontSize: "15px"}}>
+                                                        <MarqueeText tolerance={9}>
                                                         {!componente.Checked ? (
                                                             <span className="sinconComponentsCocina" style={{color:"red"}}>SIN </span>
                                                         ): (
@@ -386,6 +448,7 @@ const DetailsComanda = ({Comanda, updateComanda}) => {
                                                         {componente.Precio !== 0 && (
                                                             <span style={{color:"red"}}> ${componente.Precio}</span>
                                                         )}
+                                                        </MarqueeText>
                                                     </div>
                                                 </div>
                                                 
@@ -419,7 +482,9 @@ const DetailsComanda = ({Comanda, updateComanda}) => {
                                                                 <div style={{backgroundColor: '#7cd7ff'}}>
                                                                     <div className="row">
                                                                         <div className='col-10'>
-                                                                            <div className="textOpcionesCocina">{item.Name}</div>
+                                                                            <div className="textOpcionesCocina">
+                                                                                <MarqueeText tolerance={9}>{item.Name}</MarqueeText>
+                                                                            </div>
                                                                         </div>
                                                                         <div className='col-2 d-flex justify-content-center'>
                                                                             <img src={`iconscocina/${item.Name}.png`} alt="icon"className="img-fluid" style={{ width: 'auto', height: '55px', objectFit: 'cover'}}></img>
@@ -447,7 +512,9 @@ const DetailsComanda = ({Comanda, updateComanda}) => {
                                                     <label className="container containerIng">
                                                         <div>
                                                             <div className="row"><div className="col">
-                                                                <div className="textIngredientesCocina">{item.Name || "Nombre Ingrediente"}</div>
+                                                                <div className="textIngredientesCocina">
+                                                                    <MarqueeText tolerance={14}>{item.Name || "Nombre Ingrediente"}</MarqueeText>
+                                                                </div>
                                                             </div></div>
                                                             <div className="row mb-2"><div className="col d-flex justify-content-center">
                                                                 <img src={`iconscocina/${item.Name}.png`} alt="icon" className="img-fluid" style={{ width: 'auto', height: '55px', objectFit: 'cover' }}/>

@@ -139,9 +139,13 @@ const ComandaCard = ({order, modeInterface, Comanda, updateComanda, removeComand
                                 <FontAwesomeIcon style={{color: toggleArrowStatus ? "#ffffff" : "#5d5d5d"}} icon={toggleArrowStatus ? faAngleUp : faAngleDown} size="2x" />
                             </button>
                         </div>
-                            <div className="faButton ml-auto" onClick={() => removeComanda(Comanda)} style={{ cursor: 'pointer' }}>
-                            <FontAwesomeIcon icon={faTrash} style={{color: 'red'}} size="xl" />
-                        </div>
+                            <div 
+                                className="faButton ml-auto" 
+                                style={{ cursor: 'not-allowed', opacity: 0.4 }}
+                                title="Eliminar comanda deshabilitado"
+                            >
+                                <FontAwesomeIcon icon={faTrash} style={{color: 'red'}} size="xl" />
+                            </div>
                     </div>
                     {modeInterface ? (
                         <div className='row mb-2'>
