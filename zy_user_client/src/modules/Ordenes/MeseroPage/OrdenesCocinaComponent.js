@@ -652,11 +652,35 @@ const OrdenesCocina = ({modeInterface, Orders}) => {
                     audio.play();
                 }
             }
+            // ✅ CORREGIDO: Actualizar comandas inmediatamente cuando llega una nueva
+            fetchComandasFromOrders();
         });
         return () => {
             socket.off('NuevaComandaDesdeServidor');
         };
-    }, []);
+    }, [Orders]);
+
+    // ✅ AGREGADO: Listener para cuando se actualiza una comanda desde otro cliente
+    useEffect(() => {
+        socket.on('UpdateComandaDesdeServidor', (data) => {
+            console.log("UpdateComandaDesdeServidor: ", data.msg);
+            fetchComandasFromOrders();
+        });
+        return () => {
+            socket.off('UpdateComandaDesdeServidor');
+        };
+    }, [Orders]);
+
+    // ✅ AGREGADO: Listener para cuando se elimina una comanda desde otro cliente
+    useEffect(() => {
+        socket.on('DeleteComandaDesdeServidor', (data) => {
+            console.log("DeleteComandaDesdeServidor: ", data.msg);
+            fetchComandasFromOrders();
+        });
+        return () => {
+            socket.off('DeleteComandaDesdeServidor');
+        };
+    }, [Orders]);
 
     const getBebidaDescriptor = (comanda) => {
         const sel = comanda?.Details?.SelectedVariant;

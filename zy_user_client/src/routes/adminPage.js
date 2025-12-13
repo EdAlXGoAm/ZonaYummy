@@ -14,6 +14,8 @@ const AdminPage = () => {
     const [ListaIngredientes, setListaIngredientes] = useState([]);
     const [isModalPlatilloOpen, setIsModalPlatilloOpen] = useState(false);
     const [editPlatilloId, setEditPlatilloId] = useState(null);
+    const [isModalProductoOpen, setIsModalProductoOpen] = useState(false);
+    const [activeTab, setActiveTab] = useState('platillos'); // 'platillos' | 'productos'
 
     const openPlatilloModal = (platilloId = null) => {
         setEditPlatilloId(platilloId);
@@ -23,6 +25,9 @@ const AdminPage = () => {
         setIsModalPlatilloOpen(false);
         setEditPlatilloId(null);
     };
+
+    const openProductoModal = () => setIsModalProductoOpen(true);
+    const closeProductoModal = () => setIsModalProductoOpen(false);
 
     const fetchProductos = () => {
         // console.log("Obteniendo ListaProductos...");
@@ -46,6 +51,7 @@ const AdminPage = () => {
         })
         .then(() => {
             fetchProductos();
+            closeProductoModal();
         })
     };
     const addListaIngredientes = (producto) => {
@@ -97,49 +103,90 @@ const AdminPage = () => {
     };
     
     return(
-        <div>
-            {/* Lista de Platillos (tarjetas) - Visible en la página */}
-            <div className="container-fluid" id="ListaPlatillos">
-                <AddPlatilloForm 
-                    mode="list" 
-                    onEditRequest={openPlatilloModal}
-                />
+        <div className="admin-page">
+            {/* Pestañas de navegación */}
+            <div className="admin-tabs">
+                <button 
+                    className={`admin-tab ${activeTab === 'platillos' ? 'active' : ''}`}
+                    onClick={() => setActiveTab('platillos')}
+                >
+                    <span className="tab-icon">🍽️</span>
+                    <span className="tab-text">Platillos</span>
+                </button>
+                <button 
+                    className={`admin-tab ${activeTab === 'productos' ? 'active' : ''}`}
+                    onClick={() => setActiveTab('productos')}
+                >
+                    <span className="tab-icon">📦</span>
+                    <span className="tab-text">Productos</span>
+                </button>
             </div>
 
-            {/* Modal con formulario de Agregar/Editar Platillo */}
-            {isModalPlatilloOpen && (
-                <div className="modal-overlay" onClick={closePlatilloModal}>
-                    <div className="modal-platillo-content" onClick={(e) => e.stopPropagation()}>
-                        <div className="modal-header">
-                            <h2>{editPlatilloId ? 'Editar Platillo' : 'Agregar Nuevo Platillo'}</h2>
-                            <button className="modal-close-btn" onClick={closePlatilloModal}>✕</button>
-                        </div>
-                        <div className="modal-body">
-                            <AddPlatilloForm 
-                                mode="form"
-                                editPlatilloId={editPlatilloId}
-                                onClose={closePlatilloModal}
-                            />
-                        </div>
+            {/* Contenido de la pestaña Platillos */}
+            {activeTab === 'platillos' && (
+                <div className="tab-content">
+                    {/* Lista de Platillos (tarjetas) - Visible en la página */}
+                    <div className="container-fluid" id="ListaPlatillos">
+                        <AddPlatilloForm 
+                            mode="list" 
+                            onEditRequest={openPlatilloModal}
+                        />
                     </div>
+
+                    {/* Modal con formulario de Agregar/Editar Platillo */}
+                    {isModalPlatilloOpen && (
+                        <div className="modal-overlay" onClick={closePlatilloModal}>
+                            <div className="modal-platillo-content" onClick={(e) => e.stopPropagation()}>
+                                <div className="modal-header">
+                                    <h2>{editPlatilloId ? 'Editar Platillo' : 'Agregar Nuevo Platillo'}</h2>
+                                    <button className="modal-close-btn" onClick={closePlatilloModal}>✕</button>
+                                </div>
+                                <div className="modal-body">
+                                    <AddPlatilloForm 
+                                        mode="form"
+                                        editPlatilloId={editPlatilloId}
+                                        onClose={closePlatilloModal}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </div>
             )}
 
-            <div className="container-fluid" id="AgregarProductos">
-                <AddProductoForm addProductoBtn={addProductoBtn} />
-            </div>
-            <hr></hr>
-            {/* <div className="container-fluid" id="ListaProductos">
-                <ShowProductos ListaProductos={ListaProductos} Mode={"List"} selectProductoBtn={null} deleteProductoBtn={deleteProductoBtn} />
-            </div> */}
-            <hr></hr>
-            <div className="container-fluid" id="CalcularPrecios">
-                <CalcularPreciosForm ListaIngredientes={ListaIngredientes} updateCostoIngrediente={updateCostoIngrediente} />
-            </div>
-            <div className="container-fluid" id="ListaProductos">
-                <ShowProductos ListaProductos={ListaProductos} Mode={"Card"} selectProductoBtn={selectProductoBtn} deleteProductoBtn={deleteProductoBtn} />
-            </div>
-            <hr></hr>
+            {/* Contenido de la pestaña Productos */}
+            {activeTab === 'productos' && (
+                <div className="tab-content">
+                    {/* Botón para agregar nuevo producto */}
+                    <div className="add-producto-btn-container">
+                        <button type="button" className="btn btn-lg add-new-producto-btn" onClick={openProductoModal}>
+                            ➕ Agregar Nuevo Producto
+                        </button>
+                    </div>
+
+                    <div className="container-fluid" id="CalcularPrecios">
+                        <CalcularPreciosForm ListaIngredientes={ListaIngredientes} updateCostoIngrediente={updateCostoIngrediente} />
+                    </div>
+                    <div className="container-fluid" id="ListaProductos">
+                        <ShowProductos ListaProductos={ListaProductos} Mode={"Card"} selectProductoBtn={selectProductoBtn} deleteProductoBtn={deleteProductoBtn} />
+                    </div>
+
+                    {/* Modal con formulario de Agregar Producto */}
+                    {isModalProductoOpen && (
+                        <div className="modal-overlay" onClick={closeProductoModal}>
+                            <div className="modal-producto-content" onClick={(e) => e.stopPropagation()}>
+                                <div className="modal-header modal-header-producto">
+                                    <h2>Agregar Nuevo Producto</h2>
+                                    <button className="modal-close-btn" onClick={closeProductoModal}>✕</button>
+                                </div>
+                                <div className="modal-body">
+                                    <AddProductoForm addProductoBtn={addProductoBtn} onClose={closeProductoModal} />
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            )}
         </div>
     );
 }
