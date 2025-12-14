@@ -25,5 +25,9 @@ router.get('/getByOrderCustStatus/:OrderCustStatus', orderController.getByOrderC
 
 // Ruta para obtener la suma de CuentaTotal de órdenes de un día específico considerando offset de zona horaria
 router.get('/getSumByDate/:date/:offset', orderController.getSumByDate);
+// Ruta para obtener desglose de ventas por método de pago (cash/card/transfer) de un día específico
+router.get('/getSumByDateV2Breakdown/:date/:offset', orderController.getSumByDateV2Breakdown);
+// Conteo de platillos vendidos por día (basado en OrderDate) con desglose por variante
+router.get('/getItemCountsByDate/:date/:offset', orderController.getItemCountsByDate);
 
 module.exports = router;

@@ -6,6 +6,8 @@ const paymentSchema = new Schema({
   fecha: { type: Date, default: Date.now },
   monto: { type: Number, required: true },
   tipoPago: { type: String, enum: ['monto','items'], default: 'monto' },
+  // Compatibilidad: si no existe en registros viejos, se asume 'cash' (efectivo)
+  metodoPago: { type: String, enum: ['cash','card','transfer'], default: 'cash' },
   itemsPagados: [ Number ]
 });
 

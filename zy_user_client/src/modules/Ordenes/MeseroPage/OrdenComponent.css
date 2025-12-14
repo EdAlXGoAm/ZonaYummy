@@ -27,7 +27,7 @@
     background-color: #abe1e3;
     border-radius: 40px;
     padding: 0px 10px;
-    margin: 0px 10px;
+    margin: 0px 6px 0px 0px; /* menos separación hacia la barra de progreso */
 }
 
 .orderNum > button {
@@ -63,6 +63,78 @@
     font-size: 25px;
     font-weight: bold;
     margin: 0px 10px 0px 0px;
+}
+
+.orderPayMini {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    margin-right: 6px;
+    min-width: 120px;
+    max-width: 160px;
+    flex: 0 1 150px; /* más compacto */
+}
+.orderPayMini__row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 6px;
+    line-height: 1.05;
+}
+.orderPayMini__title {
+    font-weight: 800;
+    letter-spacing: 0.2px;
+}
+.orderPayMini__title.isPaid {
+    color: #166534;
+}
+.orderPayMini__title.isPending {
+    color: #9a3412;
+}
+.orderPayMini__amount {
+    font-size: clamp(0.9rem, 1.1vw, 1.05rem);
+    font-weight: 900;
+    white-space: nowrap;
+}
+.orderPayMini__amount.isPaid {
+    color: #166534;
+}
+.orderPayMini__amount.isPending {
+    color: #dc2626;
+}
+.orderPayMini__bar {
+    position: relative;
+    /* Más corta (menos ancho), pero más gruesa para mantener visibilidad */
+    width: clamp(90px, 10vw, 125px);
+    margin-left: auto; /* la alinea a la derecha dentro del bloque */
+    height: 8px;
+    border-radius: 999px;
+    background: #f3f4f6;
+    overflow: hidden;
+    margin-left: 0px !important;
+}
+.orderPayMini__fill {
+    height: 100%;
+    width: 0%;
+    border-radius: 999px;
+    transition: width 550ms cubic-bezier(0.2, 0.8, 0.2, 1);
+    background: linear-gradient(90deg, #22c55e, #16a34a);
+}
+.orderPayMini__bar.isPending .orderPayMini__fill {
+    background: linear-gradient(90deg, #f97316, #ef4444);
+}
+@keyframes miniShimmer {
+    0% { transform: translateX(-140%); }
+    100% { transform: translateX(240%); }
+}
+.orderPayMini__bar.isPending::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    width: 35%;
+    background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.65) 50%, rgba(255,255,255,0) 100%);
+    transform: translateX(-140%);
+    animation: miniShimmer 1.4s ease-in-out infinite;
 }
 
 .orderTotal > button {
@@ -119,6 +191,253 @@
     padding-bottom: 1rem;
     margin-bottom: 1rem;
 }
+
+/* ===== Resumen de cobro (barra de progreso) ===== */
+.payment-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.4rem 0.65rem;
+    border-radius: 999px;
+    font-size: 0.85rem;
+    line-height: 1;
+    border: 1px solid transparent;
+    user-select: none;
+}
+.payment-badge--paid {
+    background: #ecfdf5;
+    border-color: #10b981;
+    color: #065f46;
+}
+.payment-badge--pending {
+    background: #fff7ed;
+    border-color: #fb923c;
+    color: #9a3412;
+}
+
+.payment-progress {
+    border: 1px solid #e5e7eb;
+    border-radius: 0.75rem;
+    padding: 0.75rem;
+    background: #ffffff;
+}
+.payment-progress__meta {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+}
+.payment-progress__bar {
+    position: relative;
+    height: 12px;
+    border-radius: 999px;
+    background: #f3f4f6;
+    overflow: hidden;
+}
+.payment-progress__fill {
+    height: 100%;
+    width: 0%;
+    border-radius: 999px;
+    transition: width 650ms cubic-bezier(0.2, 0.8, 0.2, 1);
+    background: linear-gradient(90deg, #22c55e, #16a34a);
+}
+.payment-progress__dot {
+    position: absolute;
+    top: 50%;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    transform: translateY(-50%);
+    background: #ffffff;
+    border: 2px solid #16a34a;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.15);
+}
+.payment-progress__numbers {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+    margin-top: 0.75rem;
+}
+.payment-progress__num {
+    border-radius: 0.75rem;
+    padding: 0.65rem 0.75rem;
+    border: 1px solid #e5e7eb;
+    background: #fafafa;
+}
+.payment-progress__num .label {
+    font-size: 0.8rem;
+    color: #6b7280;
+}
+.payment-progress__num .value {
+    font-size: 1.05rem;
+    font-weight: 800;
+    margin-top: 0.1rem;
+}
+.payment-progress__num--paid {
+    background: #f0fdf4;
+    border-color: #bbf7d0;
+}
+.payment-progress__num--paid .value {
+    color: #166534;
+}
+.payment-progress__num--pending {
+    background: #fff7ed;
+    border-color: #fed7aa;
+}
+.payment-progress__num--pending .value {
+    color: #9a3412;
+}
+
+/* Animación sutil cuando falta cobrar */
+@keyframes paymentPulse {
+    0%   { box-shadow: 0 0 0 0 rgba(251, 146, 60, 0.35); }
+    70%  { box-shadow: 0 0 0 10px rgba(251, 146, 60, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(251, 146, 60, 0); }
+}
+@keyframes paymentShimmer {
+    0% { transform: translateX(-120%); }
+    100% { transform: translateX(220%); }
+}
+.payment-progress--pending .payment-progress__bar::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.65) 50%, rgba(255,255,255,0) 100%);
+    width: 40%;
+    transform: translateX(-120%);
+    animation: paymentShimmer 1.4s ease-in-out infinite;
+}
+.payment-progress--pending {
+    animation: paymentPulse 1.6s ease-out infinite;
+}
+
+/* Estado completado */
+.payment-progress--paid .payment-progress__fill {
+    background: linear-gradient(90deg, #22c55e, #10b981);
+}
+
+/* Toggle de método de pago (💵/💳/📱) */
+.payment-method-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 36px;
+    border-radius: 10px;
+    border: 1px solid #e5e7eb;
+    background: #ffffff;
+    cursor: pointer;
+    transition: transform 120ms ease, box-shadow 120ms ease, background-color 120ms ease;
+}
+.payment-method-toggle:hover {
+    background: #f9fafb;
+    box-shadow: 0 6px 16px rgba(0,0,0,0.10);
+    transform: translateY(-1px);
+}
+.payment-method-toggle:active {
+    transform: translateY(0px) scale(0.98);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.10);
+}
+.payment-method-toggle__emoji {
+    font-size: 20px;
+    line-height: 1;
+}
+
+/* Historial de cobros: hora arriba del monto, estilo "timestamp" */
+.payment-history-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 12px;
+    border: 1px solid #eef2f7;
+    border-radius: 12px;
+    background: #ffffff;
+    margin-bottom: 10px;
+}
+.payment-history-left {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center; /* centra verticalmente el texto respecto a hora/monto */
+}
+.payment-history-desc {
+    font-size: 12px;
+    color: #4b5563;
+    line-height: 1.25;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    line-clamp: 2;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+}
+.payment-method-inline {
+    border: none;
+    background: transparent;
+    padding: 0;
+    margin-right: 6px;
+    cursor: pointer;
+    font-size: 16px;
+    line-height: 1;
+}
+.payment-method-inline:hover {
+    transform: translateY(-1px);
+}
+.payment-method-inline:active {
+    transform: translateY(0px) scale(0.98);
+}
+.payment-history-right {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    justify-content: center; /* centra verticalmente hora+monto */
+    gap: 6px;
+    flex: 0 0 auto;
+    min-width: 104px;
+}
+.payment-time-badge {
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.3px;
+    color: #374151;
+    background: #f3f4f6;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 4px 8px;
+    line-height: 1;
+    white-space: nowrap;
+}
+.payment-amount {
+    font-size: 14px;
+    font-weight: 900;
+    color: #111827;
+    white-space: nowrap;
+    text-align: center; /* centrado bajo el badge de hora */
+}
+
+.payment-history-total {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 8px 12px;
+    border-top: 1px solid #e5e7eb;
+}
+.payment-history-total__label {
+    font-size: 12px;
+    color: #6b7280;
+    font-weight: 800;
+    letter-spacing: 0.2px;
+}
+.payment-history-total__value {
+    font-size: 18px;
+    font-weight: 950;
+    color: #111827;
+    white-space: nowrap;
+    text-align: right;
+}
+
 /* Tab styles (omit payment method tabs) */
 /* Items list */
 .items-content {

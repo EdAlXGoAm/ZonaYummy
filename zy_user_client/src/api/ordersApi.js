@@ -106,6 +106,28 @@ const ordersApi = {
         }
     },
 
+    // Ventas diarias con desglose por método (cash/card/transfer/total) usando pagos v2
+    getSumByDateV2Breakdown: async (date, offset) => {
+        try {
+            const response = await Axios.get(`${baseURL}/getSumByDateV2Breakdown/${date}/${offset}`);
+            return response.data;
+        } catch (error) {
+            console.error("ordersAPI error: ", error);
+            throw error;
+        }
+    },
+
+    // Conteo de platillos/variantes vendidos por día (basado en OrderDate)
+    getItemCountsByDate: async (date, offset) => {
+        try {
+            const response = await Axios.get(`${baseURL}/getItemCountsByDate/${date}/${offset}`);
+            return response.data;
+        } catch (error) {
+            console.error("ordersAPI error: ", error);
+            throw error;
+        }
+    },
+
     // Registra un pago parcial o total usando la API v2
     addPayment: async (orderID, payment) => {
         try {
@@ -121,6 +143,17 @@ const ordersApi = {
     getOrderV2: async (id) => {
         try {
             const response = await Axios.get(`${baseURL}/v2/${id}`);
+            return response.data;
+        } catch (error) {
+            console.error("ordersAPI error: ", error);
+            throw error;
+        }
+    },
+
+    // Actualizar método de pago (💵/💳/📱) de un cobro ya registrado (API v2)
+    updatePaymentMethod: async (orderID, pagoId, metodoPago) => {
+        try {
+            const response = await Axios.put(`${baseURL}/v2/${orderID}/pagos/${pagoId}`, { metodoPago });
             return response.data;
         } catch (error) {
             console.error("ordersAPI error: ", error);

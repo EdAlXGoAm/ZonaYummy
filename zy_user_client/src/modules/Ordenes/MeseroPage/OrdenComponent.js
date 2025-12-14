@@ -29,16 +29,67 @@ const Orden = ({modeInterface, iInterface, OrderID, DeleteOrder, handleOrderCust
     const skipNextFetch = useRef(false);
     const [expandedComandas, setExpandedComandas] = useState([]);
     const [modalPagoVisible, setModalPagoVisible] = useState(false);
-    const [modoMontoEspecifico, setModoMontoEspecifico] = useState(false);
     const [montoEspecifico, setMontoEspecifico] = useState(0);
     const [itemsSeleccionadosPago, setItemsSeleccionadosPago] = useState(new Set());
     const [orderV2, setOrderV2] = useState({ pagos: [], pagado: 0, pendiente: 0 });
-    const [paymentTab, setPaymentTab] = useState('items');
+    // Método de pago para EL PRÓXIMO cobro (compat: si no viene, backend asume 'cash')
+    const [metodoPago, setMetodoPago] = useState('cash'); // 'cash' | 'card' | 'transfer'
+    // Edición de método de pago por cobro ya registrado (historial)
+    const [paymentMethodEdits, setPaymentMethodEdits] = useState({}); // { [pagoId]: 'cash'|'card'|'transfer' }
     // Flags para controles de cobro
     const hasMontoPago = orderV2.pagos.some(p => p.tipoPago === 'monto');
     // Calcular pendiente: suma de precios de comandas menos lo ya cobrado
     const computedPending = comandas.reduce((sum, c) => sum + (c.Precio || 0), 0) - (orderV2.pagado || 0);
     const isFullyPaid = computedPending <= 0;
+
+    const getMetodoPagoEmoji = (m) => {
+      if (m === 'card') return '💳';
+      if (m === 'transfer') return '📱';
+      return '💵';
+    };
+    const toggleMetodoPago = () => {
+      setMetodoPago(prev => prev === 'cash' ? 'card' : (prev === 'card' ? 'transfer' : 'cash'));
+    };
+
+    const toggleMetodoPagoValue = (prev) => (prev === 'cash' ? 'card' : (prev === 'card' ? 'transfer' : 'cash'));
+    const hasPaymentEdits = Object.keys(paymentMethodEdits).length > 0;
+    const handleTogglePaymentHistoryMethod = (pago) => {
+      const pagoId = pago?._id;
+      if (!pagoId) return;
+      const current = (paymentMethodEdits[pagoId] || pago.metodoPago || 'cash');
+      const next = toggleMetodoPagoValue(current);
+      setPaymentMethodEdits(prev => ({ ...prev, [pagoId]: next }));
+    };
+    const cancelPaymentHistoryEdits = () => {
+      setPaymentMethodEdits({});
+    };
+    const savePaymentHistoryEdits = async () => {
+      try {
+        const edits = paymentMethodEdits;
+        const entries = Object.entries(edits);
+        if (entries.length === 0) return;
+
+        await Promise.all(entries.map(([pagoId, m]) => ordersApi.updatePaymentMethod(OrderID, pagoId, m)));
+        const fresh = await ordersApi.getOrderV2(OrderID);
+        setOrderV2(fresh);
+        setPaymentMethodEdits({});
+        notify('Cambios guardados');
+        setModalPagoVisible(false);
+      } catch (err) {
+        notify(`Error al guardar cambios: ${err}`);
+      }
+    };
+
+    // ==== Resumen compacto para tarjeta (usa Order local; no depende del modal/orderV2) ====
+    const cardTotal = Order?.CuentaTotal || 0;
+    const cardPagado = Order?.pagado || 0;
+    const cardPendiente = (typeof Order?.pendiente === 'number')
+      ? Math.max(0, Order.pendiente)
+      : Math.max(0, cardTotal - cardPagado);
+    const cardIsPaid = cardTotal > 0 ? cardPendiente <= 0 : false;
+    const cardPercentPaid = cardTotal > 0
+      ? Math.min(100, Math.max(0, (cardPagado / cardTotal) * 100))
+      : (cardIsPaid ? 100 : 0);
 
     const fetchOrder = () => {
         const fetchOrderStartTime = performance.now();
@@ -444,17 +495,30 @@ const Orden = ({modeInterface, iInterface, OrderID, DeleteOrder, handleOrderCust
 
     const confirmarCobroParcial = () => {
         const pending = computedPending;
-        const items = modoMontoEspecifico ? [] : Array.from(itemsSeleccionadosPago);
-        const monto = modoMontoEspecifico
-          ? montoEspecifico
-          : comandas
-              .filter(c => itemsSeleccionadosPago.has(c.ComandaId))
-              .reduce((sum, c) => sum + c.Precio, 0);
+        const items = Array.from(itemsSeleccionadosPago);
+        const montoItems = comandas
+          .filter(c => itemsSeleccionadosPago.has(c.ComandaId))
+          .reduce((sum, c) => sum + c.Precio, 0);
+
+        const hasAmount = (montoEspecifico || 0) > 0;
+        const hasItems = items.length > 0;
+
+        if (!hasAmount && !hasItems) {
+          notify('Selecciona ítems o ingresa un monto');
+          return;
+        }
+        // Seguridad extra: evitamos mezclar (aunque la UI intenta hacerlo mutuamente excluyente)
+        if (hasAmount && hasItems) {
+          notify('Elige solo una opción: ítems o monto');
+          return;
+        }
+
+        const monto = hasAmount ? montoEspecifico : montoItems;
         if (monto <= 0 || monto > pending) {
           notify('Monto inválido');
           return;
         }
-        ordersApi.addPayment(Order.OrderID, { monto, tipoPago: modoMontoEspecifico ? 'monto' : 'items', itemsPagados: items })
+        ordersApi.addPayment(Order.OrderID, { monto, tipoPago: hasAmount ? 'monto' : 'items', itemsPagados: hasAmount ? [] : items, metodoPago })
           .then((updated) => {
             setOrder(updated);
             comandasApi.getComandasByOrderId(OrderID)
@@ -470,19 +534,11 @@ const Orden = ({modeInterface, iInterface, OrderID, DeleteOrder, handleOrderCust
       if (modalPagoVisible) {
         setItemsSeleccionadosPago(new Set());
         setMontoEspecifico(0);
-        // Fetch orderV2 first to check for existing 'monto' payments
+        setMetodoPago('cash');
+        setPaymentMethodEdits({});
         ordersApi.getOrderV2(OrderID)
           .then(data => {
             setOrderV2(data);
-            // Check if there's a 'monto' payment AFTER fetching the data
-            const hasExistingMontoPago = data.pagos.some(p => p.tipoPago === 'monto');
-            if (hasExistingMontoPago) {
-              setPaymentTab('amount'); // Default to amount tab
-              setModoMontoEspecifico(true); // Ensure amount mode is on
-            } else {
-              setPaymentTab('items'); // Default to items tab
-              setModoMontoEspecifico(false);
-            }
           })
           .catch(err => console.error(err));
       }
@@ -495,7 +551,7 @@ const Orden = ({modeInterface, iInterface, OrderID, DeleteOrder, handleOrderCust
         notify('No hay monto pendiente');
         return;
       }
-      ordersApi.addPayment(OrderID, { monto: pending, tipoPago: 'monto', itemsPagados: [] })
+      ordersApi.addPayment(OrderID, { monto: pending, tipoPago: 'monto', itemsPagados: [], metodoPago })
         .then(updated => {
           setOrder(updated);
           setOrderV2(updated);
@@ -525,6 +581,16 @@ const Orden = ({modeInterface, iInterface, OrderID, DeleteOrder, handleOrderCust
       .filter(p => p.tipoPago === 'items')
       .flatMap(p => p.itemsPagados || [])
     );
+
+    // ==== UI helpers para resumen de cobro (barra de progreso) ====
+    const totalOrden = Order?.CuentaTotal || 0;
+    const pagadoActual = orderV2?.pagado || 0;
+    const pendienteActual = Math.max(0, computedPending || 0);
+    const percentPaid = totalOrden > 0
+      ? Math.min(100, Math.max(0, (pagadoActual / totalOrden) * 100))
+      : (isFullyPaid ? 100 : 0);
+
+    const totalCobradoHistorial = (orderV2?.pagos || []).reduce((sum, p) => sum + (p?.monto || 0), 0);
 
     // Función para seleccionar todos los ítems disponibles
     const handleSelectAllItems = () => {
@@ -569,26 +635,30 @@ const Orden = ({modeInterface, iInterface, OrderID, DeleteOrder, handleOrderCust
             </div>
 
             <div className="row">
-                <div className="col-2 d-flex align-items-center">
+                <div className="col-2 d-flex align-items-center justify-content-center pe-0">
                     <div className="toggleArrowButtons">
                         <button style={{backgroundColor:  toggleArrowStatus ? "#ffffff" : "#7ed65b"}} onClick={() => setToggleArrowStatus(!toggleArrowStatus)}>
                             <FontAwesomeIcon style={{color: toggleArrowStatus ? "#5d5d5d" : "#ffffff"}} icon={toggleArrowStatus ? faAngleUp : faAngleDown} size="2x" />
                         </button>
                     </div>
                 </div>
-                <div className="col-5 d-flex align-items-center orderNum">
+                <div className="col-4 d-flex align-items-center orderNum ps-0 pe-0">
                     <div className="orderNumText">{`Pedido: ${Order.OrderID}`}</div>
-                    <button 
-                        onClick={() => DeleteOrder(Order.OrderID)}
-                        disabled={true}
-                        style={{ opacity: 0.4, cursor: 'not-allowed' }}
-                        title="Eliminar orden deshabilitado"
-                    >
-                        <FontAwesomeIcon icon={faTrash} size="2x" />
-                    </button>
                 </div>
-                <div className="col-5 d-flex align-items-center orderTotal">
-                    <div className='orderTotalText'>{`Restante: $${Order.pendiente}`}</div>
+                <div className="col-6 d-flex align-items-center orderTotal ps-0">
+                    <div className="orderPayMini">
+                        <div className="orderPayMini__row">
+                            <div className={`orderPayMini__title ${cardIsPaid ? 'isPaid' : 'isPending'}`}>
+                                {cardIsPaid ? 'OK' : 'Pend.'}
+                            </div>
+                            <div className={`orderPayMini__amount ${cardIsPaid ? 'isPaid' : 'isPending'}`}>
+                                ${cardPendiente.toFixed(2)}
+                            </div>
+                        </div>
+                        <div className={`orderPayMini__bar ${cardIsPaid ? 'isPaid' : 'isPending'}`}>
+                            <div className="orderPayMini__fill" style={{ width: `${cardPercentPaid}%` }} />
+                        </div>
+                    </div>
                     <button onClick={() => setModalPagoVisible(true)} style={{ marginRight: '8px' }}>
                         <FontAwesomeIcon icon={faHandHoldingUsd} size='2x' />
                     </button>
@@ -654,134 +724,209 @@ const Orden = ({modeInterface, iInterface, OrderID, DeleteOrder, handleOrderCust
               </div>
               <div className='modal-body'>
                 <div className='modal-summary'>
-                  <div className='flex justify-between mb-2'>
-                    <span>Total Orden:</span>
-                    <span className='font-bold'>${(Order.CuentaTotal || 0).toFixed(2)}</span>
+                  <div className='flex justify-between items-end mb-3'>
+                    <div>
+                      <div className='text-sm text-gray-600'>Total de la orden</div>
+                      <div className='text-xl font-bold'>${totalOrden.toFixed(2)}</div>
+                    </div>
+                    <div className={`payment-badge ${isFullyPaid ? 'payment-badge--paid' : 'payment-badge--pending'}`}>
+                      {isFullyPaid ? (
+                        <>
+                          <FontAwesomeIcon icon={faCheck} /> <span>Orden saldada</span>
+                        </>
+                      ) : (
+                        <>
+                          <span>Falta: </span><b>${pendienteActual.toFixed(2)}</b>
+                        </>
+                      )}
+                    </div>
                   </div>
-                  <div className='flex justify-between mb-2'>
-                    <span>Pagado:</span>
-                    <span className='text-green-600 font-bold'>${orderV2.pagado.toFixed(2)}</span>
-                  </div>
-                  <div className='flex justify-between text-lg'>
-                    <span className='font-semibold'>Pendiente:</span>
-                    <span className='font-bold text-red-600'>${computedPending.toFixed(2)}</span>
+
+                  <div className={`payment-progress ${isFullyPaid ? 'payment-progress--paid' : 'payment-progress--pending'}`}>
+                    <div className='payment-progress__meta'>
+                      <span className='text-sm text-gray-600'>Progreso de cobro</span>
+                      <span className='text-sm font-bold'>{Math.round(percentPaid)}%</span>
+                    </div>
+                    <div
+                      className='payment-progress__bar'
+                      role='progressbar'
+                      aria-valuemin={0}
+                      aria-valuemax={100}
+                      aria-valuenow={Math.round(percentPaid)}
+                      aria-label='Progreso de cobro'
+                    >
+                      <div className='payment-progress__fill' style={{ width: `${percentPaid}%` }} />
+                      {percentPaid > 0 && <div className='payment-progress__dot' style={{ left: `calc(${percentPaid}% - 6px)` }} />}
+                    </div>
+                    <div className='payment-progress__numbers'>
+                      <div className='payment-progress__num payment-progress__num--paid'>
+                        <div className='label'>Pagado</div>
+                        <div className='value'>${pagadoActual.toFixed(2)}</div>
+                      </div>
+                      <div className='payment-progress__num payment-progress__num--pending'>
+                        <div className='label'>Pendiente</div>
+                        <div className='value'>${pendienteActual.toFixed(2)}</div>
+                      </div>
+                    </div>
                   </div>
                 </div>
                 {/* Historial de pagos */}
                 {orderV2.pagos.length > 0 && (
                   <div className='mb-4'>
                     <h5 className='font-medium mb-2'>Historial de cobros</h5>
-                    <div className='overflow-auto scrollbar-hide mb-4' style={{ maxHeight: '6rem' }}>
+                    <div className='overflow-auto scrollbar-hide mb-1' style={{ maxHeight: '6rem' }}>
                       {orderV2.pagos.map((p, i) => (
-                        <div key={i} className='mb-2'>
-                          <div className='flex justify-between text-sm'>
-                            <span>{format12Hour(p.fecha)}</span>
-                            <span>${p.monto.toFixed(2)}</span>
-                          <span className='text-xs text-gray-600'>
-                            {p.tipoPago === 'items'
-                              ? `Items: ${p.itemsPagados.map(id => {
-                                  const item = comandas.find(c => c.ComandaId === id);
-                                  return item ? item.Platillo : id;
-                                }).join(', ')}`
-                              : 'Pago monto fijo'}
-                          </span>
+                        <div key={p?._id || i} className='payment-history-item'>
+                          <div className='payment-history-left'>
+                            <div className='payment-history-desc'>
+                              <button
+                                type="button"
+                                className="payment-method-inline"
+                                onClick={() => handleTogglePaymentHistoryMethod(p)}
+                                title="Cambiar método de este cobro"
+                              >
+                                {getMetodoPagoEmoji(paymentMethodEdits[p._id] || p.metodoPago || 'cash')}
+                              </button>
+                              <span>
+                                {p.tipoPago === 'items'
+                                  ? `Items: ${p.itemsPagados.map(id => {
+                                      const item = comandas.find(c => c.ComandaId === id);
+                                      return item ? item.Platillo : id;
+                                    }).join(', ')}`
+                                  : 'Pago monto fijo'}
+                              </span>
+                            </div>
+                          </div>
+                          <div className='payment-history-right'>
+                            <div className='payment-time-badge'>{format12Hour(p.fecha)}</div>
+                            <div className='payment-amount'>${p.monto.toFixed(2)}</div>
                           </div>
                         </div>
                       ))}
+                    </div>
+                    <div className='payment-history-total'>
+                      <span className='payment-history-total__label'>Total cobrado</span>
+                      <span className='payment-history-total__value'>${totalCobradoHistorial.toFixed(2)}</span>
                     </div>
                   </div>
                 )}
                 {!isFullyPaid && (
                   <>
-                    {/* Tabs de selección */}
-                    <div className='flex border-b mb-4'>
+                    <div className='flex items-center justify-between mb-3'>
+                      <div className='text-sm text-gray-600'>
+                        Método para este cobro:
+                      </div>
+                      <button
+                        type='button'
+                        className='payment-method-toggle'
+                        onClick={toggleMetodoPago}
+                        title='Cambiar método (efectivo / tarjeta / transferencia)'
+                      >
+                        <span className='payment-method-toggle__emoji'>{getMetodoPagoEmoji(metodoPago)}</span>
+                      </button>
+                    </div>
+                    {/* Selección de ítems + monto en una sola vista */}
+                    {hasMontoPago && (
+                      <div className='mb-3 text-sm text-gray-600'>
+                        Ya existe un cobro por <b>monto fijo</b>. Por consistencia, la selección de ítems queda deshabilitada; puedes ingresar un monto adicional abajo.
+                      </div>
+                    )}
+
+                    <div className='flex justify-end mb-2'>
                       {!hasMontoPago && (
-                        <div
-                          className={`payment-tab ${paymentTab === 'items' ? 'active' : ''}`}
+                        <button
+                          className='text-sm text-blue-600 underline'
                           onClick={() => {
-                            setPaymentTab('items');
-                            setModoMontoEspecifico(false);
+                            setMontoEspecifico(0);
+                            handleSelectAllItems();
                           }}
                         >
-                          <i className='fas fa-list-ul mr-2'></i>Selección Ítems
-                        </div>
+                          Seleccionar todos
+                        </button>
                       )}
-                      <div
-                        className={`payment-tab ${paymentTab === 'amount' ? 'active' : ''}`}
-                        onClick={() => {
-                          setPaymentTab('amount');
-                          setItemsSeleccionadosPago(new Set());
-                          setModoMontoEspecifico(true);
-                        }}
-                      >
-                        <i className='fas fa-dollar-sign mr-2'></i>Ingresar Monto
+                    </div>
+
+                    <div className='items-content scrollbar-hide mb-4'>
+                      {comandas.filter(c => !paidItemIds.has(c.ComandaId)).map(c => (
+                        <div key={c.ComandaId} className='relative'>
+                          <input
+                            type='checkbox'
+                            id={`chk_${c.ComandaId}`}
+                            className='item-checkbox'
+                            disabled={hasMontoPago}
+                            checked={itemsSeleccionadosPago.has(c.ComandaId)}
+                            onChange={e => {
+                              if (hasMontoPago) return;
+                              const s = new Set(itemsSeleccionadosPago);
+                              e.target.checked ? s.add(c.ComandaId) : s.delete(c.ComandaId);
+                              setItemsSeleccionadosPago(s);
+                              // Si el usuario selecciona ítems, limpiamos el monto
+                              if (s.size > 0) setMontoEspecifico(0);
+                            }}
+                          />
+                          <label htmlFor={`chk_${c.ComandaId}`} className='item-label'>
+                            <div className='icon-container'>
+                              <FontAwesomeIcon
+                                icon={faCheck}
+                                className={itemsSeleccionadosPago.has(c.ComandaId) ? 'text-green-600' : 'text-transparent'}
+                              />
+                            </div>
+                            <div className='flex-1'><div className='font-medium'>{c.Platillo}</div></div>
+                            <div className='font-bold'>${c.Precio.toFixed(2)}</div>
+                          </label>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Input de monto al final (mutuamente excluyente con selección de ítems) */}
+                    <div className='mb-4'>
+                      <div className='text-sm text-gray-600 mb-2'>
+                        O ingresa un monto a cobrar (esto limpiará la selección de ítems):
+                      </div>
+                      <div className='relative'>
+                        <span className='absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500'>$</span>
+                        <span className='absolute inset-y-0 right-0 flex items-center pr-3 text-gray-500' title='Método de pago seleccionado'>
+                          {getMetodoPagoEmoji(metodoPago)}
+                        </span>
+                        <input
+                          type='number'
+                          className='w-full pl-8 pr-10 py-3 border rounded-lg focus:ring-blue-500 focus:border-blue-500'
+                          placeholder='0.00'
+                          max={computedPending}
+                          min='0'
+                          step='0.01'
+                          value={montoEspecifico}
+                          onChange={e => {
+                            const next = parseFloat(e.target.value);
+                            const safe = Number.isFinite(next) ? next : 0;
+                            setMontoEspecifico(safe);
+                            if (safe > 0) setItemsSeleccionadosPago(new Set());
+                          }}
+                        />
                       </div>
                     </div>
-                    {/* Items Content */}
-                    {paymentTab === 'items' && (
-                      <div>
-                        <div className='flex justify-end mb-2'>
-                          <button
-                            className='text-sm text-blue-600 underline'
-                            onClick={handleSelectAllItems}
-                          >
-                            Seleccionar todos
-                          </button>
-                        </div>
-                        <div className='items-content scrollbar-hide mb-4'>
-                          {comandas.filter(c => !paidItemIds.has(c.ComandaId)).map(c => (
-                            <div key={c.ComandaId} className='relative'>
-                              <input
-                                type='checkbox'
-                                id={`chk_${c.ComandaId}`}
-                                className='item-checkbox'
-                                checked={itemsSeleccionadosPago.has(c.ComandaId)}
-                                onChange={e => {
-                                  const s = new Set(itemsSeleccionadosPago);
-                                  e.target.checked ? s.add(c.ComandaId) : s.delete(c.ComandaId);
-                                  setItemsSeleccionadosPago(s);
-                                }}
-                              />
-                              <label htmlFor={`chk_${c.ComandaId}`} className='item-label'>
-                                <div className='icon-container'>
-                                  <FontAwesomeIcon
-                                    icon={faCheck}
-                                    className={itemsSeleccionadosPago.has(c.ComandaId) ? 'text-green-600' : 'text-transparent'}
-                                  />
-                                </div>
-                                <div className='flex-1'><div className='font-medium'>{c.Platillo}</div></div>
-                                <div className='font-bold'>${c.Precio.toFixed(2)}</div>
-                              </label>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                    {/* Amount Content */}
-                    {paymentTab === 'amount' && (
-                      <div className='mb-4'>
-                        <div className='relative'>
-                          <span className='absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500'>$</span>
-                          <input
-                            type='number'
-                            className='w-full pl-8 pr-4 py-3 border rounded-lg focus:ring-blue-500 focus:border-blue-500'
-                            placeholder='0.00'
-                            max={computedPending}
-                            min='0'
-                            step='0.01'
-                            value={montoEspecifico}
-                            onChange={e => setMontoEspecifico(parseFloat(e.target.value))}
-                          />
-                        </div>
-                      </div>
-                    )}
                   </>
                 )}
                 {/* Acciones */}
                 <div className='flex justify-end space-x-3'>
-                  {!isFullyPaid && (
+                  {hasPaymentEdits ? (
                     <>
-                      {paymentTab === 'items' && (
+                      <button
+                        className='bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition flex items-center'
+                        onClick={savePaymentHistoryEdits}
+                      >
+                        <i className='fas fa-save mr-2'></i>Guardar
+                      </button>
+                      <button
+                        className='bg-white border border-gray-300 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-100 transition flex items-center'
+                        onClick={() => { cancelPaymentHistoryEdits(); setModalPagoVisible(false); }}
+                      >
+                        <i className='fas fa-times mr-2'></i>Cancelar
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      {!isFullyPaid && (
                         <button
                           className='bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition flex items-center'
                           onClick={confirmarCobroParcial}
@@ -789,22 +934,14 @@ const Orden = ({modeInterface, iInterface, OrderID, DeleteOrder, handleOrderCust
                           <i className='fas fa-check-circle mr-2'></i>Confirmar
                         </button>
                       )}
-                      {paymentTab === 'amount' && (
-                        <button
-                          className='bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition flex items-center'
-                          onClick={confirmarCobroParcial}
-                        >
-                          <i className='fas fa-check-circle mr-2'></i>Confirmar
-                        </button>
-                      )}
+                      <button
+                        className='bg-white border border-gray-300 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-100 transition flex items-center'
+                        onClick={() => setModalPagoVisible(false)}
+                      >
+                        <i className='fas fa-times mr-2'></i>Cancelar
+                      </button>
                     </>
                   )}
-                  <button
-                    className='bg-white border border-gray-300 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-100 transition flex items-center'
-                    onClick={() => setModalPagoVisible(false)}
-                  >
-                    <i className='fas fa-times mr-2'></i>Cancelar
-                  </button>
                 </div>
               </div>
             </div>

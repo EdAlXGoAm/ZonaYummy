@@ -1,4 +1,5 @@
 const Order = require("../models/orderV2Model");
+const Comanda = require("../models/comandaModel");
 
 exports.getOrders = (req, res) => {
     Order.find()
@@ -137,6 +138,122 @@ exports.getSumByDate = (req, res) => {
     .then(result => {
         const total = result.length > 0 ? result[0].totalSum : 0;
         res.json({ totalSum: total });
+    })
+    .catch(err => res.status(400).json({ error: "Error: " + err }));
+};
+
+// Función para obtener desglose de ventas por método de pago para un día específico considerando offset
+// Fuente: pagos[] dentro de OrderV2. Se usa pagos.fecha (no OrderDate).
+// Compatibilidad: si un pago no trae metodoPago, se considera 'cash'.
+exports.getSumByDateV2Breakdown = (req, res) => {
+    const dateParam = req.params.date;
+    const offsetParam = parseInt(req.params.offset, 10);
+    if (isNaN(offsetParam)) {
+        return res.status(400).json({ error: "Offset inválido" });
+    }
+    const partes = dateParam.split('-');
+    if (partes.length !== 3) {
+        return res.status(400).json({ error: "Formato de fecha inválido, use YYYY-MM-DD" });
+    }
+    const [year, month, day] = partes.map(n => parseInt(n, 10));
+    if ([year, month, day].some(isNaN)) {
+        return res.status(400).json({ error: "Fecha inválida" });
+    }
+
+    const startUtc = new Date(Date.UTC(year, month - 1, day, 0 - offsetParam, 0, 0, 0));
+    const endUtc = new Date(Date.UTC(year, month - 1, day, 23 - offsetParam, 59, 59, 999));
+
+    Order.aggregate([
+        { $unwind: "$pagos" },
+        { $match: { "pagos.fecha": { $gte: startUtc, $lte: endUtc } } },
+        {
+            $group: {
+                _id: { $ifNull: ["$pagos.metodoPago", "cash"] },
+                total: { $sum: "$pagos.monto" }
+            }
+        }
+    ])
+    .then(result => {
+        let cash = 0, card = 0, transfer = 0;
+        result.forEach(r => {
+            const key = (r && r._id) ? r._id : 'cash';
+            if (key === 'card') card += r.total || 0;
+            else if (key === 'transfer') transfer += r.total || 0;
+            else cash += r.total || 0; // default cash + cualquier inesperado
+        });
+        const total = cash + card + transfer;
+        res.json({ date: dateParam, cash, card, transfer, total });
+    })
+    .catch(err => res.status(400).json({ error: "Error: " + err }));
+};
+
+// Conteo de platillos/variantes vendidos por día (basado en OrderDate) considerando offset
+exports.getItemCountsByDate = (req, res) => {
+    const dateParam = req.params.date;
+    const offsetParam = parseInt(req.params.offset, 10);
+    if (isNaN(offsetParam)) {
+        return res.status(400).json({ error: "Offset inválido" });
+    }
+    const partes = dateParam.split('-');
+    if (partes.length !== 3) {
+        return res.status(400).json({ error: "Formato de fecha inválido, use YYYY-MM-DD" });
+    }
+    const [year, month, day] = partes.map(n => parseInt(n, 10));
+    if ([year, month, day].some(isNaN)) {
+        return res.status(400).json({ error: "Fecha inválida" });
+    }
+
+    const startUtc = new Date(Date.UTC(year, month - 1, day, 0 - offsetParam, 0, 0, 0));
+    const endUtc = new Date(Date.UTC(year, month - 1, day, 23 - offsetParam, 59, 59, 999));
+
+    // Join Comandas -> Orders por OrderID para filtrar por OrderDate
+    Comanda.aggregate([
+        {
+            $lookup: {
+                from: "zy-jorders-temp-241024",
+                localField: "OrderID",
+                foreignField: "OrderID",
+                as: "order"
+            }
+        },
+        { $unwind: "$order" },
+        { $match: { "order.OrderDate": { $gte: startUtc, $lte: endUtc } } },
+        {
+            $addFields: {
+                variantName: {
+                    $let: {
+                        vars: {
+                            sel: { $ifNull: ["$Details.SelectedVariant", null] },
+                            varsArr: { $ifNull: ["$Details.Variants", []] }
+                        },
+                        in: {
+                            $let: {
+                                vars: { v: { $arrayElemAt: ["$$varsArr", "$$sel"] } },
+                                in: { $ifNull: ["$$v.VariantName", ""] }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        {
+            $group: {
+                _id: {
+                    Platillo: { $ifNull: ["$Platillo", ""] },
+                    Variante: { $ifNull: ["$variantName", ""] }
+                },
+                qty: { $sum: 1 }
+            }
+        },
+        { $sort: { qty: -1, "_id.Platillo": 1, "_id.Variante": 1 } }
+    ])
+    .then(result => {
+        const items = result.map(r => ({
+            platillo: r._id?.Platillo || '',
+            variante: r._id?.Variante || '',
+            qty: r.qty || 0
+        }));
+        res.json({ date: dateParam, items });
     })
     .catch(err => res.status(400).json({ error: "Error: " + err }));
 };
