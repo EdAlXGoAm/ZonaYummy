@@ -41,6 +41,7 @@ const Orden = ({modeInterface, iInterface, OrderID, DeleteOrder, handleOrderCust
     // Calcular pendiente: suma de precios de comandas menos lo ya cobrado
     const computedPending = comandas.reduce((sum, c) => sum + (c.Precio || 0), 0) - (orderV2.pagado || 0);
     const isFullyPaid = computedPending <= 0;
+    const isEmptyOrder = (comandas?.length || 0) === 0;
 
     const getMetodoPagoEmoji = (m) => {
       if (m === 'card') return '💳';
@@ -667,6 +668,21 @@ const Orden = ({modeInterface, iInterface, OrderID, DeleteOrder, handleOrderCust
                     </button>
                 </div>
             </div>
+            {modeInterface && isEmptyOrder && (
+                <div className="row mt-2">
+                    <div className="col-12 d-flex justify-content-center">
+                        <button
+                            type="button"
+                            className="btn btn-danger empty-order-delete-btn"
+                            onClick={() => DeleteOrder(Order.OrderID)}
+                            title="Eliminar orden vacía"
+                        >
+                            <FontAwesomeIcon icon={faTrash} style={{ marginRight: '8px' }} />
+                            Eliminar orden vacía
+                        </button>
+                    </div>
+                </div>
+            )}
             {toggleArrowStatus && (
             <div>
                 {modeInterface && (

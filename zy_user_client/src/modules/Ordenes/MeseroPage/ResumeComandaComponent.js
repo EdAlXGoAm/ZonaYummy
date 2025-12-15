@@ -548,11 +548,11 @@ const DetailsComanda = ({Comanda, updateComanda, compact = false}) => {
                                 {Comanda.Details.Variants[Comanda.Details.SelectedVariant].Ingredientes.length > 0 && (<hr/>)}
                                 {Comanda.Details.Variants[Comanda.Details.SelectedVariant].Extras.map((extra, indexExtra) => (
                                     extra.Checked && (
-                                        <div key={indexExtra} className={`col-${12/numCheckBoxPerRow}`}>
+                                        <div key={indexExtra} className={isPending ? 'col-12' : `col-${12/numCheckBoxPerRow}`}>
                                             {isPending ? (
-                                                <div>
-                                                    <span>{extra.Extra || "Nombre Ing Extra"}</span>
-                                                    {extra.Precio !== 0 && (<strong> ${extra.Precio}</strong>)}
+                                                <div className="resumeExtraLine">
+                                                    <span className="resumeExtraName">{extra.Extra || "Nombre Ing Extra"}</span>
+                                                    {extra.Precio !== 0 && (<span className="resumeExtraPrice">${extra.Precio}</span>)}
                                                 </div>
                                             ) : (
                                                 <label className="container">
@@ -570,12 +570,12 @@ const DetailsComanda = ({Comanda, updateComanda, compact = false}) => {
                                 {Comanda.Details.Variants[Comanda.Details.SelectedVariant].Extras.length > 0 && (<hr/>)}
                                 {Comanda.Details.Variants[Comanda.Details.SelectedVariant].Adicionales.map((adicional, indexAdicional) => (
                                     adicional.Checked && (
-                                        <div key={indexAdicional} className={`col-${12/numCheckBoxPerRow}`}>
+                                        <div key={indexAdicional} className={isPending ? 'col-12' : `col-${12/numCheckBoxPerRow}`}>
                                             {isPending ? (
-                                                <div>
-                                                    <span>{adicional.Adicional || "Nombre Adicional"}</span>
-                                                    {adicional.Precio !== 0 && (<strong> ${adicional.Precio}</strong>)}
-                                                    <span> - {adicional.Opciones[adicional.SelectedOpcion]}</span>
+                                                <div className="resumeExtraLine">
+                                                    <span className="resumeExtraName">{adicional.Adicional || "Nombre Adicional"}</span>
+                                                    {adicional.Precio !== 0 && (<span className="resumeExtraPrice">${adicional.Precio}</span>)}
+                                                    <span className="resumeExtraMeta">- {adicional.Opciones[adicional.SelectedOpcion]}</span>
                                                 </div>
                                             ) : (
                                                 <>

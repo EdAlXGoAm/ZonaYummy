@@ -307,7 +307,7 @@ const OrdersInterfaceTest = ({ modeInterface }) => { // modeInterface = true -> 
         });
     };
     const handleDeleteOrder = (OrderID) => {
-        const confirm = window.confirm("Eliminar Platillo");
+        const confirm = window.confirm("Eliminar orden");
             if (confirm) {
                 ordersApi.deleteOrder(OrderID)
                 .then(() => {
@@ -317,7 +317,7 @@ const OrdersInterfaceTest = ({ modeInterface }) => { // modeInterface = true -> 
                 })
                 .catch(err => {
                     console.log(err);
-                    notify(`Error al eliminar una comanda: ${err}`);
+                    notify(`Error al eliminar orden: ${err}`);
                     // alert("Error al eliminar una comanda");
                 });
             }

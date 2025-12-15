@@ -677,12 +677,14 @@
 }
 
 .resume-card--compact .titleComponentsCocina,
-.resume-card--compact .titleOpcionesCocina,
 .resume-card--compact .titleIngredientesCocina {
     font-family: Arial, sans-serif !important;
     font-size: 13px !important;
     color: #00bcd4 !important;
     padding-left: 0 !important;
+}
+.resume-card--compact .titleOpcionesCocina{
+    font-size: 16px !important;
 }
 
 .resume-card--compact .textNotaCocina {
@@ -750,12 +752,15 @@
 
 /* Fallback para textos que no usen el componente MarqueeText */
 .resume-card--compact .textIngredientesCocina,
-.resume-card--compact .textoComponentsCocina,
-.resume-card--compact .textOpcionesCocina {
+.resume-card--compact .textoComponentsCocina {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: clip;
     font-size: 11px !important;
+}
+
+.resume-card--compact .textOpcionesCocina{
+    font-size: 16px !important;
 }
 
 .resume-card--compact .sinconComponentsCocina {

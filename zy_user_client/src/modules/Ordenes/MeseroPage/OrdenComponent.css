@@ -143,6 +143,14 @@
     outline: none;
     border: none;
 }
+
+/* Botón centrado para eliminar órdenes vacías (solo mesero) */
+.empty-order-delete-btn {
+    font-weight: 900;
+    border-radius: 14px;
+    padding: 10px 14px;
+    box-shadow: 0 10px 20px rgba(220, 38, 38, 0.18);
+}
 .orderTotal > button > svg {
     padding: 3px 0px;
     color: #39c939;
