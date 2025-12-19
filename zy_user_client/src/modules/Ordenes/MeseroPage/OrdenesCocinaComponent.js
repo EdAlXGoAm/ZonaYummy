@@ -17,6 +17,10 @@ const OrdenesCocina = ({modeInterface, Orders}) => {
     const [arrayComidas, setArrayComidas] = useState([]);
     const [arrayWaffles, setArrayWaffles] = useState([]);
 
+    // Estado para controlar si el audio está habilitado
+    const [audioEnabled, setAudioEnabled] = useState(false);
+    const [showAudioModal, setShowAudioModal] = useState(false);
+
     // Estado para el menú contextual (comandas individuales)
     const [contextMenu, setContextMenu] = useState({
         visible: false,
@@ -478,178 +482,153 @@ const OrdenesCocina = ({modeInterface, Orders}) => {
     }
 
     
+    // Función helper para reproducir audio solo si está habilitado
+    const playAudioIfEnabled = (audioPath) => {
+        if (audioEnabled && !modeInterface) {
+            const audio = new Audio(audioPath);
+            audio.play().catch(err => {
+                console.error("Error al reproducir audio:", err);
+            });
+        }
+    };
+
+    // Mostrar modal de audio al iniciar (solo en modo cocina)
+    useEffect(() => {
+        if (!modeInterface) {
+            setShowAudioModal(true);
+        }
+    }, [modeInterface]);
+
     useEffect(() => { // NewComanda
         socket.on('NuevaComandaDesdeServidor', (data) => {
             if (!modeInterface) {
                 const audioMsg = `${data.msg.split('-')[0]}-${data.msg.split('-')[2]}`;
                 console.log("MSG_Audio: ", audioMsg);
                 if (audioMsg === "Add-Hamburguesa") {
-                    const audio = new Audio("ComandaAudios/Solicitan-Hamburguesa.wav");
-                    audio.play();
+                    playAudioIfEnabled("ComandaAudios/Solicitan-Hamburguesa.wav");
                 }
                 else if (audioMsg === "Add-Vaso de Postre") {
-                    const audio = new Audio("ComandaAudios/Solicitan-VasoDePostre.wav");
-                    audio.play();
+                    playAudioIfEnabled("ComandaAudios/Solicitan-VasoDePostre.wav");
                 }
                 else if (audioMsg === "Add-Pay de Limón") {
-                    const audio = new Audio("ComandaAudios/Solicitan-Pay-de-Limon.wav");
-                    audio.play();
+                    playAudioIfEnabled("ComandaAudios/Solicitan-Pay-de-Limon.wav");
                 }
                 else if (audioMsg === "Add-Cheese Cake") {
-                    const audio = new Audio("ComandaAudios/Solicitan-Cheese-Cake.wav");
-                    audio.play();
+                    playAudioIfEnabled("ComandaAudios/Solicitan-Cheese-Cake.wav");
                 }
                 else if (audioMsg === "Add-Maruchan Loca") {
-                    const audio = new Audio("ComandaAudios/Solicitan-Maruchan-Loca.wav");
-                    audio.play();
+                    playAudioIfEnabled("ComandaAudios/Solicitan-Maruchan-Loca.wav");
                 }
                 else if (audioMsg === "Add-Vaso de Esquites") {
-                    const audio = new Audio("ComandaAudios/Solicitan-Esquites.wav");
-                    audio.play();
+                    playAudioIfEnabled("ComandaAudios/Solicitan-Esquites.wav");
                 }
                 else if (audioMsg === "Add-Doriesquites") {
-                    const audio = new Audio("ComandaAudios/Solicitan-Doriesquites.wav");
-                    audio.play();
+                    playAudioIfEnabled("ComandaAudios/Solicitan-Doriesquites.wav");
                 }
                 else if (audioMsg === "Add-Maruchan con Suadero") {
-                    const audio = new Audio("ComandaAudios/Solicitan-Maruchan-Suadero.wav");
-                    audio.play();
+                    playAudioIfEnabled("ComandaAudios/Solicitan-Maruchan-Suadero.wav");
                 }
                 else if (audioMsg === "Add-Alitas a la BBQ") {
-                    const audio = new Audio("ComandaAudios/Solicitan-Alitas.wav");
-                    audio.play();
+                    playAudioIfEnabled("ComandaAudios/Solicitan-Alitas.wav");
                 }
                 else if (audioMsg === "Add-Rebanada de Pizza") {
-                    const audio = new Audio("ComandaAudios/Solicitan-Rebanada-Pizza.wav");
-                    audio.play();
+                    playAudioIfEnabled("ComandaAudios/Solicitan-Rebanada-Pizza.wav");
                 }
                 else if (audioMsg === "Add-Papas a la Francesa") {
-                    const audio = new Audio("ComandaAudios/Solicitan-Papas.wav");
-                    audio.play();
+                    playAudioIfEnabled("ComandaAudios/Solicitan-Papas.wav");
                 }
                 else if (audioMsg === "Add-Hot Dog") {
-                    const audio = new Audio("ComandaAudios/Solicitan-Hotdog.wav");
-                    audio.play();
+                    playAudioIfEnabled("ComandaAudios/Solicitan-Hotdog.wav");
                 }
                 else if (audioMsg === "Add-Salchipulpos") {
-                    const audio = new Audio("ComandaAudios/Solicitan-Salchipulpos.wav");
-                    audio.play();
+                    playAudioIfEnabled("ComandaAudios/Solicitan-Salchipulpos.wav");
                 }
                 else if (audioMsg === "Add-Sincronizadas") {
-                    const audio = new Audio("ComandaAudios/Solicitan-Sincronizadas.wav");
-                    audio.play();
+                    playAudioIfEnabled("ComandaAudios/Solicitan-Sincronizadas.wav");
                 }
                 else if (audioMsg === "Add-Donitas") {
-                    const audio = new Audio("ComandaAudios/Solicitan-Donitas.wav");
-                    audio.play();
+                    playAudioIfEnabled("ComandaAudios/Solicitan-Donitas.wav");
                 }
                 else if (audioMsg === "Add-Bubble Waffle") {
-                    const audio = new Audio("ComandaAudios/Solicitan-Waffle.wav");
-                    audio.play();
+                    playAudioIfEnabled("ComandaAudios/Solicitan-Waffle.wav");
                 }
                 else if (audioMsg === "Add-Café") {
-                    const audio = new Audio("ComandaAudios/Solicitan-Cafe.wav");
-                    audio.play();
+                    playAudioIfEnabled("ComandaAudios/Solicitan-Cafe.wav");
                 }
                 else if (audioMsg === "Add-Frappé") {
-                    const audio = new Audio("ComandaAudios/Solicitan-Frappe.wav");
-                    audio.play();
+                    playAudioIfEnabled("ComandaAudios/Solicitan-Frappe.wav");
                 }
                 else if (audioMsg === "Add-Malteada") {
-                    const audio = new Audio("ComandaAudios/Solicitan-Malteada.wav");
-                    audio.play();
+                    playAudioIfEnabled("ComandaAudios/Solicitan-Malteada.wav");
                 }
                 else if (audioMsg === "Add-Esquimo") {
-                    const audio = new Audio("ComandaAudios/Solicitan-Esquimo.wav");
-                    audio.play();
+                    playAudioIfEnabled("ComandaAudios/Solicitan-Esquimo.wav");
                 }
                 else if (audioMsg === "Add-Bubble Soda") {
-                    const audio = new Audio("ComandaAudios/Solicitan-Bubble-Soda.wav");
-                    audio.play();
+                    playAudioIfEnabled("ComandaAudios/Solicitan-Bubble-Soda.wav");
                 }
                 else if (audioMsg === "Add-Agua Fresca") {
-                    const audio = new Audio("ComandaAudios/Solicitan-Agua-Fresca.wav");
-                    audio.play();
+                    playAudioIfEnabled("ComandaAudios/Solicitan-Agua-Fresca.wav");
                 }
                 else if (audioMsg === "Add-Refresco") {
-                    const audio = new Audio("ComandaAudios/Solicitan-Refresco.wav");
-                    audio.play();
+                    playAudioIfEnabled("ComandaAudios/Solicitan-Refresco.wav");
                 }
                 else if (audioMsg === "Add-Ensalada") {
-                    const audio = new Audio("ComandaAudios/Solicitan-Ensalada.wav");
-                    audio.play();
+                    playAudioIfEnabled("ComandaAudios/Solicitan-Ensalada.wav");
                 }
                 else if (audioMsg === "Add-Platanos Fritos") {
-                    const audio = new Audio("ComandaAudios/Solicitan--PlatanosFritos.wav");
-                    audio.play();
+                    playAudioIfEnabled("ComandaAudios/Solicitan--PlatanosFritos.wav");
                 }
                 else if (audioMsg === "Add-Nuggets con Papas") {
-                    const audio = new Audio("ComandaAudios/Solicitan--Nuggets.wav");
-                    audio.play();
+                    playAudioIfEnabled("ComandaAudios/Solicitan--Nuggets.wav");
                 }
                 else if (audioMsg === "Add-Pastel") {
-                    const audio = new Audio("ComandaAudios/Solicitan-Pastel.wav");
-                    audio.play();
+                    playAudioIfEnabled("ComandaAudios/Solicitan-Pastel.wav");
                 }
                 else if (audioMsg === "Add-Combo 1 Donitas") {
-                    const audio = new Audio("ComandaAudios/Combo1.wav");
-                    audio.play();
+                    playAudioIfEnabled("ComandaAudios/Combo1.wav");
                 }
                 else if (audioMsg === "Add-Combo 2 Burguer") {
-                    const audio = new Audio("ComandaAudios/Combo2.wav");
-                    audio.play();
+                    playAudioIfEnabled("ComandaAudios/Combo2.wav");
                 }
                 else if (audioMsg === "Add-Combo 3 Alitas") {
-                    const audio = new Audio("ComandaAudios/Combo3.wav");
-                    audio.play();
+                    playAudioIfEnabled("ComandaAudios/Combo3.wav");
                 }
                 else if (audioMsg === "Add-Nachos") {
-                    const audio = new Audio("ComandaAudios/nachos.wav");
-                    audio.play();
+                    playAudioIfEnabled("ComandaAudios/nachos.wav");
                 }
                 else if (audioMsg === "Add-Banana Split") {
-                    const audio = new Audio("ComandaAudios/bananasplit.wav");
-                    audio.play();
+                    playAudioIfEnabled("ComandaAudios/bananasplit.wav");
                 }
                 else if (audioMsg === "Add-Avena") {
-                    const audio = new Audio("ComandaAudios/avena.wav");
-                    audio.play();
+                    playAudioIfEnabled("ComandaAudios/avena.wav");
                 }
                 else if (audioMsg === "Add-Sangria") {
-                    const audio = new Audio("ComandaAudios/sangria.wav");
-                    audio.play();
+                    playAudioIfEnabled("ComandaAudios/sangria.wav");
                 }
                 else if (audioMsg === "Add-Esquites con Suadero") {
-                    const audio = new Audio("ComandaAudios/esquitessuadero.wav");
-                    audio.play();
+                    playAudioIfEnabled("ComandaAudios/esquitessuadero.wav");
                 }
                 else if (audioMsg === "Add-Tortas") {
-                    const audio = new Audio("ComandaAudios/tortas.wav");
-                    audio.play();
+                    playAudioIfEnabled("ComandaAudios/tortas.wav");
                 } // ----------------------
                 else if (audioMsg === "Add-PROMO hamburguesa sencilla") {
-                    const audio = new Audio("ComandaAudios/PROMO1.wav");
-                    audio.play();
+                    playAudioIfEnabled("ComandaAudios/PROMO1.wav");
                 }
                 else if (audioMsg === "Add-PROMO hamburguesas suizas") {
-                    const audio = new Audio("ComandaAudios/PROMO2.wav");
-                    audio.play();
+                    playAudioIfEnabled("ComandaAudios/PROMO2.wav");
                 }
                 else if (audioMsg === "Add-PROMO Salchipulpos") {
-                    const audio = new Audio("ComandaAudios/PROMO3.wav");
-                    audio.play();
+                    playAudioIfEnabled("ComandaAudios/PROMO3.wav");
                 }
                 else if (audioMsg === "Add-PROMO Frappes") {
-                    const audio = new Audio("ComandaAudios/PROMO4.wav");
-                    audio.play();
+                    playAudioIfEnabled("ComandaAudios/PROMO4.wav");
                 }
                 else if (audioMsg === "Add-PROMO Salchi Nuggets") {
-                    const audio = new Audio("ComandaAudios/PROMO5.wav");
-                    audio.play();
+                    playAudioIfEnabled("ComandaAudios/PROMO5.wav");
                 }
                 else if (audioMsg === "Add-PROMO Dos Nuggets") {
-                    const audio = new Audio("ComandaAudios/PROMO6.wav");
-                    audio.play();
+                    playAudioIfEnabled("ComandaAudios/PROMO6.wav");
                 }
             }
             // ✅ CORREGIDO: Actualizar comandas inmediatamente cuando llega una nueva
@@ -873,12 +852,25 @@ const OrdenesCocina = ({modeInterface, Orders}) => {
     console.log(`Condición comidas fila 2+ visible: ${comidasRestantes > 0}`);
     console.log('==============================');
 
+    // Verificar si hay comandas pendientes
+    const hasAnyComandas = arrayBebidas.length > 0 || arrayWaffles.length > 0 || arrayBotanas.length > 0 || arrayComidas.length > 0 || arrayPostres.length > 0;
+
     return (
         <div className="contenedor-elementos">
             {/* Banner de órdenes con burbujas */}
             {renderOrdersBanner()}
             
+            {/* Mensaje cuando no hay comandas pendientes */}
+            {!hasAnyComandas && (
+                <div className="fila-elemento">
+                    <div style={{ textAlign: 'center', padding: '50px', fontSize: '24px', color: '#666' }}>
+                        No hay comandas pendientes
+                    </div>
+                </div>
+            )}
+            
             {/* Layout principal: Bebidas a la izquierda (si hay), resto a la derecha */}
+            {hasAnyComandas && (
             <div className="main-layout">
                 {/* Columna fija de bebidas y waffles - solo si hay alguno */}
                 {(arrayBebidas.length > 0 || arrayWaffles.length > 0) && (
@@ -973,6 +965,7 @@ const OrdenesCocina = ({modeInterface, Orders}) => {
                     )}
                 </div>
             </div>
+            )}
             
             {/* Menú contextual para eliminar */}
             {contextMenu.visible && (
@@ -1046,6 +1039,48 @@ const OrdenesCocina = ({modeInterface, Orders}) => {
                                 Total: ${orderContextMenu.order?.total?.toFixed(0) || 0}
                             </span>
                         </div>
+                        
+                        {/* Lista de comandas para eliminar individualmente */}
+                        {orderContextMenu.order?.comandas && orderContextMenu.order.comandas.length > 0 && (
+                            <div className="context-menu-comandas-list">
+                                <div className="context-menu-section-title">Eliminar comanda:</div>
+                                {orderContextMenu.order.comandas
+                                    .filter(c => c.ComandaPrepStatus !== "ReadyToServe") // Solo mostrar las que no están entregadas
+                                    .map((comanda) => (
+                                        <button 
+                                            key={comanda.ComandaId}
+                                            className="context-menu-btn context-menu-btn-delete-comanda"
+                                            onClick={async () => {
+                                                const comandaId = comanda._id || comanda.ComandaId;
+                                                const platillo = comanda.Platillo;
+                                                
+                                                try {
+                                                    await comandasApi.deleteComanda(comandaId);
+                                                    socket.emit('DeleteComandaDesdeCliente', { msg: `Delete-${comanda.OrderID}-${platillo}` });
+                                                    socket.emit('OrdenActualizadaDesdeCliente', { msg: comanda.OrderID });
+                                                    setActiveComandas(prev => prev.filter(c => c.ComandaId !== comanda.ComandaId));
+                                                    closeOrderContextMenu();
+                                                } catch (error) {
+                                                    console.error("Error al eliminar comanda:", error);
+                                                    alert("Error al eliminar la comanda");
+                                                }
+                                            }}
+                                        >
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                <polyline points="3 6 5 6 21 6"></polyline>
+                                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                                <line x1="10" y1="11" x2="10" y2="17"></line>
+                                                <line x1="14" y1="11" x2="14" y2="17"></line>
+                                            </svg>
+                                            <span>{comanda.Platillo}</span>
+                                            <span className="context-menu-comanda-price">${(comanda.Precio || 0).toFixed(0)}</span>
+                                        </button>
+                                    ))}
+                            </div>
+                        )}
+                        
+                        <div className="context-menu-divider"></div>
+                        
                         <button 
                             className="context-menu-btn context-menu-btn-delete-order"
                             onClick={handleDeleteOrder}
@@ -1064,6 +1099,71 @@ const OrdenesCocina = ({modeInterface, Orders}) => {
                         >
                             Cancelar
                         </button>
+                    </div>
+                </div>
+            )}
+
+            {/* Modal de confirmación de audio */}
+            {showAudioModal && !modeInterface && (
+                <div 
+                    className="context-menu-overlay"
+                    style={{ zIndex: 10001 }}
+                >
+                    <div 
+                        className="context-menu"
+                        style={{
+                            position: 'fixed',
+                            top: '50%',
+                            left: '50%',
+                            transform: 'translate(-50%, -50%)',
+                            minWidth: '400px',
+                            maxWidth: '500px'
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="context-menu-header" style={{ background: 'linear-gradient(135deg, #00bcd4 0%, #ff1493 100%)' }}>
+                            <span className="context-menu-title" style={{ color: '#ffffff', fontSize: '24px' }}>
+                                🔊 Activación de Audio
+                            </span>
+                        </div>
+                        <div style={{ padding: '24px 20px' }}>
+                            <p style={{ 
+                                fontSize: '18px', 
+                                lineHeight: '1.6', 
+                                color: '#333',
+                                marginBottom: '24px',
+                                textAlign: 'center'
+                            }}>
+                                Para que las comandas se puedan escuchar, es necesario hacer clic en <strong>"Aceptar"</strong>.
+                            </p>
+                            <p style={{ 
+                                fontSize: '14px', 
+                                lineHeight: '1.5', 
+                                color: '#666',
+                                textAlign: 'center',
+                                marginBottom: '0'
+                            }}>
+                                Esto activará la reproducción de audio para las nuevas comandas.
+                            </p>
+                        </div>
+                        <div style={{ padding: '0 20px 20px 20px' }}>
+                            <button 
+                                className="context-menu-btn"
+                                style={{
+                                    background: 'linear-gradient(135deg, #28a745 0%, #20c997 100%)',
+                                    color: '#ffffff',
+                                    fontWeight: '700',
+                                    fontSize: '18px',
+                                    marginBottom: '12px'
+                                }}
+                                onClick={() => {
+                                    setAudioEnabled(true);
+                                    setShowAudioModal(false);
+                                }}
+                            >
+                                ✓ Aceptar
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}

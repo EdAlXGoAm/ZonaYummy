@@ -933,5 +933,74 @@
     transform: scale(0.98);
 }
 
+/* Lista de comandas en el menú contextual del banner */
+.context-menu-comandas-list {
+    max-height: 300px;
+    overflow-y: auto;
+    border-bottom: 1px solid #e5e5e5;
+}
+
+.context-menu-section-title {
+    padding: 12px 20px 8px 20px;
+    font-size: 14px;
+    font-weight: 700;
+    color: #666;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    background: #f8f9fa;
+}
+
+.context-menu-btn-delete-comanda {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    padding: 14px 20px;
+    border: none;
+    background: transparent;
+    font-size: 16px;
+    font-weight: 600;
+    color: #dc3545;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    border-bottom: 1px solid #f0f0f0;
+    text-align: left;
+    justify-content: flex-start;
+}
+
+.context-menu-btn-delete-comanda:hover {
+    background: #fff5f5;
+    color: #c82333;
+}
+
+.context-menu-btn-delete-comanda:active {
+    transform: scale(0.98);
+    background: #ffe5e5;
+}
+
+.context-menu-btn-delete-comanda svg {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+    opacity: 0.8;
+}
+
+.context-menu-btn-delete-comanda span {
+    flex: 1;
+    text-align: left;
+}
+
+.context-menu-comanda-price {
+    font-weight: 700;
+    color: #666;
+    margin-left: auto;
+}
+
+.context-menu-divider {
+    height: 1px;
+    background: #e5e5e5;
+    margin: 8px 0;
+}
+
 /* ==================== FIN MENÚ CONTEXTUAL ==================== */
 
