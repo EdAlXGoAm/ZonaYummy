@@ -1,0 +1,1006 @@
+/* Banner de órdenes con burbujas */
+.orders-banner {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 20px;
+    padding: 14px 16px;
+    overflow-x: auto;
+    background: #ffffff;
+    border: 1px solid #e5e5e5;
+    border-radius: 16px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+    margin: 0 0 12px 0;
+    -webkit-overflow-scrolling: touch;
+    width: 100%;
+    box-sizing: border-box;
+    flex: 0 0 auto; /* No crecer, no encoger, tamaño automático */
+}
+
+.orders-banner::-webkit-scrollbar {
+    height: 8px;
+}
+
+.orders-banner::-webkit-scrollbar-track {
+    background: #f5f5f5;
+    border-radius: 10px;
+}
+
+.orders-banner::-webkit-scrollbar-thumb {
+    background: linear-gradient(135deg, #00bcd4 0%, #ff1493 100%);
+    border-radius: 10px;
+}
+
+/* Grupo de orden */
+.order-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+    background: linear-gradient(135deg, #f0f9fa 0%, #fff5f8 100%);
+    border-radius: 16px;
+    border: 1px solid #e5e5e5;
+    flex-shrink: 0;
+    position: relative;
+    /* No seleccionable */
+    user-select: none;
+    -webkit-user-select: none;
+    cursor: pointer;
+    transition: box-shadow 0.2s ease, border-color 0.2s ease, transform 0.15s ease;
+    outline: none;
+}
+
+/* Hover en grupo de orden */
+.order-group:hover {
+    box-shadow: 0 0 0 3px rgba(0, 188, 212, 0.25), 0 4px 16px rgba(0, 188, 212, 0.15);
+    border-color: #00bcd4;
+    transform: translateY(-2px);
+}
+
+/* Focus en grupo de orden (tab) */
+.order-group:focus {
+    box-shadow: 0 0 0 3px rgba(255, 20, 147, 0.3), 0 4px 16px rgba(255, 20, 147, 0.15);
+    border-color: #ff1493;
+}
+
+.order-group::before {
+    content: attr(data-order);
+    position: absolute;
+    top: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: linear-gradient(135deg, #00bcd4 0%, #ff1493 100%);
+    color: #ffffff;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 700;
+    font-family: Arial, sans-serif;
+    letter-spacing: 0.6px;
+    white-space: nowrap;
+}
+
+/* Contenedor de burbuja con precio */
+.platillo-bubble-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    transition: opacity 0.2s ease;
+}
+
+.platillo-bubble-container.inactive {
+    opacity: 0.4;
+}
+
+.platillo-bubble-container.active {
+    opacity: 1;
+}
+
+/* Burbuja de platillo */
+.platillo-bubble {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    overflow: hidden;
+    background: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s ease;
+    border: 2px solid #fff;
+}
+
+.platillo-bubble img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* Burbuja activa (visible en pantalla) */
+.platillo-bubble.active {
+    transform: scale(1.1);
+    border-color: #00bcd4;
+    box-shadow: 0 0 0 4px rgba(0, 188, 212, 0.18);
+}
+
+/* Burbuja inactiva (no visible en pantalla) */
+.platillo-bubble.inactive {
+    transform: scale(0.9);
+    border-color: rgba(255, 255, 255, 0.3);
+}
+
+/* Precio debajo de la burbuja */
+.platillo-price {
+    color: #1a1a1a;
+    font-size: 14px;
+    font-family: Arial, sans-serif;
+    background: rgba(255, 255, 255, 0.9);
+    border: 1px solid #e5e5e5;
+    padding: 3px 8px;
+    border-radius: 8px;
+    white-space: nowrap;
+    font-weight: bold;
+}
+
+/* ==================== LAYOUT PRINCIPAL ==================== */
+
+/* Layout con bebidas a la izquierda */
+.main-layout {
+    display: flex;
+    flex: 1;
+    width: 100%;
+    overflow: hidden;
+}
+
+/* Columna fija de bebidas a la izquierda */
+.bebidas-column {
+    width: 260px;
+    min-width: 260px;
+    background: #ffffff;
+    display: flex;
+    flex-direction: column;
+    border-right: 1px solid #e5e5e5;
+    border-radius: 16px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+    overflow-y: auto;
+}
+
+.bebidas-header {
+    color: #1a1a1a;
+    font-family: Arial, sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    text-align: left;
+    padding: 12px 10px;
+    background: linear-gradient(135deg, #f0f9fa 0%, #fff5f8 100%);
+    border-bottom: 1px solid #e5e5e5;
+    letter-spacing: 0.6px;
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.bebidas-header-count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 28px;
+    height: 28px;
+    padding: 0 8px;
+    border-radius: 999px;
+    background: #ffffff;
+    border: 1px solid #e5e5e5;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    font-size: 13px;
+    font-weight: 700;
+    color: #1a1a1a;
+}
+
+.bebidas-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 10px;
+    overflow-y: auto;
+}
+
+/* ======= SECCIÓN DE WAFFLES EN LA COLUMNA ======= */
+.waffles-header {
+    background: linear-gradient(135deg, #fff8e1 0%, #ffe0b2 100%) !important;
+    border-top: 2px solid #ff9800;
+    margin-top: 8px;
+}
+
+.waffles-header .bebidas-header-count {
+    background: #ff9800;
+    color: #ffffff;
+    border-color: #ff9800;
+}
+
+.waffles-list {
+    background: linear-gradient(180deg, #fffbf5 0%, #ffffff 100%);
+}
+
+/* ======= NUEVO UI: Bebidas agrupadas por pedido ======= */
+
+.bebidas-empty {
+    color: #666;
+    font-size: 13px;
+    padding: 12px;
+    border: 1px dashed #ddd;
+    border-radius: 12px;
+    background: #fafafa;
+}
+
+.bebidas-order-card {
+    background: #ffffff;
+    border: 1px solid #e5e5e5;
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.bebidas-order-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 10px 10px 8px 10px;
+    background: linear-gradient(135deg, #f0f9fa 0%, #fff5f8 100%);
+    border-bottom: 1px solid #e5e5e5;
+}
+
+.bebidas-order-title {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.bebidas-order-number {
+    font-weight: 800;
+    font-size: 14px;
+    color: #1a1a1a;
+    letter-spacing: 0.4px;
+}
+
+.bebidas-order-subtitle {
+    font-size: 12px;
+    color: #666;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 120px;
+}
+
+.bebidas-order-metrics {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
+.bebidas-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 700;
+    border: 1px solid #e5e5e5;
+    background: rgba(255, 255, 255, 0.85);
+    color: #1a1a1a;
+    white-space: nowrap;
+}
+
+.bebidas-pill-total {
+    border: none;
+    color: #ffffff;
+    background: linear-gradient(135deg, #00bcd4 0%, #ff1493 100%);
+    box-shadow: 0 2px 8px rgba(0, 188, 212, 0.25);
+}
+
+.bebidas-items {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 10px;
+}
+
+.bebida-item {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    padding: 8px;
+    border: 1px solid #eee;
+    border-radius: 12px;
+    background: #ffffff;
+    user-select: none;
+    transition: all 0.15s ease-in-out;
+}
+
+.bebida-item:hover {
+    border-color: #00bcd4;
+    box-shadow: 0 0 0 3px rgba(0, 188, 212, 0.15);
+    transform: translateY(-1px);
+}
+
+.bebida-icons-stack {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    flex-shrink: 0;
+}
+
+.bebida-deliver-icon {
+    width: 22px;
+    height: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.bebida-deliver-icon img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+.bebida-thumb {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid #e5e5e5;
+    background: #f8f9fa;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.bebida-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.bebida-thumb-fallback {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, rgba(0, 188, 212, 0.4) 0%, rgba(255, 20, 147, 0.35) 100%);
+}
+
+.bebida-meta {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.bebida-name-row {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    min-width: 0;
+}
+
+.bebida-name {
+    font-weight: 700;
+    font-size: 13px;
+    color: #1a1a1a;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.bebida-qty {
+    font-size: 12px;
+    font-weight: 800;
+    color: #ff1493;
+    flex-shrink: 0;
+}
+
+.bebida-descriptor {
+    font-size: 12px;
+    color: #666;
+    white-space: pre-line;
+    line-height: 1.3;
+}
+
+.bebida-status {
+    width: fit-content;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 999px;
+    border: 1px solid #e5e5e5;
+    background: #f8f9fa;
+    color: #6c757d;
+}
+
+.bebida-status-preparing {
+    background: #fff5f8;
+    color: #c82333;
+    border-color: rgba(255, 20, 147, 0.25);
+}
+
+.bebida-status-editing {
+    background: #e0f7fa;
+    color: #00bcd4;
+    border-color: rgba(0, 188, 212, 0.25);
+}
+
+.bebida-right {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 2px;
+    flex-shrink: 0;
+}
+
+.bebida-price {
+    font-size: 13px;
+    font-weight: 800;
+    color: #1a1a1a;
+}
+
+.bebida-subtotal {
+    font-size: 11px;
+    color: #666;
+}
+
+/* ======= FIN NUEVO UI ======= */
+
+/* Contenido principal a la derecha */
+.content-right {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    overflow-x: hidden; /* Evitar scroll horizontal */
+}
+
+/* ==================== FIN LAYOUT PRINCIPAL ==================== */
+
+/* Etiqueta del total de la cuenta */
+.order-total-label {
+    color: #fff;
+    font-size: 16px;
+    font-family: Arial, sans-serif;
+    font-weight: 700;
+    text-align: center;
+    white-space: nowrap;
+    margin-left: 8px;
+    padding: 8px 12px;
+    background: linear-gradient(135deg, #00bcd4 0%, #ff1493 100%);
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 188, 212, 0.25);
+    letter-spacing: 0.6px;
+}
+
+/* ==================== BANNER DE CATEGORÍAS ==================== */
+.category-banner {
+    width: 100%;
+    padding: 6px 16px;
+    margin-bottom: 10px;
+    background: linear-gradient(135deg, #00bcd4 0%, #ff1493 100%);
+    color: #ffffff;
+    font-family: Arial, sans-serif;
+    font-size: 14px;
+    font-weight: 800;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 188, 212, 0.3);
+}
+
+/* Banner inline para filas combinadas */
+.category-banner-inline {
+    width: 100%;
+    padding: 4px 12px;
+    margin-bottom: 8px;
+    font-size: 12px;
+    border-radius: 6px;
+}
+
+/* Fila combinada (esquites + comida en la misma fila) */
+.fila-combinada {
+    margin-bottom: 10px;
+    overflow: hidden; /* Evitar scroll horizontal */
+}
+
+.fila-combinada > .row {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    gap: 0; /* Sin gap para evitar overflow */
+    margin: 0 -5px; /* Compensar padding de columnas */
+}
+
+.fila-combinada > .row > [class*="col-"] {
+    flex: 0 0 auto;
+    padding: 0 5px;
+    box-sizing: border-box;
+}
+
+/* Columnas específicas para la fila combinada - usar calc para restar padding */
+.fila-combinada .col-3 { width: 25% !important; max-width: 25% !important; flex-basis: 25% !important; }
+.fila-combinada .col-6 { width: 50% !important; max-width: 50% !important; flex-basis: 50% !important; }
+.fila-combinada .col-9 { width: 75% !important; max-width: 75% !important; flex-basis: 75% !important; }
+.fila-combinada .col-12 { width: 100% !important; max-width: 100% !important; flex-basis: 100% !important; }
+
+/* ==================== FIN BANNER DE CATEGORÍAS ==================== */
+
+/* ==================== TOOLTIP FLOTANTE DE NOTAS ==================== */
+/* El wrapper está FUERA del divStyle con overflow, permitiendo que el tooltip sea visible */
+.resume-card--compact {
+    position: relative;
+}
+
+.nota-flotante-wrapper {
+    position: absolute;
+    top: -12px;
+    right: 8px;
+    z-index: 9999;
+    pointer-events: none;
+}
+
+.nota-flotante-fixed {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    background: linear-gradient(135deg, #ff4444 0%, #cc0000 100%);
+    color: #ffffff;
+    padding: 8px 14px;
+    border-radius: 12px;
+    box-shadow: 
+        0 6px 20px rgba(255, 68, 68, 0.6),
+        0 0 0 3px rgba(255, 255, 255, 0.95);
+    animation: nota-pulse 2s ease-in-out infinite;
+    max-width: 250px;
+}
+
+@keyframes nota-pulse {
+    0%, 100% {
+        box-shadow: 
+            0 6px 20px rgba(255, 68, 68, 0.6),
+            0 0 0 3px rgba(255, 255, 255, 0.95);
+    }
+    50% {
+        box-shadow: 
+            0 8px 30px rgba(255, 68, 68, 0.9),
+            0 0 0 5px rgba(255, 255, 255, 1);
+    }
+}
+
+.nota-flotante-fixed .nota-flotante-icon {
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
+.nota-flotante-fixed .nota-flotante-texto {
+    font-family: Arial, sans-serif;
+    font-weight: 800;
+    letter-spacing: 0.3px;
+    text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.4);
+    line-height: 1.3;
+    /* Permitir hasta 2 líneas */
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    white-space: normal;
+    word-break: break-word;
+}
+
+/* ==================== FIN TOOLTIP FLOTANTE ==================== */
+
+/* ==================== NUEVO DISEÑO (GRID RESTO DE CATEGORÍAS) ==================== */
+/* Solo afecta cuando `ResumeComanda` se renderiza con `compact` dentro de OrdenesCocina */
+.resume-card--compact .divStyle {
+    border: 1px solid #e5e5e5 !important;
+    border-radius: 16px !important;
+    padding: 10px !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    /* Texto no seleccionable */
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    /* Transición suave para hover/focus */
+    transition: box-shadow 0.2s ease, border-color 0.2s ease, transform 0.15s ease;
+    cursor: pointer;
+    outline: none;
+}
+
+/* Iluminación al hacer hover */
+.resume-card--compact .divStyle:hover {
+    box-shadow: 0 0 0 3px rgba(0, 188, 212, 0.25), 0 4px 16px rgba(0, 188, 212, 0.2);
+    border-color: #00bcd4 !important;
+    transform: translateY(-2px);
+}
+
+/* Iluminación al hacer focus (tab) */
+.resume-card--compact:focus-within .divStyle,
+.resume-card--compact .divStyle:focus {
+    box-shadow: 0 0 0 3px rgba(255, 20, 147, 0.3), 0 4px 16px rgba(255, 20, 147, 0.2);
+    border-color: #ff1493 !important;
+}
+
+/* Alto controlado + scroll interno cuando hay muchos ingredientes */
+.resume-card--compact .card-body {
+    max-height: 520px;
+    overflow: auto;
+}
+
+.resume-card--compact .textClienteCocina {
+    font-size: 16px !important;
+    border: 1px solid rgba(0, 0, 0, 0.08) !important;
+    border-radius: 12px !important;
+    padding: 4px 8px !important;
+    margin: 0 !important;
+}
+
+.resume-card--compact .comandaTextStyleCocina {
+    background-color: rgba(255, 255, 255, 0.8) !important;
+    color: #1a1a1a !important;
+    border: 1px solid #e5e5e5 !important;
+    border-radius: 12px !important;
+    padding: 4px 10px !important;
+    margin: 0 !important;
+  font-family: Arial, sans-serif !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.2px;
+}
+
+.resume-card--compact .titleVariantCocina {
+  font-family: Arial, sans-serif !important;
+  font-size: 15px !important;
+  font-weight: 900 !important;
+  color: #ffffff !important;
+  padding: 3px 10px !important;
+  border-radius: 999px !important;
+  background: linear-gradient(135deg, #00bcd4 0%, #ff1493 100%) !important;
+  box-shadow: 0 2px 8px rgba(0, 188, 212, 0.22) !important;
+  justify-content: flex-start !important;
+  width: fit-content;
+}
+
+.resume-card--compact .titleComponentsCocina,
+.resume-card--compact .titleIngredientesCocina {
+    font-family: Arial, sans-serif !important;
+    font-size: 13px !important;
+    color: #00bcd4 !important;
+    padding-left: 0 !important;
+}
+.resume-card--compact .titleOpcionesCocina{
+    font-size: 16px !important;
+}
+
+.resume-card--compact .textNotaCocina {
+    font-size: 16px !important;
+    border-radius: 12px !important;
+    padding: 6px 8px !important;
+}
+
+/* Imágenes del header */
+.resume-card--compact .resume-deliver-icon {
+    max-width: 28px !important;
+}
+
+.resume-card--compact .resume-main-image {
+    max-width: 44px !important;
+}
+
+/* Iconos de ingredientes/componentes al 70% (55px -> 38px) */
+.resume-card--compact .containerIng img {
+    height: 38px !important;
+}
+
+/* Evitar scroll horizontal en las tarjetas */
+.resume-card--compact .divStyle {
+    overflow-x: hidden !important;
+}
+
+/* ==================== EFECTO MARQUEE PARA INGREDIENTES ==================== */
+/* Animación de desplazamiento automático ida y vuelta */
+@keyframes marquee-bounce {
+    0%, 15% {
+        transform: translateX(0);
+    }
+    42%, 58% {
+        transform: translateX(var(--marquee-distance, -30px));
+    }
+    85%, 100% {
+        transform: translateX(0);
+    }
+}
+
+/* Contenedor de ingredientes con overflow oculto */
+.resume-card--compact .containerIng {
+    overflow: hidden !important;
+    max-width: 100%;
+}
+
+/* Wrapper del texto con marquee */
+.marquee-wrapper {
+    display: block;
+    overflow: hidden;
+    white-space: nowrap;
+    max-width: 100%;
+}
+
+/* Texto interior - solo anima si tiene la clase needs-marquee */
+.marquee-wrapper .marquee-text {
+    display: inline-block;
+    white-space: nowrap;
+}
+
+.marquee-wrapper.needs-marquee .marquee-text {
+    animation: marquee-bounce 4s ease-in-out infinite;
+}
+
+/* Fallback para textos que no usen el componente MarqueeText */
+.resume-card--compact .textIngredientesCocina,
+.resume-card--compact .textoComponentsCocina {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: clip;
+    font-size: 11px !important;
+}
+
+.resume-card--compact .textOpcionesCocina{
+    font-size: 16px !important;
+}
+
+.resume-card--compact .sinconComponentsCocina {
+    display: inline;
+    white-space: nowrap;
+}
+
+.resume-card--compact .card-body {
+    overflow-x: hidden !important;
+}
+
+/* ==================== FIN NUEVO DISEÑO (GRID RESTO DE CATEGORÍAS) ==================== */
+
+/* ==================== MENÚ CONTEXTUAL ==================== */
+.context-menu-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.3);
+    z-index: 9999;
+    animation: fadeIn 0.15s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.context-menu {
+    position: fixed;
+    min-width: 280px;
+    background: #ffffff;
+    border-radius: 16px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+    overflow: hidden;
+    animation: slideIn 0.2s ease;
+    z-index: 10000;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: scale(0.9) translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+.context-menu-header {
+    padding: 16px 20px;
+    background: linear-gradient(135deg, #f0f9fa 0%, #fff5f8 100%);
+    border-bottom: 1px solid #e5e5e5;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.context-menu-title {
+    font-size: 18px;
+    font-weight: 800;
+    color: #1a1a1a;
+}
+
+.context-menu-subtitle {
+    font-size: 14px;
+    color: #666;
+}
+
+.context-menu-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    width: 100%;
+    padding: 18px 20px;
+    border: none;
+    background: transparent;
+    font-size: 18px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    border-bottom: 1px solid #e5e5e5;
+}
+
+.context-menu-btn:last-child {
+    border-bottom: none;
+}
+
+.context-menu-btn svg {
+    width: 24px;
+    height: 24px;
+    flex-shrink: 0;
+}
+
+/* Botón entregado (verde) */
+.context-menu-btn-delivered {
+    color: #ffffff;
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+}
+
+.context-menu-btn-delivered:hover {
+    background: linear-gradient(135deg, #218838 0%, #1aa179 100%);
+    transform: scale(1.02);
+}
+
+.context-menu-btn-delivered:active {
+    transform: scale(0.98);
+}
+
+.context-menu-btn-delete {
+    color: #dc3545;
+    background: #fff;
+}
+
+.context-menu-btn-delete:hover {
+    background: #dc3545;
+    color: #ffffff;
+}
+
+.context-menu-btn-delete:active {
+    transform: scale(0.98);
+}
+
+.context-menu-btn-cancel {
+    color: #666;
+    background: #f8f9fa;
+}
+
+.context-menu-btn-cancel:hover {
+    background: #e9ecef;
+    color: #1a1a1a;
+}
+
+/* Header especial para menú de orden */
+.context-menu-header-order {
+    background: linear-gradient(135deg, #00bcd4 0%, #ff1493 100%);
+}
+
+.context-menu-header-order .context-menu-title {
+    color: #ffffff;
+}
+
+.context-menu-header-order .context-menu-subtitle {
+    color: rgba(255, 255, 255, 0.85);
+}
+
+.context-menu-total {
+    font-size: 16px;
+    font-weight: 800;
+    color: #ffffff;
+    margin-top: 4px;
+}
+
+/* Botón eliminar orden (más prominente) */
+.context-menu-btn-delete-order {
+    color: #ffffff;
+    background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+}
+
+.context-menu-btn-delete-order:hover {
+    background: linear-gradient(135deg, #c82333 0%, #a71d2a 100%);
+    transform: scale(1.02);
+}
+
+.context-menu-btn-delete-order:active {
+    transform: scale(0.98);
+}
+
+/* Lista de comandas en el menú contextual del banner */
+.context-menu-comandas-list {
+    max-height: 300px;
+    overflow-y: auto;
+    border-bottom: 1px solid #e5e5e5;
+}
+
+.context-menu-section-title {
+    padding: 12px 20px 8px 20px;
+    font-size: 14px;
+    font-weight: 700;
+    color: #666;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    background: #f8f9fa;
+}
+
+.context-menu-btn-delete-comanda {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    padding: 14px 20px;
+    border: none;
+    background: transparent;
+    font-size: 16px;
+    font-weight: 600;
+    color: #dc3545;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    border-bottom: 1px solid #f0f0f0;
+    text-align: left;
+    justify-content: flex-start;
+}
+
+.context-menu-btn-delete-comanda:hover {
+    background: #fff5f5;
+    color: #c82333;
+}
+
+.context-menu-btn-delete-comanda:active {
+    transform: scale(0.98);
+    background: #ffe5e5;
+}
+
+.context-menu-btn-delete-comanda svg {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+    opacity: 0.8;
+}
+
+.context-menu-btn-delete-comanda span {
+    flex: 1;
+    text-align: left;
+}
+
+.context-menu-comanda-price {
+    font-weight: 700;
+    color: #666;
+    margin-left: auto;
+}
+
+.context-menu-divider {
+    height: 1px;
+    background: #e5e5e5;
+    margin: 8px 0;
+}
+
+/* ==================== FIN MENÚ CONTEXTUAL ==================== */
+

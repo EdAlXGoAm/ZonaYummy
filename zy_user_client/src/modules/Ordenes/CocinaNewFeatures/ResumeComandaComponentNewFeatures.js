@@ -1,4 +1,4 @@
-import './ResumeComanda.css';
+import './ResumeComandaNewFeatures.css';
 import './../Global/checkbox.css'; //La ruta de este archivo es: src/css/checkbox.css
 import React, { useState, useEffect, useRef } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -6,7 +6,7 @@ import { faAngleUp, faAngleDown } from '@fortawesome/free-solid-svg-icons';
 import { faPenToSquare, faBan} from '@fortawesome/free-solid-svg-icons';
 
 import DropDown from './../x10DropDown';
-import MarqueeText from './MarqueeText';
+import MarqueeText from './../MeseroPage/MarqueeText';
 
 // Función para extraer timestamp del ObjectId de MongoDB
 const getTimeAgo = (mongoId) => {
@@ -39,7 +39,7 @@ const getTimeAgo = (mongoId) => {
     }
 };
 
-const DetailsComanda = ({Comanda, updateComanda, compact = false}) => {
+const DetailsComandaNewFeatures = ({Comanda, updateComanda, compact = false}) => {
 
     // Estado para el tiempo transcurrido (se actualiza cada minuto)
     const [timeAgo, setTimeAgo] = useState(() => getTimeAgo(Comanda._id));
@@ -662,4 +662,5 @@ const DetailsComanda = ({Comanda, updateComanda, compact = false}) => {
     )
 }
 
-export default DetailsComanda;
+export default DetailsComandaNewFeatures;
+
