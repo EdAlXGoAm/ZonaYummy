@@ -4,10 +4,10 @@ import OrdersInterfaceNewFeatures from '../modules/Ordenes/CocinaNewFeatures/Ord
 
 const CocinaNewFeaturesPage = () => {
     return (
-        <div className="App">
-            <div className="container-fluid">
-                <div className="row">
-                    <div className="col">
+        <div className="App" style={{ height: '100vh', overflow: 'hidden' }}>
+            <div className="container-fluid" style={{ padding: 0, height: '100%' }}>
+                <div className="row" style={{ margin: 0, height: '100%' }}>
+                    <div className="col" style={{ padding: 0, height: '100%' }}>
                         <OrdersInterfaceNewFeatures />
                     </div>
                 </div>

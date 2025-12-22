@@ -75,14 +75,22 @@
     font-weight: bold;
 }
 .titleVariantCocina {
-    justify-content: center;
-    display: flex;
-    padding-left: 10px;
-    font-weight: bold;
-    color: red;
+    display: inline-block;
+    padding: 6px 16px;
+    font-weight: 800;
     font-family: 'Salsa', cursive;
-    font-size: clamp(1rem, 1vw, 2.5rem);
+    font-size: 20px;
     margin: 0px;
+    color: #ffffff;
+    background: linear-gradient(135deg, #00bcd4 0%, #ff1493 100%);
+    border-radius: 20px;
+    box-shadow: 0 2px 6px rgba(0, 188, 212, 0.3);
+}
+
+/* Override para modo compact - tamaño de variante más grande */
+.resume-card--compact .titleVariantCocina {
+    font-size: 20px !important;
+    padding: 5px 14px !important;
 }
 .titleComponentsCocina {
     display: flex;
@@ -326,5 +334,153 @@ hr {
 @keyframes pulse-dot-urgent {
     0%, 100% { transform: scale(1); box-shadow: 0 0 10px rgba(239, 68, 68, 0.8); }
     50% { transform: scale(1.4); box-shadow: 0 0 16px rgba(239, 68, 68, 1); }
+}
+
+/* ============================================= */
+/* HAMBURGUESA: Imágenes más pequeñas */
+/* ============================================= */
+.resume-card--hamburguesa .containerIng img {
+    height: 28px !important;
+}
+
+/* ============================================= */
+/* BADGE DE NÚMERO DE COMANDA */
+/* ============================================= */
+.comanda-number-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 24px;
+    height: 24px;
+    padding: 0 6px;
+    margin-right: 8px;
+    background: #ffffff;
+    color: #1a1a1a;
+    font-size: 14px;
+    font-weight: 800;
+    border-radius: 50%;
+    border: 2px solid #1a1a1a;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+    font-family: Arial, sans-serif;
+}
+
+/* Estilos para Tacos - Complementos */
+.tacos-complementos-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px 8px;
+    margin: 0;
+    background: linear-gradient(135deg, #fff8e1 0%, #ffe0b2 100%);
+    border: 1px solid #ffcc80;
+    border-radius: 8px;
+}
+
+.tacos-complementos-text {
+    font-size: 22px;
+    font-weight: 800;
+    font-family: 'Salsa', cursive;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin: 0;
+    padding: 0;
+    line-height: 1.2;
+}
+
+/* Estilos para Tacos - Extras destacados */
+.tacos-extras-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 4px 8px;
+    margin: 4px 0;
+    background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+    border: 1px solid #64b5f6;
+    border-radius: 8px;
+}
+
+.tacos-extra-text {
+    font-size: 18px;
+    font-weight: 800;
+    font-family: 'Salsa', cursive;
+    color: #1565c0;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.tacos-extra-price {
+    color: #d32f2f;
+    font-weight: 800;
+}
+
+/* ============================================
+   MODO COMPACT - Layout del col-3
+   ============================================ */
+
+.compact-col3-layout {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+}
+
+.compact-comanda-row {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 8px;
+    width: 100%;
+}
+
+.comanda-number-badge-large {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 36px;
+    height: 36px;
+    padding: 0 8px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #1a1a1a 0%, #444 100%);
+    color: #ffffff;
+    font-size: 16px;
+    font-weight: 800;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    font-family: Arial, sans-serif;
+}
+
+.compact-deliver-icon {
+    width: 28px;
+    height: auto;
+    margin-left: 4px;
+}
+
+.compact-time-badge {
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 700;
+    text-align: center;
+    margin-left: auto;
+}
+
+.compact-time-normal {
+    background: #e8f5e9;
+    color: #2e7d32;
+}
+
+.compact-time-warning {
+    background: #fff3e0;
+    color: #ef6c00;
+}
+
+.compact-time-urgent {
+    background: #ffebee;
+    color: #c62828;
+    animation: compact-pulse-urgent 1s ease-in-out infinite;
+}
+
+@keyframes compact-pulse-urgent {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
 }
 

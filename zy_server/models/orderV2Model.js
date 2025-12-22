@@ -20,6 +20,7 @@ const orderV2Schema = new mongoose.Schema({
   OrderCustStatus:  { type: String, required: true },
   Customer:         { type: String },
   CuentaTotal:      { type: Number },
+  Origen:           { type: String, default: '' },
   pagado:           { type: Number, default: 0 },
   pendiente:        { type: Number, default: function() { return this.CuentaTotal; } },
   pagos:            [ paymentSchema ]

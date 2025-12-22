@@ -39,7 +39,7 @@ const getTimeAgo = (mongoId) => {
     }
 };
 
-const DetailsComandaNewFeatures = ({Comanda, updateComanda, compact = false}) => {
+const DetailsComandaNewFeatures = ({Comanda, updateComanda, compact = false, comandaNumber = null}) => {
 
     // Estado para el tiempo transcurrido (se actualiza cada minuto)
     const [timeAgo, setTimeAgo] = useState(() => getTimeAgo(Comanda._id));
@@ -389,16 +389,47 @@ const DetailsComandaNewFeatures = ({Comanda, updateComanda, compact = false}) =>
 
     const isPending = Comanda.ComandaPaidStatus === "Pending";
 
+    // Calcular qué secciones tienen contenido visible para mostrar <hr/> inteligentemente
+    const selectedVariant = Comanda.Details.Variants[Comanda.Details.SelectedVariant];
+    const hasComponentes = selectedVariant.Componentes.length > 0;
+    const hasOpciones = selectedVariant.Opciones.some(op => op.Items[op.SelectedItem].Name !== "No aplica");
+    const hasIngredientes = selectedVariant.Ingredientes.length > 0;
+    const hasExtras = selectedVariant.Extras.some(e => e.Checked);
+    const hasAdicionales = selectedVariant.Adicionales.some(a => a.Checked);
+
     // En modo compacto: priorizar lectura (platillo + variante) y minimizar íconos
     const deliverIconWidth = compact ? '28px' : '250px';
     const mainImageWidth = compact ? '44px' : '200px';
     const headerFontSize = compact ? '22px' : '25px';
     const notaFontSize = compact ? '16px' : '25px';
+    
+    // Para Hamburguesa: ingredientes con ancho fijo de 80px y altura reducida
+    const isHamburguesa = Comanda.Platillo === "Hamburguesa";
+    const ingredientImageHeight = isHamburguesa ? '28px' : '55px';
+    
+    // Para Tacos: mostrar solo texto en lugar de imágenes para "Complementos"
+    const isTacos = Comanda.Platillo?.toLowerCase().trim() === "tacos";
+    
+    // Helper para obtener el texto de complementos para Tacos
+    const getTacosComplementosText = (ingrediente) => {
+        const ingredienteName = ingrediente.Name?.toLowerCase().trim();
+        if (!isTacos || ingredienteName !== "complementos") return null;
+        
+        const items = ingrediente.Items || [];
+        const selectedItems = items.filter(item => item.Checked);
+        
+        if (selectedItems.length === 0) return { text: "NADA", color: "red" };
+        if (selectedItems.length === items.length) return { text: "CON TODO", color: "green" };
+        
+        // Solo uno seleccionado
+        const selectedNames = selectedItems.map(item => item.Name.toUpperCase());
+        return { text: `SOLO ${selectedNames.join(" y ")}`, color: "#1a1a1a" };
+    };
 
     return (
-        <div className={`resume-card ${compact ? 'resume-card--compact' : ''}`} tabIndex={compact ? 0 : undefined}>
-            {/* Indicador de tiempo transcurrido */}
-            {timeAgo && (
+        <div className={`resume-card ${compact ? 'resume-card--compact' : ''} ${isHamburguesa ? 'resume-card--hamburguesa' : ''}`} tabIndex={compact ? 0 : undefined}>
+            {/* Indicador de tiempo transcurrido - solo en modo normal, en compact va dentro del col-3 */}
+            {!compact && timeAgo && (
                 <div className="comanda-time-badge">
                     <span className={`comanda-time-dot comanda-time-${timeAgo.urgency}`}></span>
                     <span className="comanda-time-text">{timeAgo.text}</span>
@@ -433,32 +464,62 @@ const DetailsComandaNewFeatures = ({Comanda, updateComanda, compact = false}) =>
 
                 <div className="row" style={{display: Comanda.Customer === undefined ? 'none' : 'flex'}}>
                     <div className='col-3'>
-                        <div className="row"><div className="col">
-                            <img
-                                src={Comanda.ComandaDeliverMode === "Delivery" ? "Ideogram/llevare.png" : "Ideogram/aquie.png" }
-                                alt="icon"
-                                className="img-fluid resume-deliver-icon"
-                                style={{ width: deliverIconWidth }}
-                            />
-                        </div></div>
-                        <div className="row"><div className="col">
-                            <img
-                                src={Comanda.Imagen}
-                                alt="icon"
-                                className="img-fluid resume-main-image"
-                                style={{ width: mainImageWidth }}
-                            />
-                        </div></div>
+                        {compact ? (
+                            /* Modo compact: ComandaId grande + imagen delivery + tiempo en la misma fila */
+                            <div className="compact-col3-layout">
+                                <div className="compact-comanda-row">
+                                    {comandaNumber && (
+                                        <span className="comanda-number-badge-large">{comandaNumber}</span>
+                                    )}
+                                    <img
+                                        src={Comanda.ComandaDeliverMode === "Delivery" ? "Ideogram/llevare.png" : "Ideogram/aquie.png"}
+                                        alt="icon"
+                                        className="img-fluid compact-deliver-icon"
+                                    />
+                                    {timeAgo && (
+                                        <div className={`compact-time-badge compact-time-${timeAgo.urgency}`}>
+                                            {timeAgo.text}
+                                        </div>
+                                    )}
+                                </div>
+                                <img
+                                    src={Comanda.Imagen}
+                                    alt="icon"
+                                    className="img-fluid resume-main-image"
+                                    style={{ width: mainImageWidth }}
+                                />
+                            </div>
+                        ) : (
+                            /* Modo normal */
+                            <>
+                                <div className="row"><div className="col">
+                                    <img
+                                        src={Comanda.ComandaDeliverMode === "Delivery" ? "Ideogram/llevare.png" : "Ideogram/aquie.png" }
+                                        alt="icon"
+                                        className="img-fluid resume-deliver-icon"
+                                        style={{ width: deliverIconWidth }}
+                                    />
+                                </div></div>
+                                <div className="row"><div className="col">
+                                    <img
+                                        src={Comanda.Imagen}
+                                        alt="icon"
+                                        className="img-fluid resume-main-image"
+                                        style={{ width: mainImageWidth }}
+                                    />
+                                </div></div>
+                            </>
+                        )}
                     </div>
                     <div className='col-9'>
                         <div className="row"><div className="col">
-                            <p className={`textClienteCocina colorTextClienteCocina${Comanda.OrderID % 10}`} style={{fontSize: headerFontSize}}>
-                                {Comanda.Customer ? Comanda.Customer : `Cliente ${Comanda.OrderID}`}
-                            </p>
-                        </div></div>
-                        <div className="row"><div className="col">
-                            {/* <h2 className="title comandaTextStyleCocina">{Comanda.Platillo}&nbsp;&nbsp;<span style={{textShadow: "0px 0px 10px red"}}>${Comanda.Precio}</span></h2> */}
-                            <h2 className="title comandaTextStyleCocina" style={{fontSize: headerFontSize}}>{Comanda.Platillo}&nbsp;&nbsp;<span style={{textShadow: "0px 0px 10px red"}}>${Comanda.Precio}</span></h2>
+                            <h2 className="title comandaTextStyleCocina" style={{fontSize: headerFontSize}}>
+                                {/* En modo compact el número ya está en col-3 */}
+                                {!compact && comandaNumber && (
+                                    <span className="comanda-number-badge">{comandaNumber}</span>
+                                )}
+                                {Comanda.Platillo}&nbsp;&nbsp;<span style={{textShadow: "0px 0px 10px red"}}>${Comanda.Precio}</span>
+                            </h2>
                         </div></div>
                         <div className="row"><div className="col">
                             <div><span className="titleVariantCocina">
@@ -470,7 +531,7 @@ const DetailsComandaNewFeatures = ({Comanda, updateComanda, compact = false}) =>
 
 
 
-                <div className="row mb-3">
+                <div className="row">
                     <div className='col'>
                         {Comanda.ComandaPaidStatus === "Editing" ? (
                             <div>
@@ -481,12 +542,19 @@ const DetailsComandaNewFeatures = ({Comanda, updateComanda, compact = false}) =>
                         )
                         : (
                             <div>
-                                {Comanda.Details.Variants[Comanda.Details.SelectedVariant].Componentes.length > 0 && (
+                                {!isHamburguesa && Comanda.Details.Variants[Comanda.Details.SelectedVariant].Componentes.length > 0 && (
                                     <h2 className="titleComponentsCocina">Componentes</h2>
                                 )}
-                                <div className="row">
+                                {!isHamburguesa && <div className="row" style={isHamburguesa ? { flexWrap: 'wrap' } : {}}>
                                 {Comanda.Details.Variants[Comanda.Details.SelectedVariant].Componentes.map((componente, indexComponente) => (
-                                    <div key={indexComponente} style={{padding: '2px'}} className={`col-${12/numCheckBoxPerRow}`}>
+                                    <div 
+                                        key={indexComponente} 
+                                        style={{
+                                            padding: '2px',
+                                            ...(isHamburguesa ? { width: '80px', flex: '0 0 80px' } : {})
+                                        }} 
+                                        className={isHamburguesa ? '' : `col-${12/numCheckBoxPerRow}`}
+                                    >
                                         <label className="container containerIng">
                                             <div>
                                                 <div className='row mb-2'>
@@ -505,9 +573,9 @@ const DetailsComandaNewFeatures = ({Comanda, updateComanda, compact = false}) =>
                                                     </div>
                                                 </div>
                                                 
-                                                <div className='row mb-2'>
+                                                <div className={isHamburguesa ? 'row' : 'row mb-2'}>
                                                     <div className='col d-flex justify-content-center'>
-                                                       <img src={`iconscocina/${componente.Name}.png`} alt="icon"className="img-fluid" style={{ width: 'auto', height: '55px', objectFit: 'cover'}}></img>
+                                                       <img src={`iconscocina/${componente.Name}.png`} alt="icon"className="img-fluid" style={{ width: 'auto', height: ingredientImageHeight, objectFit: 'cover'}}></img>
                                                        
                                                        {!componente.Checked && (
                                                         <div class="linea-tachado-delgada"></div>
@@ -518,8 +586,8 @@ const DetailsComandaNewFeatures = ({Comanda, updateComanda, compact = false}) =>
                                         </label>
                                     </div>
                                 ))}
-                                </div>
-                                {Comanda.Details.Variants[Comanda.Details.SelectedVariant].Componentes.length > 0 && (<hr/>)}
+                                </div>}
+                                {!isHamburguesa && hasComponentes && (hasOpciones || hasIngredientes || hasExtras || hasAdicionales) && (<hr/>)}
                                 {Comanda.Details.Variants[Comanda.Details.SelectedVariant].Opciones.map((opcion, indexOpcion) => (
                                     <div key={indexOpcion}>
                                         {opcion.Items[opcion.SelectedItem].Name !== "No aplica" && (
@@ -553,15 +621,40 @@ const DetailsComandaNewFeatures = ({Comanda, updateComanda, compact = false}) =>
                                         )}
                                     </div>
                                 ))}
-                                {Comanda.Details.Variants[Comanda.Details.SelectedVariant].Opciones.length > 0 && (<hr/>)}
-                                {Comanda.Details.Variants[Comanda.Details.SelectedVariant].Ingredientes.map((ingrediente, indexIngrediente) => (
+                                {hasOpciones && (hasIngredientes || hasExtras || hasAdicionales) && (<hr/>)}
+                                {Comanda.Details.Variants[Comanda.Details.SelectedVariant].Ingredientes.map((ingrediente, indexIngrediente) => {
+                                    const tacosComplementos = getTacosComplementosText(ingrediente);
+                                    
+                                    // Para Tacos con Complementos: mostrar solo texto
+                                    if (tacosComplementos) {
+                                        return (
+                                            <div key={indexIngrediente} className="tacos-complementos-container">
+                                                <span 
+                                                    className="tacos-complementos-text"
+                                                    style={{ color: tacosComplementos.color }}
+                                                >
+                                                    {tacosComplementos.text}
+                                                </span>
+                                            </div>
+                                        );
+                                    }
+                                    
+                                    // Renderizado normal para otros ingredientes
+                                    return (
                                     <div key={indexIngrediente}>
                                         <div className="row"><div className="col">
                                             <h2 className="titleIngredientesCocina">{ingrediente.Name}</h2>
                                         </div></div>
-                                        <div className="row" ref={containerRef} style={{ position: 'relative' }}>
+                                        <div className="row" ref={containerRef} style={{ position: 'relative', ...(isHamburguesa ? { flexWrap: 'wrap' } : {}) }}>
                                             {ingrediente.Items.map((item, indexItem) => (
-                                                <div key={indexItem} style={{padding: '2px'}} className={`col-${12/numCheckBoxPerRow}`}>
+                                                <div 
+                                                    key={indexItem} 
+                                                    style={{
+                                                        padding: '2px',
+                                                        ...(isHamburguesa ? { width: '80px', flex: '0 0 80px' } : {})
+                                                    }} 
+                                                    className={isHamburguesa ? '' : `col-${12/numCheckBoxPerRow}`}
+                                                >
                                                     <label className="container containerIng">
                                                         <div>
                                                             <div className="row"><div className="col">
@@ -569,8 +662,8 @@ const DetailsComandaNewFeatures = ({Comanda, updateComanda, compact = false}) =>
                                                                     <MarqueeText tolerance={14}>{item.Name || "Nombre Ingrediente"}</MarqueeText>
                                                                 </div>
                                                             </div></div>
-                                                            <div className="row mb-2"><div className="col d-flex justify-content-center">
-                                                                <img src={`iconscocina/${item.Name}.png`} alt="icon" className="img-fluid" style={{ width: 'auto', height: '55px', objectFit: 'cover' }}/>
+                                                            <div className={isHamburguesa ? 'row' : 'row mb-2'}><div className="col d-flex justify-content-center">
+                                                                <img src={`iconscocina/${item.Name}.png`} alt="icon" className="img-fluid" style={{ width: 'auto', height: ingredientImageHeight, objectFit: 'cover' }}/>
                                                                 {!item.Checked && !ingrediente.Items.every(i => !i.Checked) && (<div className="linea-tachado"></div>)}
                                                             </div></div>
                                                         </div>
@@ -583,7 +676,7 @@ const DetailsComandaNewFeatures = ({Comanda, updateComanda, compact = false}) =>
                                                     backgroundColor: 'rgba(255,255,255,0.7)',
                                                     display: 'flex', alignItems: 'center', justifyContent: 'center'
                                                 }}>
-                                                    <span style={{ color: 'green', fontWeight: 'bold', fontSize: '40px', fontFamily: 'Salsa, cursive' }}>CON TODO</span>
+                                                    <span style={{ color: 'green', fontWeight: 'bold', fontSize: '24px', fontFamily: 'Salsa, cursive' }}>CON TODO</span>
                                                 </div>
                                             )}
                                             {ingrediente.Items.every(item => !item.Checked) && (
@@ -592,14 +685,30 @@ const DetailsComandaNewFeatures = ({Comanda, updateComanda, compact = false}) =>
                                                     backgroundColor: 'rgba(255,255,255,0.7)',
                                                     display: 'flex', alignItems: 'center', justifyContent: 'center'
                                                 }}>
-                                                    <span style={{ color: 'red', fontWeight: 'bold', fontSize: '40px', fontFamily: 'Salsa, cursive' }}>NADA</span>
+                                                    <span style={{ color: 'red', fontWeight: 'bold', fontSize: '24px', fontFamily: 'Salsa, cursive' }}>NADA</span>
                                                 </div>
                                             )}
                                         </div>
                                     </div>
-                                ))}
-                                {Comanda.Details.Variants[Comanda.Details.SelectedVariant].Ingredientes.length > 0 && (<hr/>)}
-                                {Comanda.Details.Variants[Comanda.Details.SelectedVariant].Extras.map((extra, indexExtra) => (
+                                    );
+                                })}
+                                {hasIngredientes && (hasExtras || hasAdicionales) && (<hr/>)}
+                                {/* Para Tacos: mostrar extras destacados */}
+                                {isTacos && hasExtras && (
+                                    <div className="tacos-extras-container">
+                                        {Comanda.Details.Variants[Comanda.Details.SelectedVariant].Extras
+                                            .filter(extra => extra.Checked)
+                                            .map((extra, idx) => (
+                                                <span key={idx} className="tacos-extra-text">
+                                                    + {extra.Extra?.toUpperCase() || "EXTRA"}
+                                                    {extra.Precio !== 0 && <span className="tacos-extra-price"> ${extra.Precio}</span>}
+                                                </span>
+                                            ))
+                                        }
+                                    </div>
+                                )}
+                                {/* Renderizado normal de extras para otros platillos */}
+                                {!isTacos && Comanda.Details.Variants[Comanda.Details.SelectedVariant].Extras.map((extra, indexExtra) => (
                                     extra.Checked && (
                                         <div key={indexExtra} className={isPending ? 'col-12' : `col-${12/numCheckBoxPerRow}`}>
                                             {isPending ? (
@@ -620,7 +729,7 @@ const DetailsComandaNewFeatures = ({Comanda, updateComanda, compact = false}) =>
                                         </div>
                                     )
                                 ))}
-                                {Comanda.Details.Variants[Comanda.Details.SelectedVariant].Extras.length > 0 && (<hr/>)}
+                                {hasExtras && hasAdicionales && (<hr/>)}
                                 {Comanda.Details.Variants[Comanda.Details.SelectedVariant].Adicionales.map((adicional, indexAdicional) => (
                                     adicional.Checked && (
                                         <div key={indexAdicional} className={isPending ? 'col-12' : `col-${12/numCheckBoxPerRow}`}>
@@ -652,7 +761,7 @@ const DetailsComandaNewFeatures = ({Comanda, updateComanda, compact = false}) =>
                                         </div>
                                     )
                                 ))}
-                                {Comanda.Details.Variants[Comanda.Details.SelectedVariant].Adicionales.length > 0 && (<hr/>)}
+                                {/* El último hr nunca se muestra porque no hay contenido después */}
                             </div>
                         )}
                     </div>

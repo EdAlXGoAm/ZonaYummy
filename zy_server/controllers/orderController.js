@@ -42,6 +42,7 @@ exports.updateOrder = (req, res) => {
             order.Customer = req.body.Customer;
             order.CuentaTotal = req.body.CuentaTotal;
             order.ComandasList = req.body.ComandasList;
+            order.Origen = req.body.Origen || '';
 
             order
                 .save()

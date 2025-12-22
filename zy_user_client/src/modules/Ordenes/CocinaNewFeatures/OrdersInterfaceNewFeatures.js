@@ -85,7 +85,7 @@ const OrdersInterfaceNewFeatures = () => {
     }, []);
 
     return (
-        <div className="container-fluid">
+        <div style={{ height: '100%', overflow: 'hidden' }}>
             {/* ToastContainer siempre visible para notificaciones */}
             <ToastContainer />
             {renderOrders()}

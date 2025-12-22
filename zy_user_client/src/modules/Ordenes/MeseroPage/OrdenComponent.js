@@ -443,11 +443,33 @@ const Orden = ({modeInterface, iInterface, OrderID, DeleteOrder, handleOrderCust
     const customerColors = ['#ff5382', '#39c5ff', '#ec1cff', '#80ff10', '#fbdd31'];
     const getCustomerBgColor = id => customerColors[id % customerColors.length];
     const [clientIcon, setClientIcon] = useState(false);
+    
+    // Estado para origen WhatsApp
+    const [origenWhatsapp, setOrigenWhatsapp] = useState(false);
 
     const handleCliente = (e) => {
         setCliente(e.target.value);
         setClientIcon(false);
     }
+    
+    // Manejar doble click en icono WhatsApp
+    const handleWhatsappDoubleClick = () => {
+        const newOrigen = !origenWhatsapp;
+        setOrigenWhatsapp(newOrigen);
+        
+        // Actualizar la orden con el nuevo origen
+        const newOrder = { ...Order };
+        newOrder.Origen = newOrigen ? 'Whatsapp' : '';
+        setOrder(newOrder);
+        ordersApi.updateOrder(newOrder)
+            .then((res) => {
+                console.log("Origen actualizado:", newOrigen ? 'Whatsapp' : '');
+                socket.emit('OrdenActualizadaDesdeCliente', {msg: Order.OrderID});
+            })
+            .catch((err) => {
+                console.log(err);
+            });
+    };
 
     useEffect(() => {
         if (!Order) return; // Verificación de seguridad
@@ -455,7 +477,9 @@ const Orden = ({modeInterface, iInterface, OrderID, DeleteOrder, handleOrderCust
         console.log("CARGANDO CLIENTE", savedCliente);
         setCliente(savedCliente);
         setClientIcon(savedCliente !== '');
-    }, [Order?.Customer]);
+        // Cargar origen WhatsApp
+        setOrigenWhatsapp(Order.Origen === 'Whatsapp');
+    }, [Order?.Customer, Order?.Origen]);
 
     const updateCliente = () => {
         const newOrder = { ...Order };
@@ -625,8 +649,23 @@ const Orden = ({modeInterface, iInterface, OrderID, DeleteOrder, handleOrderCust
                     }}
                     ></textarea>
                 </div>
-                <div className='col-2'>
-                    {/* Add Variant at Level 1 */}
+                <div className='col-2' style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+                    {/* Icono WhatsApp - doble click para activar/desactivar */}
+                    <img 
+                        src="icons/whatsapp.png" 
+                        alt="WhatsApp"
+                        onDoubleClick={handleWhatsappDoubleClick}
+                        style={{
+                            width: '36px',
+                            height: '36px',
+                            cursor: 'pointer',
+                            opacity: origenWhatsapp ? 1 : 0.3,
+                            transition: 'opacity 0.2s ease',
+                            filter: origenWhatsapp ? 'none' : 'grayscale(50%)'
+                        }}
+                        title={origenWhatsapp ? 'Origen: WhatsApp (doble click para quitar)' : 'Doble click para marcar como WhatsApp'}
+                    />
+                    {/* Botón guardar cliente */}
                     <div className="form-group">
                         <button type="button" className="btn btn-primary" style={{backgroundColor: iconColor}} onClick={updateCliente}>
                             <FontAwesomeIcon icon={iconType} size="2x" style={{ color: '#fff' }} />
