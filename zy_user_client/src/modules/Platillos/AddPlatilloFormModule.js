@@ -54,8 +54,11 @@ const AddPlatilloForm = ({
     }
 
     useEffect(() => {
-        fetchPlatilloId();
-    },[]);
+        // Solo obtener nuevo ID si NO estamos editando un platillo existente
+        if (editPlatilloId === null || editPlatilloId === undefined) {
+            fetchPlatilloId();
+        }
+    },[editPlatilloId]);
 
     const fetchPlatillos = () => {
         platillosApi.getPlatillos()
