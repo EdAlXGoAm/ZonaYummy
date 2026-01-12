@@ -7,8 +7,85 @@ const socketIo = require('socket.io');
 const cors = require("cors");
 
 const app = express();
+const PORT = 3010;
+
 app.use(cors());
 app.use(express.json());
+
+app.get("/", (req, res) => {
+    res.send(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>ZonaYummy Server</title>
+            <style>
+                body {
+                    font-family: 'Segoe UI', sans-serif;
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    justify-content: center;
+                    min-height: 100vh;
+                    margin: 0;
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    color: white;
+                }
+                h1 { margin-bottom: 10px; }
+                p { margin-bottom: 30px; opacity: 0.9; }
+                button {
+                    padding: 15px 40px;
+                    font-size: 18px;
+                    font-weight: 600;
+                    border: none;
+                    border-radius: 50px;
+                    background: white;
+                    color: #764ba2;
+                    cursor: pointer;
+                    transition: transform 0.2s, box-shadow 0.2s;
+                }
+                button:hover {
+                    transform: scale(1.05);
+                    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+                }
+                button:active { transform: scale(0.98); }
+                #response {
+                    margin-top: 20px;
+                    padding: 10px 20px;
+                    background: rgba(255,255,255,0.2);
+                    border-radius: 10px;
+                    display: none;
+                }
+            </style>
+        </head>
+        <body>
+            <h1>🍽️ Servidor ZonaYummy</h1>
+            <p>Corriendo en puerto ${PORT}</p>
+            <button onclick="handshake()">🤝 Hand Shake</button>
+            <div id="response"></div>
+            <script>
+                async function handshake() {
+                    try {
+                        const res = await fetch('/handshake', { method: 'POST' });
+                        const data = await res.json();
+                        const responseDiv = document.getElementById('response');
+                        responseDiv.textContent = '✅ ' + data.message;
+                        responseDiv.style.display = 'block';
+                        setTimeout(() => { responseDiv.style.display = 'none'; }, 3000);
+                    } catch (err) {
+                        console.error('Error:', err);
+                    }
+                }
+            </script>
+        </body>
+        </html>
+    `);
+});
+
+app.post("/handshake", (req, res) => {
+    const timestamp = new Date().toLocaleString();
+    console.log(`🤝 Handshake recibido de un cliente - ${timestamp}`);
+    res.json({ success: true, message: `Handshake exitoso - ${timestamp}` });
+});
 
 const server = http.createServer(app);
 
@@ -93,6 +170,6 @@ app.use('/api/platillos', platilloRoutes);
 app.use('/api/orders/v2', orderV2Routes);
 
 
-server.listen(3010, () => {
-    console.log("Server running on port 3010");
+server.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
 });
