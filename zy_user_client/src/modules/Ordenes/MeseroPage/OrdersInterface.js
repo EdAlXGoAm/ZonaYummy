@@ -262,7 +262,21 @@ const OrdersInterface = ({ modeInterface }) => {
     const [showPasswordModal, setShowPasswordModal] = useState(false);
     const [passwordInput, setPasswordInput] = useState("");
     const passwordInputRef = useRef(null);
+    const [passwordTarget, setPasswordTarget] = useState('calendar'); // 'calendar' | 'balance'
     const [showCalendarModal, setShowCalendarModal] = useState(false);
+    
+    // Estados para el modal de Balance (ZonaYummy)
+    const [showBalanceModal, setShowBalanceModal] = useState(false);
+    const [balanceDate, setBalanceDate] = useState(new Date());
+    const [balanceOrders, setBalanceOrders] = useState([]);
+    const [balanceLoading, setBalanceLoading] = useState(false);
+    const [showBalanceDayPicker, setShowBalanceDayPicker] = useState(false);
+    
+    // Estados para el submodal de edición de pagos
+    const [editingOrder, setEditingOrder] = useState(null); // orden seleccionada para editar
+    const [showEditPaymentsModal, setShowEditPaymentsModal] = useState(false);
+    const [editingPaymentId, setEditingPaymentId] = useState(null); // pago en edición de monto
+    const [editingPaymentAmount, setEditingPaymentAmount] = useState(0);
     const [selectedDate, setSelectedDate] = useState(new Date());
     const [monthlyActiveStartDate, setMonthlyActiveStartDate] = useState(new Date());
     const [dailySums, setDailySums] = useState({});
@@ -357,6 +371,12 @@ const OrdersInterface = ({ modeInterface }) => {
     })();
 
     const handleDoubleClick = () => {
+        setPasswordTarget('calendar');
+        setShowPasswordModal(true);
+    };
+
+    const handleZonaYummyDoubleClick = () => {
+        setPasswordTarget('balance');
         setShowPasswordModal(true);
     };
 
@@ -373,10 +393,16 @@ const OrdersInterface = ({ modeInterface }) => {
 
     const handlePasswordAccept = () => {
         if (passwordInput === "2on4") {
-            // Mostrar modal de calendario de ventas
-            setShowCalendarModal(true);
-            setSelectedDate(new Date());
-            setMonthlyActiveStartDate(new Date());
+            if (passwordTarget === 'calendar') {
+                // Mostrar modal de calendario de ventas
+                setShowCalendarModal(true);
+                setSelectedDate(new Date());
+                setMonthlyActiveStartDate(new Date());
+            } else if (passwordTarget === 'balance') {
+                // Mostrar modal de balance
+                setShowBalanceModal(true);
+                setBalanceDate(new Date());
+            }
         }
         setShowPasswordModal(false);
         setPasswordInput("");
@@ -399,9 +425,115 @@ const OrdersInterface = ({ modeInterface }) => {
         setExpandedItems(new Set());
     };
 
+    const closeBalanceModal = () => {
+        setShowBalanceModal(false);
+        setBalanceOrders([]);
+        setBalanceLoading(false);
+        setShowBalanceDayPicker(false);
+        setShowEditPaymentsModal(false);
+        setEditingOrder(null);
+        setEditingPaymentId(null);
+    };
+
+    const openEditPaymentsModal = (order) => {
+        setEditingOrder(order);
+        setShowEditPaymentsModal(true);
+        setEditingPaymentId(null);
+    };
+
+    const closeEditPaymentsModal = () => {
+        setShowEditPaymentsModal(false);
+        setEditingOrder(null);
+        setEditingPaymentId(null);
+    };
+
+    const handleEditPaymentAmount = (pagoId, currentAmount) => {
+        setEditingPaymentId(pagoId);
+        setEditingPaymentAmount(currentAmount);
+    };
+
+    const confirmEditPaymentAmount = async () => {
+        if (!editingOrder || !editingPaymentId) return;
+        
+        const pago = editingOrder.pagos.find(p => p._id === editingPaymentId);
+        const confirmMsg = `¿Cambiar monto de $${pago?.monto?.toFixed(2)} a $${editingPaymentAmount.toFixed(2)}?`;
+        
+        if (!window.confirm(confirmMsg)) return;
+        
+        try {
+            await ordersApi.updatePaymentAmount(editingOrder.OrderID, editingPaymentId, editingPaymentAmount);
+            // Refrescar datos
+            const offset = -new Date().getTimezoneOffset() / 60;
+            const dateStr = toLocalYMD(balanceDate);
+            const res = await ordersApi.getOrdersByDate(dateStr, offset);
+            setBalanceOrders(res?.orders || []);
+            // Actualizar orden en edición
+            const updatedOrder = res?.orders?.find(o => o.OrderID === editingOrder.OrderID);
+            if (updatedOrder) setEditingOrder(updatedOrder);
+            setEditingPaymentId(null);
+            notify('Monto actualizado');
+        } catch (err) {
+            console.error(err);
+            notify(`Error al actualizar monto: ${err}`);
+        }
+    };
+
+    const handleDeletePayment = async (pagoId) => {
+        if (!editingOrder) return;
+        
+        const pago = editingOrder.pagos.find(p => p._id === pagoId);
+        const confirmMsg = `¿Eliminar pago de $${pago?.monto?.toFixed(2)}?\n\nEsta acción no se puede deshacer.`;
+        
+        if (!window.confirm(confirmMsg)) return;
+        
+        try {
+            await ordersApi.deletePayment(editingOrder.OrderID, pagoId);
+            // Refrescar datos
+            const offset = -new Date().getTimezoneOffset() / 60;
+            const dateStr = toLocalYMD(balanceDate);
+            const res = await ordersApi.getOrdersByDate(dateStr, offset);
+            setBalanceOrders(res?.orders || []);
+            // Actualizar orden en edición
+            const updatedOrder = res?.orders?.find(o => o.OrderID === editingOrder.OrderID);
+            if (updatedOrder) {
+                setEditingOrder(updatedOrder);
+            } else {
+                closeEditPaymentsModal(); // Si ya no hay pagos excedidos, cerrar
+            }
+            notify('Pago eliminado');
+        } catch (err) {
+            console.error(err);
+            notify(`Error al eliminar pago: ${err}`);
+        }
+    };
+
+    // useEffect para cargar órdenes cuando cambia la fecha en el modal de balance
+    useEffect(() => {
+        if (!showBalanceModal) return;
+        let cancelled = false;
+
+        const fetchBalanceOrders = async () => {
+            try {
+                setBalanceLoading(true);
+                const offset = -new Date().getTimezoneOffset() / 60;
+                const dateStr = toLocalYMD(balanceDate);
+                const res = await ordersApi.getOrdersByDate(dateStr, offset);
+                if (!cancelled) setBalanceOrders(res?.orders || []);
+            } catch (err) {
+                console.error(err);
+                if (!cancelled) setBalanceOrders([]);
+            } finally {
+                if (!cancelled) setBalanceLoading(false);
+            }
+        };
+
+        fetchBalanceOrders();
+        return () => { cancelled = true; };
+    }, [balanceDate, showBalanceModal]);
+
     // Evitar "scroll chaining" hacia la pantalla principal cuando el modal llega a su límite
     useEffect(() => {
-        const anyModalOpen = showCalendarModal || showPasswordModal || showDayPickerModal;
+        const anyModalOpen = showCalendarModal || showPasswordModal || showDayPickerModal || showBalanceModal || showBalanceDayPicker || showEditPaymentsModal;
         if (anyModalOpen) {
             // Guardar estado previo solo la primera vez que bloqueamos
             if (document.body.style.overflow !== 'hidden') {
@@ -525,7 +657,14 @@ const OrdersInterface = ({ modeInterface }) => {
                     </div>
                 </div>
                 <div className="col-8">
-                    <h1 style={{ color: "#000000" }} onDoubleClick={handleDoubleClick}>Comandas</h1><ToastContainer />
+                    <h1 style={{ color: "#000000" }}>
+                        <span 
+                            onDoubleClick={handleZonaYummyDoubleClick} 
+                            style={{ cursor: 'pointer', color: '#166534' }}
+                            title="Doble click para ver balance"
+                        >ZonaYummy</span>{' '}
+                        <span onDoubleClick={handleDoubleClick}>Comandas</span>
+                    </h1><ToastContainer />
                 </div>
             </div>
             <hr style={{backgroundColor:"white"}}/>
@@ -792,6 +931,242 @@ const OrdersInterface = ({ modeInterface }) => {
                     </div>
                 </div>
             )}
+            {/* Modal de Balance (ZonaYummy) */}
+            {showBalanceModal && (() => {
+                // Calcular totales desde los datos de órdenes
+                const totalVendido = balanceOrders.reduce((sum, o) => sum + (o?.CuentaTotal || 0), 0);
+                const totalCobrado = balanceOrders.reduce((sum, o) => {
+                    const pagosSum = (o?.pagos || []).reduce((ps, p) => ps + (p?.monto || 0), 0);
+                    return sum + pagosSum;
+                }, 0);
+                const balance = totalCobrado - totalVendido;
+                const balanceStatus = balance === 0 ? 'ok' : (balance > 0 ? 'exceeded' : 'pending');
+
+                return (
+                    <div className="zy-modal-overlay">
+                        <div className="zy-modal zy-balance-modal">
+                            <div className="zy-modal__header">
+                                <div>
+                                    <div className="zy-modal__title">Balance del Día</div>
+                                    <div className="zy-modal__subtitle">
+                                        {formatShortDateEs(toLocalYMD(balanceDate))}
+                                    </div>
+                                </div>
+                                <button className="zy-modal__close" onClick={closeBalanceModal} title="Cerrar">✕</button>
+                            </div>
+                            <div className="zy-modal__body">
+                                {/* Selector de fecha como botón */}
+                                <div className="zy-balance__date-selector">
+                                    <button
+                                        type="button"
+                                        className="zy-date-btn"
+                                        onClick={() => setShowBalanceDayPicker(true)}
+                                        title="Seleccionar día"
+                                    >
+                                        {formatShortDateEs(toLocalYMD(balanceDate))} ▾
+                                    </button>
+                                </div>
+
+                                {balanceLoading && (
+                                    <div className="zy-balance__loading">Cargando pedidos...</div>
+                                )}
+
+                                {!balanceLoading && balanceOrders.length === 0 && (
+                                    <div className="zy-balance__empty">No hay pedidos en este día.</div>
+                                )}
+
+                                {/* Lista de pedidos con barras de progreso */}
+                                {!balanceLoading && balanceOrders.length > 0 && (
+                                    <div className="zy-balance__orders">
+                                        <div className="zy-balance__orders-header">
+                                            <span>Pedidos del día ({balanceOrders.length})</span>
+                                        </div>
+                                        <div className="zy-balance__orders-list">
+                                            {balanceOrders.map((order) => {
+                                                const orderTotal = order?.CuentaTotal || 0;
+                                                const orderPagado = (order?.pagos || []).reduce((s, p) => s + (p?.monto || 0), 0);
+                                                const orderPendiente = orderTotal - orderPagado;
+                                                const orderPercent = orderTotal > 0 
+                                                    ? Math.min(100, Math.max(0, (orderPagado / orderTotal) * 100)) 
+                                                    : 0;
+                                                const orderStatus = orderPendiente === 0 ? 'ok' : (orderPendiente < 0 ? 'exceeded' : 'pending');
+                                                
+                                                return (
+                                                    <div key={order.OrderID} className={`zy-balance__order-item zy-balance__order-item--${orderStatus}`}>
+                                                        <div className="zy-balance__order-row">
+                                                            <span className="zy-balance__order-id">#{order.OrderID}</span>
+                                                            <span className="zy-balance__order-total">${orderTotal.toFixed(2)}</span>
+                                                            <span className={`zy-balance__order-status zy-balance__order-status--${orderStatus}`}>
+                                                                {orderStatus === 'ok' ? 'OK' : orderStatus === 'exceeded' ? 'Exced.' : 'Pend.'}
+                                                            </span>
+                                                            {orderStatus === 'exceeded' && (
+                                                                <button
+                                                                    className="zy-balance__order-menu"
+                                                                    onClick={() => openEditPaymentsModal(order)}
+                                                                    title="Editar pagos"
+                                                                >
+                                                                    ⋮
+                                                                </button>
+                                                            )}
+                                                        </div>
+                                                        <div className={`zy-balance__order-bar zy-balance__order-bar--${orderStatus}`}>
+                                                            <div className="zy-balance__order-fill" style={{ width: `${orderPercent}%` }} />
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Resumen de totales */}
+                                {!balanceLoading && balanceOrders.length > 0 && (
+                                    <div className="zy-balance__summary">
+                                        <div className="zy-balance__summary-row">
+                                            <span className="zy-balance__summary-label">Total Vendido:</span>
+                                            <span className="zy-balance__summary-value">${totalVendido.toFixed(2)}</span>
+                                        </div>
+                                        <div className="zy-balance__summary-row">
+                                            <span className="zy-balance__summary-label">Total Cobrado:</span>
+                                            <span className="zy-balance__summary-value">${totalCobrado.toFixed(2)}</span>
+                                        </div>
+                                        <div className={`zy-balance__summary-row zy-balance__summary-row--balance zy-balance__summary-row--${balanceStatus}`}>
+                                            <span className="zy-balance__summary-label">Balance:</span>
+                                            <span className="zy-balance__summary-value">
+                                                {balance === 0 ? '$0.00' : (balance > 0 ? `+$${balance.toFixed(2)}` : `-$${Math.abs(balance).toFixed(2)}`)}
+                                            </span>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Modal de selección de día (encima del modal de balance) */}
+                                {showBalanceDayPicker && (
+                                    <div className="zy-modal-overlay zy-modal-overlay--nested">
+                                        <div className="zy-modal zy-date-modal">
+                                            <div className="zy-modal__header">
+                                                <div>
+                                                    <div className="zy-modal__title">Seleccionar día</div>
+                                                    <div className="zy-modal__subtitle">
+                                                        {toLocalYMD(balanceDate)}
+                                                    </div>
+                                                </div>
+                                                <button className="zy-modal__close" onClick={() => setShowBalanceDayPicker(false)} title="Cerrar">✕</button>
+                                            </div>
+                                            <div className="zy-modal__body">
+                                                <Calendar
+                                                    onChange={(d) => { setBalanceDate(d); setShowBalanceDayPicker(false); }}
+                                                    value={balanceDate}
+                                                />
+                                            </div>
+                                            <div className="zy-modal__footer">
+                                                <button className="zy-btn zy-btn--secondary" onClick={() => setShowBalanceDayPicker(false)}>Cancelar</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Submodal de edición de pagos (encima del modal de balance) */}
+                                {showEditPaymentsModal && editingOrder && (
+                                    <div className="zy-modal-overlay zy-modal-overlay--nested" onClick={(e) => e.target === e.currentTarget && e.stopPropagation()}>
+                                        <div className="zy-modal zy-edit-payments-modal">
+                                            <div className="zy-modal__header zy-modal__header--danger">
+                                                <div>
+                                                    <div className="zy-modal__title">Editar Pagos</div>
+                                                    <div className="zy-modal__subtitle">
+                                                        Orden #{editingOrder.OrderID}
+                                                    </div>
+                                                </div>
+                                                <button className="zy-modal__close" onClick={closeEditPaymentsModal} title="Cerrar">✕</button>
+                                            </div>
+                                            <div className="zy-modal__body">
+                                                <div className="zy-edit-payments__info">
+                                                    <span>Total orden: <b>${editingOrder.CuentaTotal?.toFixed(2)}</b></span>
+                                                    <span>Cobrado: <b>${(editingOrder.pagos || []).reduce((s, p) => s + (p?.monto || 0), 0).toFixed(2)}</b></span>
+                                                </div>
+
+                                                <div className="zy-edit-payments__list">
+                                                    {(editingOrder.pagos || []).map((pago, idx) => (
+                                                        <div key={pago._id} className="zy-edit-payments__item">
+                                                            <div className="zy-edit-payments__item-info">
+                                                                <span className="zy-edit-payments__item-idx">#{idx + 1}</span>
+                                                                <span className="zy-edit-payments__item-date">
+                                                                    {new Date(pago.fecha).toLocaleString('es-MX', { 
+                                                                        day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' 
+                                                                    })}
+                                                                </span>
+                                                                <span className="zy-edit-payments__item-method">
+                                                                    {pago.metodoPago === 'card' ? '💳' : pago.metodoPago === 'transfer' ? '📱' : '💵'}
+                                                                </span>
+                                                            </div>
+                                                            <div className="zy-edit-payments__item-amount">
+                                                                {editingPaymentId === pago._id ? (
+                                                                    <div className="zy-edit-payments__edit-input">
+                                                                        <span>$</span>
+                                                                        <input
+                                                                            type="number"
+                                                                            value={editingPaymentAmount}
+                                                                            onChange={(e) => setEditingPaymentAmount(parseFloat(e.target.value) || 0)}
+                                                                            min="0"
+                                                                            step="0.01"
+                                                                            autoFocus
+                                                                        />
+                                                                        <button 
+                                                                            className="zy-edit-payments__btn zy-edit-payments__btn--confirm"
+                                                                            onClick={confirmEditPaymentAmount}
+                                                                            title="Confirmar"
+                                                                        >
+                                                                            ✓
+                                                                        </button>
+                                                                        <button 
+                                                                            className="zy-edit-payments__btn zy-edit-payments__btn--cancel"
+                                                                            onClick={() => setEditingPaymentId(null)}
+                                                                            title="Cancelar"
+                                                                        >
+                                                                            ✕
+                                                                        </button>
+                                                                    </div>
+                                                                ) : (
+                                                                    <>
+                                                                        <span className="zy-edit-payments__item-monto">${pago.monto?.toFixed(2)}</span>
+                                                                        <button 
+                                                                            className="zy-edit-payments__btn zy-edit-payments__btn--edit"
+                                                                            onClick={() => handleEditPaymentAmount(pago._id, pago.monto)}
+                                                                            title="Editar monto"
+                                                                        >
+                                                                            ✏️
+                                                                        </button>
+                                                                        <button 
+                                                                            className="zy-edit-payments__btn zy-edit-payments__btn--delete"
+                                                                            onClick={() => handleDeletePayment(pago._id)}
+                                                                            title="Eliminar pago"
+                                                                        >
+                                                                            🗑️
+                                                                        </button>
+                                                                    </>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+
+                                                {(editingOrder.pagos || []).length === 0 && (
+                                                    <div className="zy-edit-payments__empty">No hay pagos registrados.</div>
+                                                )}
+                                            </div>
+                                            <div className="zy-modal__footer">
+                                                <button className="zy-btn zy-btn--secondary" onClick={closeEditPaymentsModal}>Cerrar</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                            <div className="zy-modal__footer">
+                                <button className="zy-btn zy-btn--secondary" onClick={closeBalanceModal}>Cerrar</button>
+                            </div>
+                        </div>
+                    </div>
+                );
+            })()}
         </div>
     )
 }

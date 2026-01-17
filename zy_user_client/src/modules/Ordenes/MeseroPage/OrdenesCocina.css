@@ -899,37 +899,40 @@
 }
 
 /* Header especial para menú de orden */
-.context-menu-header-order {
-    background: linear-gradient(135deg, #00bcd4 0%, #ff1493 100%);
+.context-menu-header.context-menu-header-order {
+    background: linear-gradient(135deg, #e91e63 0%, #9c27b0 100%);
 }
 
-.context-menu-header-order .context-menu-title {
+.context-menu-header.context-menu-header-order .context-menu-title {
     color: #ffffff;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
-.context-menu-header-order .context-menu-subtitle {
-    color: rgba(255, 255, 255, 0.85);
+.context-menu-header.context-menu-header-order .context-menu-subtitle {
+    color: rgba(255, 255, 255, 0.9);
 }
 
-.context-menu-total {
+.context-menu-header.context-menu-header-order .context-menu-total {
     font-size: 16px;
     font-weight: 800;
     color: #ffffff;
     margin-top: 4px;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
 /* Botón eliminar orden (más prominente) */
-.context-menu-btn-delete-order {
-    color: #ffffff;
-    background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+.context-menu .context-menu-btn.context-menu-btn-delete-order {
+    color: #ffffff !important;
+    background: linear-gradient(135deg, #dc3545 0%, #c82333 100%) !important;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
 }
 
-.context-menu-btn-delete-order:hover {
-    background: linear-gradient(135deg, #c82333 0%, #a71d2a 100%);
+.context-menu .context-menu-btn.context-menu-btn-delete-order:hover {
+    background: linear-gradient(135deg, #c82333 0%, #a71d2a 100%) !important;
     transform: scale(1.02);
 }
 
-.context-menu-btn-delete-order:active {
+.context-menu .context-menu-btn.context-menu-btn-delete-order:active {
     transform: scale(0.98);
 }
 
@@ -944,10 +947,11 @@
     padding: 12px 20px 8px 20px;
     font-size: 14px;
     font-weight: 700;
-    color: #666;
+    color: #374151;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    background: #f8f9fa;
+    background: #f3f4f6;
+    border-top: 1px solid #e5e7eb;
 }
 
 .context-menu-btn-delete-comanda {

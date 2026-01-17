@@ -11,5 +11,9 @@ router.get('/:id', orderV2Controller.getOrder);
 router.post('/:id/pagos', orderV2Controller.addPayment);
 // Actualizar método de pago de un pago existente (solo compat/UI)
 router.put('/:id/pagos/:pagoId', orderV2Controller.updatePaymentMethod);
+// Actualizar monto de un pago existente
+router.put('/:id/pagos/:pagoId/monto', orderV2Controller.updatePaymentAmount);
+// Eliminar un pago existente
+router.delete('/:id/pagos/:pagoId', orderV2Controller.deletePayment);
 
 module.exports = router; 

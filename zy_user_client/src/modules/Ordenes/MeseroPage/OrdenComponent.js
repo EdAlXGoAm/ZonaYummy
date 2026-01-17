@@ -36,11 +36,16 @@ const Orden = ({modeInterface, iInterface, OrderID, DeleteOrder, handleOrderCust
     const [metodoPago, setMetodoPago] = useState('cash'); // 'cash' | 'card' | 'transfer'
     // Edición de método de pago por cobro ya registrado (historial)
     const [paymentMethodEdits, setPaymentMethodEdits] = useState({}); // { [pagoId]: 'cash'|'card'|'transfer' }
+    const [isProcessingPayment, setIsProcessingPayment] = useState(false); // Bloquea botón de confirmar
     // Flags para controles de cobro
     const hasMontoPago = orderV2.pagos.some(p => p.tipoPago === 'monto');
-    // Calcular pendiente: suma de precios de comandas menos lo ya cobrado
-    const computedPending = comandas.reduce((sum, c) => sum + (c.Precio || 0), 0) - (orderV2.pagado || 0);
-    const isFullyPaid = computedPending <= 0;
+    // Calcular pagado REAL desde array de pagos (más confiable que orderV2.pagado)
+    const realPagado = (orderV2?.pagos || []).reduce((sum, p) => sum + (p?.monto || 0), 0);
+    // Calcular pendiente: suma de precios de comandas menos lo ya cobrado REAL
+    const computedPending = comandas.reduce((sum, c) => sum + (c.Precio || 0), 0) - realPagado;
+    const isFullyPaid = computedPending <= 0 && computedPending === 0;
+    const isExceeded = computedPending < 0; // Se cobró de más
+    const excesoMonto = isExceeded ? Math.abs(computedPending) : 0;
     const isEmptyOrder = (comandas?.length || 0) === 0;
 
     const getMetodoPagoEmoji = (m) => {
@@ -83,11 +88,17 @@ const Orden = ({modeInterface, iInterface, OrderID, DeleteOrder, handleOrderCust
 
     // ==== Resumen compacto para tarjeta (usa Order local; no depende del modal/orderV2) ====
     const cardTotal = Order?.CuentaTotal || 0;
-    const cardPagado = Order?.pagado || 0;
-    const cardPendiente = (typeof Order?.pendiente === 'number')
-      ? Math.max(0, Order.pendiente)
-      : Math.max(0, cardTotal - cardPagado);
-    const cardIsPaid = cardTotal > 0 ? cardPendiente <= 0 : false;
+    // Calcular pagado REAL desde el array de pagos (más confiable que el campo pagado)
+    const cardPagadoFromPagos = (Order?.pagos || []).reduce((sum, p) => sum + (p?.monto || 0), 0);
+    const cardPagado = cardPagadoFromPagos > 0 ? cardPagadoFromPagos : (Order?.pagado || 0);
+    // Calcular pendiente real (puede ser negativo si se excedió)
+    const cardPendienteReal = cardTotal - cardPagado;
+    // Para mostrar, usamos el valor absoluto si es negativo (muestra el exceso)
+    const cardPendiente = Math.max(0, cardPendienteReal);
+    // Detectar exceso: pendiente negativo O pagado > total
+    const cardIsExceeded = cardTotal > 0 && (cardPendienteReal < 0 || cardPagado > cardTotal);
+    const cardExcesoMonto = cardIsExceeded ? Math.abs(cardPendienteReal) : 0;
+    const cardIsPaid = !cardIsExceeded && cardTotal > 0 && cardPendiente <= 0;
     const cardPercentPaid = cardTotal > 0
       ? Math.min(100, Math.max(0, (cardPagado / cardTotal) * 100))
       : (cardIsPaid ? 100 : 0);
@@ -519,6 +530,10 @@ const Orden = ({modeInterface, iInterface, OrderID, DeleteOrder, handleOrderCust
     }
 
     const confirmarCobroParcial = () => {
+        // Bloquear inmediatamente para evitar doble click
+        if (isProcessingPayment) return;
+        setIsProcessingPayment(true);
+
         const pending = computedPending;
         const items = Array.from(itemsSeleccionadosPago);
         const montoItems = comandas
@@ -530,28 +545,34 @@ const Orden = ({modeInterface, iInterface, OrderID, DeleteOrder, handleOrderCust
 
         if (!hasAmount && !hasItems) {
           notify('Selecciona ítems o ingresa un monto');
+          setIsProcessingPayment(false);
           return;
         }
         // Seguridad extra: evitamos mezclar (aunque la UI intenta hacerlo mutuamente excluyente)
         if (hasAmount && hasItems) {
           notify('Elige solo una opción: ítems o monto');
+          setIsProcessingPayment(false);
           return;
         }
 
         const monto = hasAmount ? montoEspecifico : montoItems;
         if (monto <= 0 || monto > pending) {
           notify('Monto inválido');
+          setIsProcessingPayment(false);
           return;
         }
         ordersApi.addPayment(Order.OrderID, { monto, tipoPago: hasAmount ? 'monto' : 'items', itemsPagados: hasAmount ? [] : items, metodoPago })
           .then((updated) => {
             setOrder(updated);
-            comandasApi.getComandasByOrderId(OrderID)
-              .then(res => setComandas(res))
-              .catch(err => console.log(err));
+            // Refrescar orden completa para recalcular pendiente (puede ser negativo si hay exceso)
+            fetchOrder();
             setModalPagoVisible(false);
+            setIsProcessingPayment(false);
           })
-          .catch(err => notify(`Error al cobrar: ${err}`));
+          .catch(err => {
+            notify(`Error al cobrar: ${err}`);
+            setIsProcessingPayment(false);
+          });
     };
 
     // Al abrir modal, limpiar selección previa y monto, y obtener la orden v2
@@ -580,9 +601,8 @@ const Orden = ({modeInterface, iInterface, OrderID, DeleteOrder, handleOrderCust
         .then(updated => {
           setOrder(updated);
           setOrderV2(updated);
-          comandasApi.getComandasByOrderId(OrderID)
-            .then(res => setComandas(res))
-            .catch(err => console.log(err));
+          // Refrescar orden completa para recalcular pendiente
+          fetchOrder();
           setModalPagoVisible(false);
         })
         .catch(err => notify(`Error al cobrar todo: ${err}`));
@@ -609,13 +629,13 @@ const Orden = ({modeInterface, iInterface, OrderID, DeleteOrder, handleOrderCust
 
     // ==== UI helpers para resumen de cobro (barra de progreso) ====
     const totalOrden = Order?.CuentaTotal || 0;
-    const pagadoActual = orderV2?.pagado || 0;
+    const pagadoActual = realPagado; // Usar suma real de pagos
     const pendienteActual = Math.max(0, computedPending || 0);
     const percentPaid = totalOrden > 0
       ? Math.min(100, Math.max(0, (pagadoActual / totalOrden) * 100))
       : (isFullyPaid ? 100 : 0);
 
-    const totalCobradoHistorial = (orderV2?.pagos || []).reduce((sum, p) => sum + (p?.monto || 0), 0);
+    const totalCobradoHistorial = realPagado; // Ya calculado arriba
 
     // Función para seleccionar todos los ítems disponibles
     const handleSelectAllItems = () => {
@@ -688,14 +708,14 @@ const Orden = ({modeInterface, iInterface, OrderID, DeleteOrder, handleOrderCust
                 <div className="col-6 d-flex align-items-center orderTotal ps-0">
                     <div className="orderPayMini">
                         <div className="orderPayMini__row">
-                            <div className={`orderPayMini__title ${cardIsPaid ? 'isPaid' : 'isPending'}`}>
-                                {cardIsPaid ? 'OK' : 'Pend.'}
+                            <div className={`orderPayMini__title ${cardIsExceeded ? 'isExceeded' : (cardIsPaid ? 'isPaid' : 'isPending')}`}>
+                                {cardIsExceeded ? 'Exced' : (cardIsPaid ? 'OK' : 'Pend.')}
                             </div>
-                            <div className={`orderPayMini__amount ${cardIsPaid ? 'isPaid' : 'isPending'}`}>
-                                ${cardPendiente.toFixed(2)}
+                            <div className={`orderPayMini__amount ${cardIsExceeded ? 'isExceeded' : (cardIsPaid ? 'isPaid' : 'isPending')}`}>
+                                ${cardIsExceeded ? cardExcesoMonto.toFixed(2) : cardPendiente.toFixed(2)}
                             </div>
                         </div>
-                        <div className={`orderPayMini__bar ${cardIsPaid ? 'isPaid' : 'isPending'}`}>
+                        <div className={`orderPayMini__bar ${cardIsExceeded ? 'isExceeded' : (cardIsPaid ? 'isPaid' : 'isPending')}`}>
                             <div className="orderPayMini__fill" style={{ width: `${cardPercentPaid}%` }} />
                         </div>
                     </div>
@@ -784,8 +804,12 @@ const Orden = ({modeInterface, iInterface, OrderID, DeleteOrder, handleOrderCust
                       <div className='text-sm text-gray-600'>Total de la orden</div>
                       <div className='text-xl font-bold'>${totalOrden.toFixed(2)}</div>
                     </div>
-                    <div className={`payment-badge ${isFullyPaid ? 'payment-badge--paid' : 'payment-badge--pending'}`}>
-                      {isFullyPaid ? (
+                    <div className={`payment-badge ${isExceeded ? 'payment-badge--exceeded' : (isFullyPaid ? 'payment-badge--paid' : 'payment-badge--pending')}`}>
+                      {isExceeded ? (
+                        <>
+                          <span>⚠️ Excedido: </span><b>${excesoMonto.toFixed(2)}</b>
+                        </>
+                      ) : isFullyPaid ? (
                         <>
                           <FontAwesomeIcon icon={faCheck} /> <span>Orden saldada</span>
                         </>
@@ -797,10 +821,10 @@ const Orden = ({modeInterface, iInterface, OrderID, DeleteOrder, handleOrderCust
                     </div>
                   </div>
 
-                  <div className={`payment-progress ${isFullyPaid ? 'payment-progress--paid' : 'payment-progress--pending'}`}>
+                  <div className={`payment-progress ${isExceeded ? 'payment-progress--exceeded' : (isFullyPaid ? 'payment-progress--paid' : 'payment-progress--pending')}`}>
                     <div className='payment-progress__meta'>
                       <span className='text-sm text-gray-600'>Progreso de cobro</span>
-                      <span className='text-sm font-bold'>{Math.round(percentPaid)}%</span>
+                      <span className='text-sm font-bold'>{isExceeded ? `${Math.round(percentPaid)}% ⚠️` : `${Math.round(percentPaid)}%`}</span>
                     </div>
                     <div
                       className='payment-progress__bar'
@@ -818,9 +842,9 @@ const Orden = ({modeInterface, iInterface, OrderID, DeleteOrder, handleOrderCust
                         <div className='label'>Pagado</div>
                         <div className='value'>${pagadoActual.toFixed(2)}</div>
                       </div>
-                      <div className='payment-progress__num payment-progress__num--pending'>
-                        <div className='label'>Pendiente</div>
-                        <div className='value'>${pendienteActual.toFixed(2)}</div>
+                      <div className={`payment-progress__num ${isExceeded ? 'payment-progress__num--exceeded' : 'payment-progress__num--pending'}`}>
+                        <div className='label'>{isExceeded ? 'Exceso' : 'Pendiente'}</div>
+                        <div className='value'>${isExceeded ? excesoMonto.toFixed(2) : pendienteActual.toFixed(2)}</div>
                       </div>
                     </div>
                   </div>
@@ -983,10 +1007,12 @@ const Orden = ({modeInterface, iInterface, OrderID, DeleteOrder, handleOrderCust
                     <>
                       {!isFullyPaid && (
                         <button
-                          className='bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition flex items-center'
+                          className={`${isProcessingPayment ? 'bg-gray-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700'} text-white px-4 py-2 rounded-lg transition flex items-center`}
                           onClick={confirmarCobroParcial}
+                          disabled={isProcessingPayment}
                         >
-                          <i className='fas fa-check-circle mr-2'></i>Confirmar
+                          <i className={`fas ${isProcessingPayment ? 'fa-spinner fa-spin' : 'fa-check-circle'} mr-2`}></i>
+                          {isProcessingPayment ? 'Procesando...' : 'Confirmar'}
                         </button>
                       )}
                       <button

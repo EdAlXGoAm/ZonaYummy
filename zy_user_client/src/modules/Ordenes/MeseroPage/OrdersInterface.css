@@ -473,3 +473,339 @@
     white-space: nowrap;
     max-width: 360px;
 }
+
+/* ===== Modal de Balance (ZonaYummy) ===== */
+.zy-balance-modal {
+    max-width: 680px;
+}
+.zy-balance-modal .zy-modal__header {
+    background: linear-gradient(135deg, #166534, #15803d);
+}
+
+.zy-balance__date-selector {
+    margin-bottom: 16px;
+}
+.zy-balance__date-label {
+    display: block;
+    font-size: 12px;
+    font-weight: 900;
+    color: #374151;
+    margin-bottom: 8px;
+}
+
+.zy-balance__loading,
+.zy-balance__empty {
+    padding: 16px 0;
+    font-size: 13px;
+    color: #6b7280;
+    font-weight: 700;
+    text-align: center;
+}
+
+/* Lista de pedidos */
+.zy-balance__orders {
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 10px 12px;
+    margin-bottom: 16px;
+    background: #fff;
+}
+.zy-balance__orders-header {
+    font-size: 13px;
+    font-weight: 900;
+    color: #111827;
+    margin-bottom: 10px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #eef2f7;
+}
+.zy-balance__orders-list {
+    max-height: 280px;
+    overflow: auto;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+}
+.zy-balance__order-item {
+    padding: 8px 10px;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    background: #fafafa;
+}
+.zy-balance__order-item--ok {
+    border-left: 3px solid #22c55e;
+}
+.zy-balance__order-item--exceeded {
+    border-left: 3px solid #dc2626;
+}
+.zy-balance__order-item--pending {
+    border-left: 3px solid #f97316;
+}
+.zy-balance__order-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 4px;
+}
+.zy-balance__order-id {
+    font-size: 12px;
+    font-weight: 900;
+    color: #374151;
+}
+.zy-balance__order-total {
+    font-size: 13px;
+    font-weight: 950;
+    color: #111827;
+}
+.zy-balance__order-status {
+    font-size: 11px;
+    font-weight: 900;
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+.zy-balance__order-status--ok {
+    background: #dcfce7;
+    color: #166534;
+}
+.zy-balance__order-status--exceeded {
+    background: #fee2e2;
+    color: #dc2626;
+}
+.zy-balance__order-status--pending {
+    background: #ffedd5;
+    color: #9a3412;
+}
+
+/* Barra de progreso del pedido */
+.zy-balance__order-bar {
+    height: 8px;
+    background: #f3f4f6;
+    border-radius: 999px;
+    overflow: hidden;
+}
+.zy-balance__order-fill {
+    height: 100%;
+    border-radius: 999px;
+    transition: width 350ms ease;
+}
+.zy-balance__order-bar--ok .zy-balance__order-fill {
+    background: linear-gradient(90deg, #22c55e, #16a34a);
+}
+.zy-balance__order-bar--exceeded .zy-balance__order-fill {
+    background: linear-gradient(90deg, #dc2626, #991b1b);
+}
+.zy-balance__order-bar--pending .zy-balance__order-fill {
+    background: linear-gradient(90deg, #f97316, #ea580c);
+}
+
+/* Resumen de totales */
+.zy-balance__summary {
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 12px 14px;
+    background: #f9fafb;
+}
+.zy-balance__summary-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 8px 0;
+    border-bottom: 1px solid #e5e7eb;
+}
+.zy-balance__summary-row:last-child {
+    border-bottom: none;
+}
+.zy-balance__summary-label {
+    font-size: 13px;
+    font-weight: 800;
+    color: #374151;
+}
+.zy-balance__summary-value {
+    font-size: 15px;
+    font-weight: 950;
+    color: #111827;
+}
+.zy-balance__summary-row--balance {
+    margin-top: 4px;
+    padding-top: 12px;
+    border-top: 2px solid #d1d5db;
+}
+.zy-balance__summary-row--balance .zy-balance__summary-label {
+    font-size: 14px;
+}
+.zy-balance__summary-row--balance .zy-balance__summary-value {
+    font-size: 18px;
+}
+.zy-balance__summary-row--ok .zy-balance__summary-value {
+    color: #166534;
+}
+.zy-balance__summary-row--exceeded .zy-balance__summary-value {
+    color: #dc2626;
+}
+.zy-balance__summary-row--pending .zy-balance__summary-value {
+    color: #9a3412;
+}
+
+/* Botón de menú contextual en órdenes excedidas */
+.zy-balance__order-menu {
+    background: none;
+    border: none;
+    font-size: 16px;
+    font-weight: 900;
+    color: #dc2626;
+    cursor: pointer;
+    padding: 2px 6px;
+    border-radius: 4px;
+    line-height: 1;
+}
+.zy-balance__order-menu:hover {
+    background: #fee2e2;
+}
+
+/* ===== Submodal de edición de pagos ===== */
+.zy-edit-payments-modal {
+    max-width: 480px;
+}
+.zy-modal__header--danger {
+    background: linear-gradient(135deg, #dc2626, #b91c1c);
+}
+
+.zy-edit-payments__info {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 12px;
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: 8px;
+    margin-bottom: 12px;
+    font-size: 13px;
+    color: #991b1b;
+}
+
+.zy-edit-payments__list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.zy-edit-payments__item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 10px 12px;
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+}
+
+.zy-edit-payments__item-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.zy-edit-payments__item-idx {
+    font-size: 12px;
+    font-weight: 900;
+    color: #6b7280;
+    background: #f3f4f6;
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
+.zy-edit-payments__item-date {
+    font-size: 12px;
+    color: #374151;
+}
+
+.zy-edit-payments__item-method {
+    font-size: 14px;
+}
+
+.zy-edit-payments__item-amount {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.zy-edit-payments__item-monto {
+    font-size: 14px;
+    font-weight: 900;
+    color: #111827;
+    min-width: 70px;
+    text-align: right;
+}
+
+.zy-edit-payments__btn {
+    border: none;
+    background: none;
+    cursor: pointer;
+    font-size: 14px;
+    padding: 4px 6px;
+    border-radius: 4px;
+}
+
+.zy-edit-payments__btn--edit:hover {
+    background: #eff6ff;
+}
+
+.zy-edit-payments__btn--delete {
+    color: #dc2626;
+}
+.zy-edit-payments__btn--delete:hover {
+    background: #fee2e2;
+}
+
+.zy-edit-payments__btn--confirm {
+    background: #dcfce7;
+    color: #166534;
+    font-weight: 900;
+}
+.zy-edit-payments__btn--confirm:hover {
+    background: #bbf7d0;
+}
+
+.zy-edit-payments__btn--cancel {
+    background: #f3f4f6;
+    color: #6b7280;
+}
+.zy-edit-payments__btn--cancel:hover {
+    background: #e5e7eb;
+}
+
+.zy-edit-payments__edit-input {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.zy-edit-payments__edit-input span {
+    font-size: 13px;
+    font-weight: 700;
+    color: #374151;
+}
+
+.zy-edit-payments__edit-input input {
+    width: 80px;
+    padding: 4px 8px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.zy-edit-payments__edit-input input:focus {
+    outline: none;
+    border-color: #2563eb;
+    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+}
+
+.zy-edit-payments__empty {
+    padding: 16px;
+    text-align: center;
+    color: #6b7280;
+    font-size: 13px;
+}

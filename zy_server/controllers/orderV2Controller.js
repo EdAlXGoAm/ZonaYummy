@@ -79,3 +79,62 @@ exports.updatePaymentMethod = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+
+// Actualizar el monto de un pago existente
+exports.updatePaymentAmount = async (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    const { pagoId } = req.params;
+    const { monto } = req.body;
+
+    if (typeof monto !== 'number' || monto < 0) {
+      return res.status(400).json({ error: 'Monto inválido' });
+    }
+
+    const order = await OrderV2.findOne({ OrderID: id });
+    if (!order) return res.status(404).json({ error: 'Orden no encontrada' });
+
+    const pago = order.pagos.id(pagoId);
+    if (!pago) return res.status(404).json({ error: 'Pago no encontrado' });
+
+    const diferencia = monto - pago.monto;
+    pago.monto = monto;
+
+    // Recalcular pagado y pendiente
+    order.pagado = (order.pagado || 0) + diferencia;
+    order.pendiente = order.CuentaTotal - order.pagado;
+
+    await order.save();
+    res.json(order);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+// Eliminar un pago existente
+exports.deletePayment = async (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    const { pagoId } = req.params;
+
+    const order = await OrderV2.findOne({ OrderID: id });
+    if (!order) return res.status(404).json({ error: 'Orden no encontrada' });
+
+    const pago = order.pagos.id(pagoId);
+    if (!pago) return res.status(404).json({ error: 'Pago no encontrado' });
+
+    const montoEliminado = pago.monto;
+
+    // Eliminar el pago del array
+    order.pagos.pull(pagoId);
+
+    // Recalcular pagado y pendiente
+    order.pagado = Math.max(0, (order.pagado || 0) - montoEliminado);
+    order.pendiente = order.CuentaTotal - order.pagado;
+
+    await order.save();
+    res.json(order);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};

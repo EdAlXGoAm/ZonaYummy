@@ -29,5 +29,7 @@ router.get('/getSumByDate/:date/:offset', orderController.getSumByDate);
 router.get('/getSumByDateV2Breakdown/:date/:offset', orderController.getSumByDateV2Breakdown);
 // Conteo de platillos vendidos por día (basado en OrderDate) con desglose por variante
 router.get('/getItemCountsByDate/:date/:offset', orderController.getItemCountsByDate);
+// Órdenes de un día específico con pagos para modal de balance
+router.get('/getByDate/:date/:offset', orderController.getOrdersByDate);
 
 module.exports = router;

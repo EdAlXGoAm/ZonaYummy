@@ -188,6 +188,36 @@ exports.getSumByDateV2Breakdown = (req, res) => {
     .catch(err => res.status(400).json({ error: "Error: " + err }));
 };
 
+// Obtener órdenes de un día específico con sus pagos para el modal de balance
+exports.getOrdersByDate = (req, res) => {
+    const dateParam = req.params.date;
+    const offsetParam = parseInt(req.params.offset, 10);
+    if (isNaN(offsetParam)) {
+        return res.status(400).json({ error: "Offset inválido" });
+    }
+    const partes = dateParam.split('-');
+    if (partes.length !== 3) {
+        return res.status(400).json({ error: "Formato de fecha inválido, use YYYY-MM-DD" });
+    }
+    const [year, month, day] = partes.map(n => parseInt(n, 10));
+    if ([year, month, day].some(isNaN)) {
+        return res.status(400).json({ error: "Fecha inválida" });
+    }
+
+    const startUtc = new Date(Date.UTC(year, month - 1, day, 0 - offsetParam, 0, 0, 0));
+    const endUtc = new Date(Date.UTC(year, month - 1, day, 23 - offsetParam, 59, 59, 999));
+
+    Order.find({
+        OrderDate: { $gte: startUtc, $lte: endUtc }
+    })
+    .select('OrderID OrderDate CuentaTotal Customer pagado pendiente pagos')
+    .sort({ OrderID: 1 })
+    .then(orders => {
+        res.json({ date: dateParam, orders });
+    })
+    .catch(err => res.status(400).json({ error: "Error: " + err }));
+};
+
 // Conteo de platillos/variantes vendidos por día (basado en OrderDate) considerando offset
 exports.getItemCountsByDate = (req, res) => {
     const dateParam = req.params.date;

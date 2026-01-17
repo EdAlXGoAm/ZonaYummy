@@ -128,6 +128,17 @@ const ordersApi = {
         }
     },
 
+    // Órdenes de un día específico con pagos para modal de balance
+    getOrdersByDate: async (date, offset) => {
+        try {
+            const response = await Axios.get(`${baseURL}/getByDate/${date}/${offset}`);
+            return response.data;
+        } catch (error) {
+            console.error("ordersAPI error: ", error);
+            throw error;
+        }
+    },
+
     // Registra un pago parcial o total usando la API v2
     addPayment: async (orderID, payment) => {
         try {
@@ -154,6 +165,28 @@ const ordersApi = {
     updatePaymentMethod: async (orderID, pagoId, metodoPago) => {
         try {
             const response = await Axios.put(`${baseURL}/v2/${orderID}/pagos/${pagoId}`, { metodoPago });
+            return response.data;
+        } catch (error) {
+            console.error("ordersAPI error: ", error);
+            throw error;
+        }
+    },
+
+    // Actualizar monto de un pago existente (API v2)
+    updatePaymentAmount: async (orderID, pagoId, monto) => {
+        try {
+            const response = await Axios.put(`${baseURL}/v2/${orderID}/pagos/${pagoId}/monto`, { monto });
+            return response.data;
+        } catch (error) {
+            console.error("ordersAPI error: ", error);
+            throw error;
+        }
+    },
+
+    // Eliminar un pago existente (API v2)
+    deletePayment: async (orderID, pagoId) => {
+        try {
+            const response = await Axios.delete(`${baseURL}/v2/${orderID}/pagos/${pagoId}`);
             return response.data;
         } catch (error) {
             console.error("ordersAPI error: ", error);
