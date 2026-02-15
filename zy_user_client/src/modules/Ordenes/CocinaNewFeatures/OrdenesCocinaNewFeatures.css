@@ -469,8 +469,8 @@ body:has(.cocina-new-layout) {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
     gap: 12px;
-    height: 100%;
-    min-height: 0; /* Permite que las columnas colapsen y tengan scroll interno */
+    min-height: 100%;
+    height: auto; /* La fila crece con la columna más alta (ej. C Hamburguesa) */
 }
 
 .order-column {
@@ -494,6 +494,25 @@ body:has(.cocina-new-layout) {
 .order-column-empty {
     opacity: 0.5;
     border-style: dashed;
+}
+
+/* Columna que expande altura al contenido (ej. C Hamburguesa, 100% de columna) */
+.order-column--expand-height {
+    height: auto;
+    min-height: 0;
+}
+
+.order-column--expand-height .order-column-body {
+    flex: 0 1 auto;
+    overflow: visible;
+    min-height: 0;
+}
+
+/* C Hamburguesa: sin límite de altura en card-body para que la columna expanda */
+.order-column--expand-height .resume-card--compact .card-body,
+.order-column--expand-height .resume-card--compact .card-body.divStyle {
+    max-height: none !important;
+    overflow: visible !important;
 }
 
 /* ============================================

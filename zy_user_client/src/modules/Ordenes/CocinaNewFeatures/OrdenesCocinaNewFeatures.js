@@ -198,60 +198,66 @@ const OrdenesCocinaNewFeatures = ({modeInterface, Orders}) => {
         return Array.from(orderMap.values()).sort((a, b) => Number(a.orderId) - Number(b.orderId));
     }, [activeComandas]);
 
-    // Lógica especial para dividir órdenes con muchas hamburguesas
-    const MAX_HAMBURGUESAS_POR_COLUMNA = 3;
-    
+    // Espacio que ocupa cada platillo como fracción de una columna (1.0 = columna llena).
+    // Fácil extender: añadir más entradas con su fracción.
+    const PLATILLO_COLUMN_SPACE = {
+        Hamburguesa: 1 / 3,
+        Tacos: 1 / 6,
+        'C Hamburguesa': 1, // 100% de la columna; se expande verticalmente a lo que necesite.
+        // Ejemplo futuro: Waffle: 1/4,
+    };
+    const DEFAULT_COLUMN_SPACE = 1 / 3; // Platillos no listados (comportamiento similar a hamburguesa).
+    const getComandaSpace = (comanda) => PLATILLO_COLUMN_SPACE[comanda.Platillo] ?? DEFAULT_COLUMN_SPACE;
+
     const { mainOrders, extraOrders } = useMemo(() => {
         const columnSlots = []; // Cada slot representa una columna
         const overflow = []; // Comandas que van a "próximas"
-        
-        ordersGrouped.forEach((order, orderIndex) => {
-            // Separar hamburguesas de otras comandas
-            const hamburguesas = order.comandas.filter(c => c.Platillo === "Hamburguesa");
-            const otrasComandas = order.comandas.filter(c => c.Platillo !== "Hamburguesa");
-            
-            // Si tiene 3 o menos hamburguesas, se trata normal
-            if (hamburguesas.length <= MAX_HAMBURGUESAS_POR_COLUMNA) {
-                columnSlots.push({
-                    ...order,
-                    isPartial: false,
-                    partNumber: null
-                });
-            } else {
-                // Dividir hamburguesas en chunks de 3
-                const chunks = [];
-                for (let i = 0; i < hamburguesas.length; i += MAX_HAMBURGUESAS_POR_COLUMNA) {
-                    chunks.push(hamburguesas.slice(i, i + MAX_HAMBURGUESAS_POR_COLUMNA));
-                }
-                
-                // Calcular cuántos slots ya tenemos y cuántos quedan
-                const slotsUsados = columnSlots.length;
-                const slotsDisponibles = 4 - slotsUsados;
-                
-                // Distribuir chunks
-                chunks.forEach((chunk, chunkIndex) => {
-                    const chunkTotal = chunk.reduce((sum, c) => sum + (c.Precio || 0), 0);
-                    const partialOrder = {
-                        orderId: order.orderId,
-                        customer: order.customer,
-                        comandas: chunkIndex === 0 ? [...chunk, ...otrasComandas] : chunk, // Primera parte incluye otras comandas
-                        total: chunkIndex === 0 ? chunkTotal + otrasComandas.reduce((sum, c) => sum + (c.Precio || 0), 0) : chunkTotal,
-                        isPartial: true,
-                        partNumber: chunkIndex + 1,
-                        totalParts: chunks.length
-                    };
-                    
-                    // Si aún caben en las 4 columnas principales
-                    if (columnSlots.length < 4) {
-                        columnSlots.push(partialOrder);
-                    } else {
-                        // Van a próximas
-                        overflow.push(partialOrder);
+        const COLUMN_CAPACITY = 1.0;
+
+        ordersGrouped.forEach((order) => {
+            // Formar partes: cada parte es un conjunto de comandas cuya suma de espacios <= 1.0
+            const parts = [];
+            let currentPart = [];
+            let currentUsed = 0;
+
+            order.comandas.forEach((comanda) => {
+                const space = getComandaSpace(comanda);
+                if (currentUsed + space <= COLUMN_CAPACITY) {
+                    currentPart.push(comanda);
+                    currentUsed += space;
+                } else {
+                    if (currentPart.length > 0) {
+                        parts.push(currentPart);
                     }
-                });
+                    currentPart = [comanda];
+                    currentUsed = space;
+                }
+            });
+            if (currentPart.length > 0) {
+                parts.push(currentPart);
             }
+
+            // Asignar cada parte a columnSlots (si < 4) o overflow
+            parts.forEach((part, partIndex) => {
+                const total = part.reduce((sum, c) => sum + (c.Precio || 0), 0);
+                const slot = {
+                    orderId: order.orderId,
+                    customer: order.customer,
+                    origen: order.origen,
+                    comandas: part,
+                    total,
+                    isPartial: parts.length > 1,
+                    partNumber: parts.length > 1 ? partIndex + 1 : null,
+                    totalParts: parts.length > 1 ? parts.length : null
+                };
+                if (columnSlots.length < 4) {
+                    columnSlots.push(slot);
+                } else {
+                    overflow.push(slot);
+                }
+            });
         });
-        
+
         return {
             mainOrders: columnSlots.slice(0, 4),
             extraOrders: [...columnSlots.slice(4), ...overflow]
@@ -306,10 +312,18 @@ const OrdenesCocinaNewFeatures = ({modeInterface, Orders}) => {
         );
     };
 
+    // Columna con un solo platillo "C Hamburguesa" expande altura al contenido
+    const isExpandHeightColumn = (order) =>
+        order.comandas.length === 1 && order.comandas[0].Platillo === 'C Hamburguesa';
+
     // Renderizar una columna de orden
     const renderOrderColumn = (order, index) => {
+        const expandHeight = isExpandHeightColumn(order);
         return (
-            <div key={order.orderId} className="order-column">
+            <div
+                key={order.orderId}
+                className={`order-column${expandHeight ? ' order-column--expand-height' : ''}`}
+            >
                 <BubbleTrainHeader order={order} />
                 <div className="order-column-body">
                     {order.comandas.map((comanda, comandaIndex) => (
