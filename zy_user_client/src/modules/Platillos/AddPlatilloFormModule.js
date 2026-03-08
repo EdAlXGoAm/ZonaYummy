@@ -3,38 +3,124 @@ import checkbox_css from './checkbox.css'; //La ruta de este archivo es: src/css
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import platillosApi from './../../api/platillosApi';
 
+const createEmptyPlatillo = (platilloId = '') => ({
+    PlatilloId: platilloId,
+    Categoria: '',
+    NombrePlatillo: '',
+    Descripcion: '',
+    Imagen: '',
+    Disponibilidad: '',
+    SelectedVariant: 0,
+    Variants: []
+});
+
+const normalizeComponente = (componente = {}) => ({
+    Name: componente?.Name ?? '',
+    Precio: componente?.Precio ?? 0,
+    Checked: componente?.Checked ?? true
+});
+
+const normalizeOpcionItem = (item = {}) => ({
+    Name: item?.Name ?? '',
+    Precio: item?.Precio ?? 0
+});
+
+const normalizeOpcion = (opcion = {}) => ({
+    Name: opcion?.Name ?? '',
+    SelectedItem: opcion?.SelectedItem ?? 0,
+    Items: Array.isArray(opcion?.Items) ? opcion.Items.map(normalizeOpcionItem) : []
+});
+
+const normalizeIngredienteItemCantidad = (cantidad = {}) => ({
+    Name: cantidad?.Name ?? ''
+});
+
+const normalizeIngredienteItem = (item = {}) => ({
+    Checked: item?.Checked ?? false,
+    Name: item?.Name ?? '',
+    SelectedCantidad: item?.SelectedCantidad ?? 0,
+    ItemCantidad: Array.isArray(item?.ItemCantidad) ? item.ItemCantidad.map(normalizeIngredienteItemCantidad) : []
+});
+
+const normalizeIngrediente = (ingrediente = {}) => ({
+    Type: ingrediente?.Type ?? 'CB',
+    Name: ingrediente?.Name ?? '',
+    SelectedItem: ingrediente?.SelectedItem ?? 0,
+    Items: Array.isArray(ingrediente?.Items) ? ingrediente.Items.map(normalizeIngredienteItem) : []
+});
+
+const normalizeExtra = (extra = {}) => ({
+    Checked: extra?.Checked ?? false,
+    Extra: extra?.Extra ?? '',
+    SelectedOpcion: extra?.SelectedOpcion ?? 0,
+    Opciones: Array.isArray(extra?.Opciones) ? extra.Opciones : [],
+    SelectedCantidad: extra?.SelectedCantidad ?? 0,
+    Cantidad: Array.isArray(extra?.Cantidad) ? extra.Cantidad : [],
+    Precio: extra?.Precio ?? 0
+});
+
+const normalizeAdicional = (adicional = {}) => ({
+    Checked: adicional?.Checked ?? false,
+    Adicional: adicional?.Adicional ?? '',
+    SelectedOpcion: adicional?.SelectedOpcion ?? 0,
+    Opciones: Array.isArray(adicional?.Opciones) ? adicional.Opciones : [],
+    SelectedCantidad: adicional?.SelectedCantidad ?? 0,
+    Cantidad: Array.isArray(adicional?.Cantidad) ? adicional.Cantidad : [],
+    Precio: adicional?.Precio ?? 0
+});
+
+const normalizeVariant = (variant = {}) => ({
+    VariantName: variant?.VariantName ?? '',
+    Precio: variant?.Precio ?? 0,
+    Componentes: Array.isArray(variant?.Componentes) ? variant.Componentes.map(normalizeComponente) : [],
+    Opciones: Array.isArray(variant?.Opciones) ? variant.Opciones.map(normalizeOpcion) : [],
+    Ingredientes: Array.isArray(variant?.Ingredientes) ? variant.Ingredientes.map(normalizeIngrediente) : [],
+    Extras: Array.isArray(variant?.Extras) ? variant.Extras.map(normalizeExtra) : [],
+    Adicionales: Array.isArray(variant?.Adicionales) ? variant.Adicionales.map(normalizeAdicional) : []
+});
+
+const normalizePlatillo = (value = {}) => ({
+    PlatilloId: value?.PlatilloId ?? '',
+    Categoria: value?.Categoria ?? '',
+    NombrePlatillo: value?.NombrePlatillo ?? '',
+    Descripcion: value?.Descripcion ?? '',
+    Imagen: value?.Imagen ?? '',
+    Disponibilidad: value?.Disponibilidad ?? '',
+    SelectedVariant: value?.SelectedVariant ?? 0,
+    Variants: Array.isArray(value?.Variants) ? value.Variants.map(normalizeVariant) : []
+});
+
 const AddPlatilloForm = ({ 
     onClose, 
     mode = "both", // "list" | "form" | "both"
     onEditRequest, // callback cuando se hace clic en editar desde la lista
     editPlatilloId = null, // ID del platillo a editar (para cargar desde afuera)
+    initialCategoria = '',
     onPlatillosUpdate // callback para sincronizar la lista externa
 }) => {
-    const [platillo, setPlatillo] = useState({
-        PlatilloId: '',
-        Categoria: '',
-        NombrePlatillo: '',
-        Descripcion: '',
-        Imagen: '',
-        Disponibilidad: '',
-        SelectedVariant: 0,
-        Variants: []
-    });
+    const [platillo, setPlatillo] = useState(createEmptyPlatillo());
     const [platillosList, setPlatillosList] = useState([]);
     const [buttonAction, setButtonAction] = useState("Agregar")
+    const [jsonDraft, setJsonDraft] = useState(JSON.stringify(createEmptyPlatillo(), null, 2));
+    const [jsonIsDirty, setJsonIsDirty] = useState(false);
+    const [jsonError, setJsonError] = useState('');
+    const jsonLineNumbersRef = useRef(null);
+    const platilloJson = useMemo(() => JSON.stringify(platillo, null, 2), [platillo]);
+    const jsonLineNumbers = useMemo(
+        () => jsonDraft.split('\n').map((_, index) => index + 1).join('\n'),
+        [jsonDraft]
+    );
 
     const fetchResetPlatillo = () => {
-        setPlatillo ({
-            PlatilloId: '',
-            Categoria: '',
-            NombrePlatillo: '',
-            Descripcion: '',
-            Imagen: '',
-            Disponibilidad: '',
-            SelectedVariant: 0,
-            Variants: []
-        })
+        setPlatillo(createEmptyPlatillo())
     }
+
+    useEffect(() => {
+        if (!jsonIsDirty) {
+            setJsonDraft(platilloJson);
+            setJsonError('');
+        }
+    }, [platilloJson, jsonIsDirty]);
 
     const handleToggleButtonAction = () => {
         buttonAction === "Actualizar"
@@ -80,11 +166,16 @@ const AddPlatilloForm = ({
     // Cargar platillo a editar cuando se pasa editPlatilloId desde afuera
     useEffect(() => {
         if (editPlatilloId !== null && editPlatilloId !== undefined) {
+            setPlatillo(prevPlatillo => ({
+                ...prevPlatillo,
+                PlatilloId: editPlatilloId,
+                Categoria: initialCategoria || prevPlatillo.Categoria
+            }));
             fetchPlatilloToEdit(editPlatilloId);
         }
-    }, [editPlatilloId]);
+    }, [editPlatilloId, initialCategoria]);
 
-    // Agrupar platillos por categoría
+    // Agrupar platillos por categoría y ordenar por ID
     const platillosAgrupados = useMemo(() => {
         const grupos = {};
         platillosList.forEach(platillo => {
@@ -94,26 +185,109 @@ const AddPlatilloForm = ({
             }
             grupos[categoria].push(platillo);
         });
+        // Ordenar por ID dentro de cada categoría
+        Object.keys(grupos).forEach(categoria => {
+            grupos[categoria].sort((a, b) => {
+                const idA = parseInt(a.PlatilloId) || 0;
+                const idB = parseInt(b.PlatilloId) || 0;
+                return idA - idB;
+            });
+        });
         return grupos;
     }, [platillosList]);
 
     const categoriasPlatillos = useMemo(() => Object.keys(platillosAgrupados).sort(), [platillosAgrupados]);
 
+    // Función para generar IDs faltantes entre dos platillos
+    const getMissingIds = (startId, endId) => {
+        const missing = [];
+        for (let i = startId + 1; i < endId; i++) {
+            missing.push(i);
+        }
+        return missing;
+    };
+
+    // Función auxiliar para verificar si un ID ya existe en la lista completa de platillos
+    const platilloIdExists = (id) => {
+        return platillosList.some(platillo => parseInt(platillo.PlatilloId) === id);
+    };
+
+    // Función para crear un array mezclado de platillos y botones de IDs faltantes
+    const createPlatillosWithButtons = (platillos) => {
+        if (platillos.length === 0) return [];
+        
+        const result = [];
+        
+        const firstId = parseInt(platillos[0].PlatilloId) || 0;
+        const lastId = parseInt(platillos[platillos.length - 1].PlatilloId) || 0;
+        
+        // Agregar botón antes del primer platillo si el ID anterior no existe
+        if (firstId > 1 && !platilloIdExists(firstId - 1)) {
+            result.push({ type: 'button', id: firstId - 1 });
+        }
+        
+        // Agregar el primer platillo
+        result.push({ type: 'platillo', data: platillos[0] });
+        
+        // Para cada par de platillos consecutivos, verificar IDs faltantes
+        for (let i = 1; i < platillos.length; i++) {
+            const prevId = parseInt(platillos[i - 1].PlatilloId) || 0;
+            const currentId = parseInt(platillos[i].PlatilloId) || 0;
+            
+            // Si hay IDs faltantes entre ellos, agregar solo el siguiente al primero y el anterior al segundo
+            if (currentId - prevId > 1) {
+                // Botón inmediatamente después del primero (prevId + 1)
+                result.push({ type: 'button', id: prevId + 1 });
+                
+                // Si hay más de un ID faltante, agregar también el inmediatamente antes del segundo (currentId - 1)
+                if (currentId - prevId > 2) {
+                    result.push({ type: 'button', id: currentId - 1 });
+                }
+            }
+            
+            // Agregar el platillo actual
+            result.push({ type: 'platillo', data: platillos[i] });
+        }
+        
+        // Agregar botón después del último platillo si el ID siguiente no existe
+        if (!platilloIdExists(lastId + 1)) {
+            result.push({ type: 'button', id: lastId + 1 });
+        }
+        
+        return result;
+    };
+
     const fetchPlatilloToEdit = (id) => {
         platillosApi.getPlatillo(id)
         .then(data => {
-            setPlatillo(prevPlatillo => {
-                const newPlatillo = { ...prevPlatillo, ...data };
-                    return newPlatillo;
-            })
+            const platilloEncontrado = Array.isArray(data) ? data[0] : data;
+
+            if (!platilloEncontrado || platilloEncontrado.PlatilloId === undefined || platilloEncontrado.PlatilloId === null || platilloEncontrado.PlatilloId === '') {
+                setPlatillo(normalizePlatillo({
+                    ...createEmptyPlatillo(id),
+                    Categoria: initialCategoria || ''
+                }));
+                setButtonAction("Agregar");
+                return;
+            }
+
+            setPlatillo(normalizePlatillo(platilloEncontrado))
             setButtonAction("Actualizar")
+        })
+        .catch(() => {
+            // Si el platillo no existe, crear uno nuevo con ese ID
+            setPlatillo(normalizePlatillo({
+                ...createEmptyPlatillo(id),
+                Categoria: initialCategoria || ''
+            }))
+            setButtonAction("Agregar")
         })
     };
     
-    const handleEditPlatillo = (id) => {
+    const handleEditPlatillo = (id, categoria = '') => {
         // Si hay callback onEditRequest, llamarlo (para abrir modal desde lista externa)
         if (onEditRequest) {
-            onEditRequest(id);
+            onEditRequest(id, categoria);
         } else {
             fetchPlatilloToEdit(id);
         }
@@ -799,6 +973,33 @@ const AddPlatilloForm = ({
         if (onClose) onClose();
     }
 
+    const handleJsonDraftChange = (e) => {
+        const newValue = e.target.value;
+        setJsonDraft(newValue);
+        setJsonIsDirty(newValue !== platilloJson);
+        setJsonError('');
+    };
+
+    const handleJsonScroll = (e) => {
+        if (jsonLineNumbersRef.current) {
+            jsonLineNumbersRef.current.scrollTop = e.target.scrollTop;
+        }
+    };
+
+    const handleApplyJsonToForm = () => {
+        try {
+            const parsedValue = JSON.parse(jsonDraft);
+            const normalizedPlatillo = normalizePlatillo(parsedValue);
+
+            setPlatillo(normalizedPlatillo);
+            setJsonDraft(JSON.stringify(normalizedPlatillo, null, 2));
+            setJsonIsDirty(false);
+            setJsonError('');
+        } catch (error) {
+            setJsonError(error.message || 'No se pudo interpretar el JSON.');
+        }
+    };
+
     const containerRef = useRef(null);
     const [numVariantsPerRow, setNumVariantsPerRow] = useState (1);
     const updateNumVariantsPerRow = (width) => {
@@ -854,7 +1055,7 @@ const AddPlatilloForm = ({
                 {/* Botón para agregar nuevo platillo cuando está en modo lista */}
                 {mode === "list" && (
                     <div className="add-platillo-btn-container">
-                        <button type="button" className="btn btn-success btn-lg add-new-platillo-btn" onClick={() => onEditRequest && onEditRequest(null)}>
+                        <button type="button" className="btn btn-success btn-lg add-new-platillo-btn" onClick={() => onEditRequest && onEditRequest(null, '')}>
                             ➕ Agregar Nuevo Platillo
                         </button>
                     </div>
@@ -868,37 +1069,64 @@ const AddPlatilloForm = ({
                             </span>
                         </div>
                         <div className="row platillos-grid">
-                            {platillosAgrupados[categoria].map((item) => (
-                                <div key={item.PlatilloId} className="col-12 col-sm-6 col-md-4 col-lg-2 platillo-card-wrapper">
-                                    <div className="platillo-card">
-                                        <div className="platillo-card-header">
-                                            <span className="platillo-id">#{item.PlatilloId}</span>
-                                            <span className={`platillo-disponibilidad ${item.Disponibilidad > 0 ? 'disponible' : 'no-disponible'}`}>
-                                                {item.Disponibilidad > 0 ? `Stock: ${item.Disponibilidad}` : 'Agotado'}
-                                            </span>
+                            {createPlatillosWithButtons(platillosAgrupados[categoria]).map((item, index) => {
+                                if (item.type === 'platillo') {
+                                    return (
+                                        <div key={item.data.PlatilloId} className="col-12 col-sm-6 col-md-4 col-lg-2 platillo-card-wrapper">
+                                            <div className="platillo-card">
+                                                <div className="platillo-card-header">
+                                                    <span className="platillo-id">#{item.data.PlatilloId}</span>
+                                                    <span className={`platillo-disponibilidad ${item.data.Disponibilidad > 0 ? 'disponible' : 'no-disponible'}`}>
+                                                        {item.data.Disponibilidad > 0 ? `Stock: ${item.data.Disponibilidad}` : 'Agotado'}
+                                                    </span>
+                                                </div>
+                                                <div className="platillo-card-body">
+                                                    {item.data.Imagen && (
+                                                        <div className="platillo-card-thumb">
+                                                            <img src={item.data.Imagen} alt={item.data.NombrePlatillo || 'Platillo'} />
+                                                        </div>
+                                                    )}
+                                                    <div className="platillo-card-text">
+                                                        <h5 className="platillo-nombre">{item.data.NombrePlatillo}</h5>
+                                                        <p className="platillo-descripcion">{item.data.Descripcion || 'Sin descripción'}</p>
+                                                    </div>
+                                                </div>
+                                                <div className="platillo-card-footer">
+                                                    <button type="button" className="btn btn-warning btn-sm" onClick={() => handleEditPlatillo(item.data.PlatilloId, item.data.Categoria)}>
+                                                        Editar
+                                                    </button>
+                                                    <button type="button" className="btn btn-danger btn-sm" onClick={() => handleDeletePlatillo(item.data.PlatilloId)}>
+                                                        Eliminar
+                                                    </button>
+                                                </div>
+                                            </div>
                                         </div>
-                                        <div className="platillo-card-body">
-                                            <h5 className="platillo-nombre">{item.NombrePlatillo}</h5>
-                                            <p className="platillo-descripcion">{item.Descripcion || 'Sin descripción'}</p>
+                                    );
+                                } else if (item.type === 'button') {
+                                    return (
+                                        <div key={`missing-${item.id}`} className="col-12 col-sm-6 col-md-4 col-lg-2 platillo-card-wrapper">
+                                            <div className="platillo-missing-button-container">
+                                                <button 
+                                                    type="button" 
+                                                    className="btn btn-outline-primary platillo-missing-button"
+                                                    onClick={() => handleEditPlatillo(item.id, categoria)}
+                                                >
+                                                    #{item.id}
+                                                </button>
+                                            </div>
                                         </div>
-                                        <div className="platillo-card-footer">
-                                            <button type="button" className="btn btn-warning btn-sm" onClick={() => handleEditPlatillo(item.PlatilloId)}>
-                                                Editar
-                                            </button>
-                                            <button type="button" className="btn btn-danger btn-sm" onClick={() => handleDeletePlatillo(item.PlatilloId)}>
-                                                Eliminar
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            ))}
+                                    );
+                                }
+                                return null;
+                            })}
                         </div>
                     </div>
                 ))}
             </div>
             )}
             {showForm && (
-            <div className="row"><div className="col-12">
+            <div className="row form-json-layout">
+                <div className="col-12 col-xl-8">
                 <form className="FormAddPlatillo" onSubmit={handleSubmit}>
                     <div className="row"><div className={`col-${numColsForPlatilloFormPart1}`}>
                         <div  style={{backgroundColor: "#42fae0", padding: "10px", borderRadius: "10px"}}>
@@ -1258,7 +1486,43 @@ const AddPlatilloForm = ({
                     </div>
 
                 </form>
-            </div></div>
+                </div>
+                <div className="col-12 col-xl-4">
+                    <div className="json-editor-panel">
+                        <div className="json-editor-header">
+                            <div>
+                                <h4 className="json-editor-title">JSON en tiempo real</h4>
+                                <p className="json-editor-subtitle">Edita el formulario o el JSON y sincroniza cuando quieras.</p>
+                            </div>
+                            {jsonIsDirty && (
+                                <button type="button" className="btn btn-primary btn-sm" onClick={handleApplyJsonToForm}>
+                                    Actualizar formulario
+                                </button>
+                            )}
+                        </div>
+                        <div className="json-editor-body">
+                            <pre className="json-editor-lines" ref={jsonLineNumbersRef}>{jsonLineNumbers}</pre>
+                            <textarea
+                                className="json-editor-textarea"
+                                value={jsonDraft}
+                                onChange={handleJsonDraftChange}
+                                onScroll={handleJsonScroll}
+                                spellCheck={false}
+                                wrap="off"
+                            />
+                        </div>
+                        <div className="json-editor-footer">
+                            {jsonError ? (
+                                <span className="json-editor-error">JSON invalido: {jsonError}</span>
+                            ) : (
+                                <span className="json-editor-status">
+                                    {jsonIsDirty ? 'Hay cambios manuales pendientes por aplicar.' : 'El JSON refleja el formulario actual.'}
+                                </span>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            </div>
             )}
         </div></div>
     );

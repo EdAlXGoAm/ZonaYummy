@@ -14,16 +14,19 @@ const AdminPage = () => {
     const [ListaIngredientes, setListaIngredientes] = useState([]);
     const [isModalPlatilloOpen, setIsModalPlatilloOpen] = useState(false);
     const [editPlatilloId, setEditPlatilloId] = useState(null);
+    const [editPlatilloCategoria, setEditPlatilloCategoria] = useState('');
     const [isModalProductoOpen, setIsModalProductoOpen] = useState(false);
     const [activeTab, setActiveTab] = useState('platillos'); // 'platillos' | 'productos'
 
-    const openPlatilloModal = (platilloId = null) => {
+    const openPlatilloModal = (platilloId = null, categoria = '') => {
         setEditPlatilloId(platilloId);
+        setEditPlatilloCategoria(categoria);
         setIsModalPlatilloOpen(true);
     };
     const closePlatilloModal = () => {
         setIsModalPlatilloOpen(false);
         setEditPlatilloId(null);
+        setEditPlatilloCategoria('');
     };
 
     const openProductoModal = () => setIsModalProductoOpen(true);
@@ -145,6 +148,7 @@ const AdminPage = () => {
                                     <AddPlatilloForm 
                                         mode="form"
                                         editPlatilloId={editPlatilloId}
+                                        initialCategoria={editPlatilloCategoria}
                                         onClose={closePlatilloModal}
                                     />
                                 </div>
