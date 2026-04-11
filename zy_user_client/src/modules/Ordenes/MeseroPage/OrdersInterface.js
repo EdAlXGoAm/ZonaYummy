@@ -990,11 +990,15 @@ const OrdersInterface = ({ modeInterface }) => {
                                                     ? Math.min(100, Math.max(0, (orderPagado / orderTotal) * 100)) 
                                                     : 0;
                                                 const orderStatus = orderPendiente === 0 ? 'ok' : (orderPendiente < 0 ? 'exceeded' : 'pending');
+                                                const paymentMethods = [...new Set((order?.pagos || []).map(p => p?.metodoPago))];
                                                 
                                                 return (
                                                     <div key={order.OrderID} className={`zy-balance__order-item zy-balance__order-item--${orderStatus}`}>
                                                         <div className="zy-balance__order-row">
                                                             <span className="zy-balance__order-id">#{order.OrderID}</span>
+                                                            <span className="zy-balance__order-methods">
+                                                                {paymentMethods.map(m => m === 'card' ? '\u{1F4B3}' : m === 'transfer' ? '\u{1F4F1}' : '\u{1F4B5}').join('')}
+                                                            </span>
                                                             <span className="zy-balance__order-total">${orderTotal.toFixed(2)}</span>
                                                             <span className={`zy-balance__order-status zy-balance__order-status--${orderStatus}`}>
                                                                 {orderStatus === 'ok' ? 'OK' : orderStatus === 'exceeded' ? 'Exced.' : 'Pend.'}
