@@ -1,0 +1,17 @@
+[Unit]
+Description=ZonaYummy legacy API (zy_server)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=root
+Group=root
+WorkingDirectory=/root/productive/old_zonayummy/zy_server
+Environment=NODE_ENV=production
+ExecStart=/usr/bin/node app.js
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
