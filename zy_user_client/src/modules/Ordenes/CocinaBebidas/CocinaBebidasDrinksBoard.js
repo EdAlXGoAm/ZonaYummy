@@ -1,26 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import ordersApi from './../../../api/ordersApi';
 import comandasApi from './../../../api/comandasApi';
-import ResumeComanda from './ResumeComandaComponent';
-import './OrdenesCocina.css';
-import { ToastContainer, toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+import CocinaBebidasComandaCard from './CocinaBebidasComandaCard';
+import './../MeseroPage/OrdenesCocina.css';
 
 import io from 'socket.io-client';
 const socket = io(`${process.env.REACT_APP_API_URL}`);
 
-const OrdersInterfaceBebidasWaffles = () => {
-    const notify = (message) => toast(message);
-    const [orders, setOrders] = useState([]);
+const CocinaBebidasDrinksBoard = ({ Orders }) => {
     const [activeComandas, setActiveComandas] = useState([]);
     const [arrayBebidas, setArrayBebidas] = useState([]);
     const [arrayWaffles, setArrayWaffles] = useState([]);
 
-    // Estado para controlar si el audio está habilitado
     const [audioEnabled, setAudioEnabled] = useState(false);
     const [showAudioModal, setShowAudioModal] = useState(true);
 
-    // Estado para el menú contextual (comandas individuales)
     const [contextMenu, setContextMenu] = useState({
         visible: false,
         x: 0,
@@ -28,7 +21,6 @@ const OrdersInterfaceBebidasWaffles = () => {
         comanda: null
     });
 
-    // Manejar clic derecho sobre una tarjeta
     const handleContextMenu = (e, comanda) => {
         e.preventDefault();
         e.stopPropagation();
@@ -40,19 +32,17 @@ const OrdersInterfaceBebidasWaffles = () => {
         });
     };
 
-    // Cerrar menú contextual
     const closeContextMenu = () => {
         setContextMenu({ visible: false, x: 0, y: 0, comanda: null });
     };
 
-    // Eliminar comanda
     const handleDeleteComanda = async () => {
         if (!contextMenu.comanda) return;
-        
+
         const comanda = contextMenu.comanda;
         const comandaId = comanda._id || comanda.ComandaId;
         const platillo = comanda.Platillo;
-        
+
         try {
             await comandasApi.deleteComanda(comandaId);
             socket.emit('DeleteComandaDesdeCliente', { msg: `Delete-${comanda.OrderID}-${platillo}` });
@@ -61,49 +51,47 @@ const OrdersInterfaceBebidasWaffles = () => {
             closeContextMenu();
         } catch (error) {
             console.error("Error al eliminar comanda:", error);
-            notify(`Error al eliminar la comanda: ${error}`);
+            alert("Error al eliminar la comanda");
         }
     };
 
-    // Marcar comanda como entregada
     const handleMarkAsDelivered = async () => {
         if (!contextMenu.comanda) return;
-        
+
         const comanda = contextMenu.comanda;
-        
+
         try {
             const updatedComanda = {
                 ...comanda,
                 ComandaPrepStatus: "ReadyToServe"
             };
             await comandasApi.updateComanda(updatedComanda);
-            
+
             socket.emit('UpdateComandaDesdeCliente', { msg: `Update-${comanda.OrderID}-${comanda.Platillo}` });
             socket.emit('OrdenActualizadaDesdeCliente', { msg: comanda.OrderID });
-            
+
             setActiveComandas(prev => prev.filter(c => c.ComandaId !== comanda.ComandaId));
             closeContextMenu();
         } catch (error) {
             console.error("Error al marcar como entregado:", error);
-            notify(`Error al marcar como entregado: ${error}`);
+            alert("Error al marcar como entregado");
         }
     };
 
-    // Cerrar menú al hacer clic fuera
     useEffect(() => {
         if (!contextMenu.visible) return;
-        
+
         const handleClickOutside = (e) => {
             const menu = document.querySelector('.context-menu');
             if (menu && menu.contains(e.target)) return;
             closeContextMenu();
         };
-        
+
         const timeoutId = setTimeout(() => {
             document.addEventListener('click', handleClickOutside);
             document.addEventListener('contextmenu', handleClickOutside);
         }, 10);
-        
+
         return () => {
             clearTimeout(timeoutId);
             document.removeEventListener('click', handleClickOutside);
@@ -111,164 +99,82 @@ const OrdersInterfaceBebidasWaffles = () => {
         };
     }, [contextMenu.visible]);
 
-    const fetchOrders = () => {
-        ordersApi.getOrdersByOrderCustStatus("InPlace")
-        .then(data => {
-            setOrders(prevOrders => {return (data);});
-        })
-        .catch(err => {
-            console.log(err);
-            notify(`Error al cargar las comandas: ${err}`);
-        });
-    };
-
     const fetchComandasFromOrders = () => {
-        let localOrders = orders;
-        let localActiveComandas = [];
-
-        let comandasPromises = localOrders.map(order => {
+        const comandasPromises = Orders.map(order => {
             return comandasApi.getComandasByOrderId(order.OrderID)
                 .then(response => {
-                    const res_comandas = response.map(comanda => {
-                        return {
-                            ...comanda,
-                            Customer: order.Customer
-                        };
-                    });
-                    return res_comandas;
+                    return response.map(comanda => ({
+                        ...comanda,
+                        Customer: order.Customer
+                    }));
                 })
                 .catch(e => {
                     console.log(e);
                     return [];
                 });
         });
-        
+
         Promise.all(comandasPromises).then(comandasResults => {
-            localActiveComandas = comandasResults.flat();
-            setActiveComandas(prevActiveComandas => {
-                return (localActiveComandas);
-            });
+            setActiveComandas(comandasResults.flat());
         }).catch(e => {
             console.log("Error al recuperar comandas: ", e);
         });
     };
 
     useEffect(() => {
-        if (orders.length > 0) {
+        if (Orders.length > 0) {
             fetchComandasFromOrders();
+        } else {
+            setActiveComandas([]);
         }
-    }, [orders]);
+    }, [Orders]);
 
     const fetchCategorias = () => {
-        // Filtrar solo las que no están entregadas
-        let localComandasForCategorize = [...activeComandas].filter(c => c.ComandaPrepStatus !== "ReadyToServe");
-        // Filtrar solo Bebidas y Waffles
-        const localArrayBebidas = localComandasForCategorize.filter(c => c.Categoria === "Bebidas");
-        const localArrayWaffles = localComandasForCategorize.filter(c => c.Categoria === "Waffles");
+        const localComandasForCategorize = [...activeComandas].filter(c => c.ComandaPrepStatus !== "ReadyToServe");
+        setArrayBebidas(localComandasForCategorize.filter(c => c.Categoria === "Bebidas"));
+        setArrayWaffles(localComandasForCategorize.filter(c => c.Categoria === "Waffles"));
+    };
 
-        setArrayBebidas(localArrayBebidas);
-        setArrayWaffles(localArrayWaffles);
-    }
-
-    useEffect(() => { 
+    useEffect(() => {
         fetchCategorias();
     }, [activeComandas]);
 
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    useEffect(() => {
-        fetchOrders();
-    }, []);
-
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    useEffect(() => {
-        const hacerAlgo = () => {
-            fetchOrders();
-        };
-        const intervalo = setInterval(hacerAlgo, 5000);
-        return () => clearInterval(intervalo);
-    }, []);
-
-    // Socket listeners
-    useEffect(() => {
-        socket.on('NuevaComandaDesdeServidor', (data) => {
-            fetchOrders();
-        });
-        return () => {
-            socket.off('NuevaComandaDesdeServidor');
-        };
-    }, []);
-
-    useEffect(() => {
-        socket.on('UpdateComandaDesdeServidor', (data) => {
-            console.log("UpdateComandaDesdeServidor: ", data.msg);
-            fetchOrders();
-        });
-        return () => {
-            socket.off('UpdateComandaDesdeServidor');
-        };
-    }, []);
-
-    useEffect(() => {
-        socket.on('DeleteComandaDesdeServidor', (data) => {
-            console.log("DeleteComandaDesdeServidor: ", data.msg);
-            fetchOrders();
-        });
-        return () => {
-            socket.off('DeleteComandaDesdeServidor');
-        };
-    }, []);
-
-    useEffect(() => {
-        socket.on('OrdenActualizadaDesdeServidor', (data) => {
-            console.log("OrdenActualizadaDesdeServidor Mensaje: ", data);
-            fetchOrders();
-        });
-        return () => {
-            socket.off('OrdenActualizadaDesdeServidor');
-        };
-    }, []);
-
     return (
         <div className="container-fluid">
-            <ToastContainer />
-            
-            {/* Sección de Bebidas */}
             {arrayBebidas.length > 0 && (
                 <div className="fila-elemento">
                     <div className="category-banner">BEBIDAS</div>
                     <div className="row">
                         {arrayBebidas.map((comanda) => (
-                            <div 
-                                key={comanda.ComandaId} 
+                            <div
+                                key={comanda.ComandaId}
                                 className="col-3"
                                 onContextMenu={(e) => handleContextMenu(e, comanda)}
                             >
-                                <ResumeComanda Comanda={comanda} compact />
+                                <CocinaBebidasComandaCard Comanda={comanda} compact />
                             </div>
                         ))}
                     </div>
                 </div>
             )}
 
-            {/* Sección de Waffles */}
             {arrayWaffles.length > 0 && (
                 <div className="fila-elemento">
                     <div className="category-banner">WAFFLES</div>
                     <div className="row">
                         {arrayWaffles.map((comanda) => (
-                            <div 
-                                key={comanda.ComandaId} 
+                            <div
+                                key={comanda.ComandaId}
                                 className="col-3"
                                 onContextMenu={(e) => handleContextMenu(e, comanda)}
                             >
-                                <ResumeComanda Comanda={comanda} compact />
+                                <CocinaBebidasComandaCard Comanda={comanda} compact />
                             </div>
                         ))}
                     </div>
                 </div>
             )}
 
-            {/* Mensaje cuando no hay comandas */}
             {arrayBebidas.length === 0 && arrayWaffles.length === 0 && (
                 <div className="fila-elemento">
                     <div style={{ textAlign: 'center', padding: '50px', fontSize: '24px', color: '#666' }}>
@@ -277,13 +183,12 @@ const OrdersInterfaceBebidasWaffles = () => {
                 </div>
             )}
 
-            {/* Menú contextual para eliminar */}
             {contextMenu.visible && (
-                <div 
+                <div
                     className="context-menu-overlay"
                     onClick={closeContextMenu}
                 >
-                    <div 
+                    <div
                         className="context-menu"
                         style={{ left: contextMenu.x, top: contextMenu.y }}
                         onClick={(e) => e.stopPropagation()}
@@ -296,7 +201,7 @@ const OrdersInterfaceBebidasWaffles = () => {
                                 #{contextMenu.comanda?.OrderID} • ${contextMenu.comanda?.Precio || 0}
                             </span>
                         </div>
-                        <button 
+                        <button
                             className="context-menu-btn context-menu-btn-delivered"
                             onClick={handleMarkAsDelivered}
                         >
@@ -305,7 +210,7 @@ const OrdersInterfaceBebidasWaffles = () => {
                             </svg>
                             Entregado
                         </button>
-                        <button 
+                        <button
                             className="context-menu-btn context-menu-btn-delete"
                             onClick={handleDeleteComanda}
                         >
@@ -317,7 +222,7 @@ const OrdersInterfaceBebidasWaffles = () => {
                             </svg>
                             Eliminar Comanda
                         </button>
-                        <button 
+                        <button
                             className="context-menu-btn context-menu-btn-cancel"
                             onClick={closeContextMenu}
                         >
@@ -327,13 +232,12 @@ const OrdersInterfaceBebidasWaffles = () => {
                 </div>
             )}
 
-            {/* Modal de confirmación de audio */}
             {showAudioModal && (
-                <div 
+                <div
                     className="context-menu-overlay"
                     style={{ zIndex: 10001 }}
                 >
-                    <div 
+                    <div
                         className="context-menu"
                         style={{
                             position: 'fixed',
@@ -351,18 +255,18 @@ const OrdersInterfaceBebidasWaffles = () => {
                             </span>
                         </div>
                         <div style={{ padding: '24px 20px' }}>
-                            <p style={{ 
-                                fontSize: '18px', 
-                                lineHeight: '1.6', 
+                            <p style={{
+                                fontSize: '18px',
+                                lineHeight: '1.6',
                                 color: '#333',
                                 marginBottom: '24px',
                                 textAlign: 'center'
                             }}>
                                 Para que las comandas se puedan escuchar, es necesario hacer clic en <strong>"Aceptar"</strong>.
                             </p>
-                            <p style={{ 
-                                fontSize: '14px', 
-                                lineHeight: '1.5', 
+                            <p style={{
+                                fontSize: '14px',
+                                lineHeight: '1.5',
                                 color: '#666',
                                 textAlign: 'center',
                                 marginBottom: '0'
@@ -371,7 +275,7 @@ const OrdersInterfaceBebidasWaffles = () => {
                             </p>
                         </div>
                         <div style={{ padding: '0 20px 20px 20px' }}>
-                            <button 
+                            <button
                                 className="context-menu-btn"
                                 style={{
                                     background: 'linear-gradient(135deg, #28a745 0%, #20c997 100%)',
@@ -395,5 +299,4 @@ const OrdersInterfaceBebidasWaffles = () => {
     );
 };
 
-export default OrdersInterfaceBebidasWaffles;
-
+export default CocinaBebidasDrinksBoard;

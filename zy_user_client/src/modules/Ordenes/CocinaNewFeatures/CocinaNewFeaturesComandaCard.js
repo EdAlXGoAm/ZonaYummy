@@ -1,4 +1,4 @@
-import './ResumeComandaNewFeatures.css';
+import './CocinaNewFeaturesComandaCard.css';
 import './../Global/checkbox.css'; //La ruta de este archivo es: src/css/checkbox.css
 import React, { useState, useEffect, useRef } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -39,7 +39,7 @@ const getTimeAgo = (mongoId) => {
     }
 };
 
-const DetailsComandaNewFeatures = ({Comanda, updateComanda, compact = false, comandaNumber = null}) => {
+const CocinaNewFeaturesComandaCard = ({Comanda, updateComanda, compact = false, comandaNumber = null}) => {
 
     // Estado para el tiempo transcurrido (se actualiza cada minuto)
     const [timeAgo, setTimeAgo] = useState(() => getTimeAgo(Comanda._id));
@@ -771,5 +771,5 @@ const DetailsComandaNewFeatures = ({Comanda, updateComanda, compact = false, com
     )
 }
 
-export default DetailsComandaNewFeatures;
+export default CocinaNewFeaturesComandaCard;
 

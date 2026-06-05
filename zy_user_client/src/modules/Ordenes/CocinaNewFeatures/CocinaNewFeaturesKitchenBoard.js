@@ -1,14 +1,14 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import ordersApi from './../../../api/ordersApi';
 import comandasApi from './../../../api/comandasApi';
-import ResumeComanda from './ResumeComandaComponentNewFeatures';
-import './OrdenesCocinaNewFeatures.css';
-import './ResumeComandaNewFeatures.css';
+import CocinaNewFeaturesComandaCard from './CocinaNewFeaturesComandaCard';
+import './CocinaNewFeaturesKitchenBoard.css';
+import './CocinaNewFeaturesComandaCard.css';
 
 import io from 'socket.io-client';
 const socket = io(`${process.env.REACT_APP_API_URL}`);
 
-const OrdenesCocinaNewFeatures = ({modeInterface, Orders}) => {
+const CocinaNewFeaturesKitchenBoard = ({modeInterface, Orders}) => {
     const [numOrders, setNumOrders] = useState([]);
     const [activeComandas, setActiveComandas] = useState([]);
     const [arrayBebidas, setArrayBebidas] = useState([]);
@@ -332,7 +332,7 @@ const OrdenesCocinaNewFeatures = ({modeInterface, Orders}) => {
                             className="order-column-comanda"
                             onContextMenu={(e) => handleContextMenu(e, comanda)}
                         >
-                            <ResumeComanda Comanda={comanda} compact comandaNumber={comanda.ComandaId} />
+                            <CocinaNewFeaturesComandaCard Comanda={comanda} compact comandaNumber={comanda.ComandaId} />
                         </div>
                     ))}
                 </div>
@@ -873,4 +873,4 @@ const OrdenesCocinaNewFeatures = ({modeInterface, Orders}) => {
     );
 };
 
-export default OrdenesCocinaNewFeatures;
+export default CocinaNewFeaturesKitchenBoard;

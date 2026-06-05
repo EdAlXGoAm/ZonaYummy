@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import Orden from './OrdenComponent';
+import MeseroOrderPanel from '../Mesero/MeseroOrderPanel';
 import Button from 'react-bootstrap/Button';
-import './OrdersInterface.css';
+import '../Mesero/MeseroOrdersShell.css';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
@@ -225,7 +225,7 @@ const OrdersInterfaceTest = ({ modeInterface }) => { // modeInterface = true -> 
                 
                 OrdersArray.push(
                 <div key={order.OrderID} className={`col-xl-${12/ComandasPerScreen} d-flex justify-content-center`}>
-                    <Orden 
+                    <MeseroOrderPanel 
                         modeInterface={modeInterface} 
                         iInterface={iInterfaceFlag} 
                         OrderID={order.OrderID}

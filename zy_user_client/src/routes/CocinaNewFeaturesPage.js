@@ -1,6 +1,6 @@
 import './MeseroPage.css';
 import React from 'react';
-import OrdersInterfaceNewFeatures from '../modules/Ordenes/CocinaNewFeatures/OrdersInterfaceNewFeatures';
+import CocinaNewFeaturesOrdersShell from '../modules/Ordenes/CocinaNewFeatures/CocinaNewFeaturesOrdersShell';
 
 const CocinaNewFeaturesPage = () => {
     return (
@@ -8,7 +8,7 @@ const CocinaNewFeaturesPage = () => {
             <div className="container-fluid" style={{ padding: 0, height: '100%' }}>
                 <div className="row" style={{ margin: 0, height: '100%' }}>
                     <div className="col" style={{ padding: 0, height: '100%' }}>
-                        <OrdersInterfaceNewFeatures />
+                        <CocinaNewFeaturesOrdersShell />
                     </div>
                 </div>
             </div>

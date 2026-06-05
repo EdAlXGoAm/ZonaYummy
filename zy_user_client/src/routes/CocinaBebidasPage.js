@@ -1,6 +1,6 @@
 import './MeseroPage.css';
 import React from 'react';
-import OrdersInterfaceBebidasWaffles from '../modules/Ordenes/MeseroPage/OrdersInterfaceBebidasWaffles';
+import CocinaBebidasOrdersShell from '../modules/Ordenes/CocinaBebidas/CocinaBebidasOrdersShell';
 
 const CocinaBebidasPage = () => {
     return (
@@ -8,7 +8,7 @@ const CocinaBebidasPage = () => {
             <div className="container-fluid">
                 <div className="row">
                     <div className="col">
-                        <OrdersInterfaceBebidasWaffles />
+                        <CocinaBebidasOrdersShell />
                     </div>
                 </div>
             </div>
