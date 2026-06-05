@@ -751,11 +751,11 @@ const CocinaNewFeaturesKitchenBoard = ({modeInterface, Orders}) => {
                                 </div>
                             ))}
                         </div>
-                    ) : (
+                    ) : hasAnything ? (
                         <div className="no-orders-message">
                             <span>No hay órdenes principales pendientes</span>
                         </div>
-                    )}
+                    ) : null}
                 </div>
             </div>
 
