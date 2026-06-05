@@ -11,9 +11,6 @@ const CocinaBebidasDrinksBoard = ({ Orders }) => {
     const [arrayBebidas, setArrayBebidas] = useState([]);
     const [arrayWaffles, setArrayWaffles] = useState([]);
 
-    const [audioEnabled, setAudioEnabled] = useState(false);
-    const [showAudioModal, setShowAudioModal] = useState(true);
-
     const [contextMenu, setContextMenu] = useState({
         visible: false,
         x: 0,
@@ -232,69 +229,6 @@ const CocinaBebidasDrinksBoard = ({ Orders }) => {
                 </div>
             )}
 
-            {showAudioModal && (
-                <div
-                    className="context-menu-overlay"
-                    style={{ zIndex: 10001 }}
-                >
-                    <div
-                        className="context-menu"
-                        style={{
-                            position: 'fixed',
-                            top: '50%',
-                            left: '50%',
-                            transform: 'translate(-50%, -50%)',
-                            minWidth: '400px',
-                            maxWidth: '500px'
-                        }}
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        <div className="context-menu-header" style={{ background: 'linear-gradient(135deg, #00bcd4 0%, #ff1493 100%)' }}>
-                            <span className="context-menu-title" style={{ color: '#ffffff', fontSize: '24px' }}>
-                                🔊 Activación de Audio
-                            </span>
-                        </div>
-                        <div style={{ padding: '24px 20px' }}>
-                            <p style={{
-                                fontSize: '18px',
-                                lineHeight: '1.6',
-                                color: '#333',
-                                marginBottom: '24px',
-                                textAlign: 'center'
-                            }}>
-                                Para que las comandas se puedan escuchar, es necesario hacer clic en <strong>"Aceptar"</strong>.
-                            </p>
-                            <p style={{
-                                fontSize: '14px',
-                                lineHeight: '1.5',
-                                color: '#666',
-                                textAlign: 'center',
-                                marginBottom: '0'
-                            }}>
-                                Esto activará la reproducción de audio para las nuevas comandas.
-                            </p>
-                        </div>
-                        <div style={{ padding: '0 20px 20px 20px' }}>
-                            <button
-                                className="context-menu-btn"
-                                style={{
-                                    background: 'linear-gradient(135deg, #28a745 0%, #20c997 100%)',
-                                    color: '#ffffff',
-                                    fontWeight: '700',
-                                    fontSize: '18px',
-                                    marginBottom: '12px'
-                                }}
-                                onClick={() => {
-                                    setAudioEnabled(true);
-                                    setShowAudioModal(false);
-                                }}
-                            >
-                                ✓ Aceptar
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
         </div>
     );
 };
