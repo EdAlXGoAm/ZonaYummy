@@ -172,7 +172,7 @@ const MeseroOrdersShell = ({ modeInterface }) => {
                 )
             }
             return (
-                <div class="row">
+                <div className="row">
                     {OrdersArray}
                 </div>
                 );
@@ -703,21 +703,17 @@ const MeseroOrdersShell = ({ modeInterface }) => {
             {/* ToastContainer siempre visible para notificaciones */}
             {!modeInterface && <ToastContainer />}
             {modeInterface && (
-                <div className="mesero-toolbar">
-                    <div className="row align-items-center g-2">
-                        {!galleryView && (
-                            <div className="col-2">
-                                <Button variant="success" size="lg" onClick={() => handleSlideChange(slide - 1)} disabled={isMobile}>←</Button>
-                            </div>
-                        )}
-                        <div className={galleryView ? 'col-8 offset-2' : 'col-8'}>
+                <div>
+                    <div className="row">
+                        <div className="col-2">
+                            <Button variant="success" size="lg" onClick={() => handleSlideChange(slide - 1)} disabled={isMobile || galleryView}>←</Button>
+                        </div>
+                        <div className="col-8">
                             <Button variant="success" size="lg" onClick={handleNewOrderClick}>Nueva Orden</Button>
                         </div>
-                        {!galleryView && (
-                            <div className="col-2">
-                                <Button variant="success" size="lg" onClick={() => handleSlideChange(slide + 1)} disabled={isMobile}>→</Button>
-                            </div>
-                        )}
+                        <div className="col-2">
+                            <Button variant="success" size="lg" onClick={() => handleSlideChange(slide + 1)} disabled={isMobile || galleryView}>→</Button>
+                        </div>
                     </div>
                     <div className="mesero-view-switch">
                         <span className="mesero-view-switch__label">Vista galería</span>
