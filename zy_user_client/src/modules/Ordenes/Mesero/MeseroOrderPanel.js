@@ -839,6 +839,7 @@ const MeseroOrderPanel = ({modeInterface, iInterface, OrderID, DeleteOrder, hand
                             updateComanda={updateComanda}
                             removeComanda={removeComanda}
                             onBubbleToggle={handleBubbleToggle}
+                            enableFullscreenFab={galleryLayout}
                         />
                     </div>
                 </div>
@@ -851,6 +852,7 @@ const MeseroOrderPanel = ({modeInterface, iInterface, OrderID, DeleteOrder, hand
                     updateComanda={updateComanda}
                     removeComanda={removeComanda}
                     onBubbleToggle={handleBubbleToggle}
+                    enableFullscreenFab={galleryLayout}
                 />
             )
         ));

@@ -1,3 +1,37 @@
+.mesero-comanda-slot {
+    position: relative;
+}
+
+.mesero-comanda-slot__expand-fab {
+    position: absolute;
+    bottom: 10px;
+    right: 10px;
+    z-index: 6;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 42px;
+    height: 42px;
+    padding: 0;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    color: #fff;
+    background: linear-gradient(180deg, #5ce1ff, #00b7e6);
+    box-shadow: 0 4px 14px rgba(0, 183, 230, 0.45);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.mesero-comanda-slot__expand-fab:hover {
+    transform: scale(1.06);
+    box-shadow: 0 6px 18px rgba(0, 183, 230, 0.55);
+}
+
+.mesero-comanda-slot__expand-fab svg {
+    width: 18px;
+    height: 18px;
+}
+
 .comandaTextStyle {
     background-color: #2d2d2d;
     color: #ffffff;

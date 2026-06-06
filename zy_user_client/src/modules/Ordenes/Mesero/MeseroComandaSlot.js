@@ -3,13 +3,25 @@ import React, { useState, useEffect, memo } from 'react';
 import BootstrapSwitchButton from 'bootstrap-switch-button-react';
 import MeseroComandaEditor from './MeseroComandaEditor';
 import ResumeComanda from './../MeseroPage/ResumeComandaComponent';
+import MeseroComandaFullscreenModal from './MeseroComandaFullscreenModal';
 
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTrash, faCashRegister } from '@fortawesome/free-solid-svg-icons';
 import { faAngleUp, faAngleDown } from '@fortawesome/free-solid-svg-icons';
-import { faPaperPlane, faFilePen, faFloppyDisk } from '@fortawesome/free-solid-svg-icons';
+import { faPaperPlane, faFilePen, faFloppyDisk, faExpand } from '@fortawesome/free-solid-svg-icons';
 
-const MeseroComandaSlot = ({order, modeInterface, Comanda, updateComanda, removeComanda, onBubbleToggle}) => {
+const MeseroComandaSlot = ({
+    order,
+    modeInterface,
+    Comanda,
+    updateComanda,
+    removeComanda,
+    onBubbleToggle,
+    enableFullscreenFab = false,
+    forceExpanded = false,
+    fullscreenMode = false,
+    onCloseFullscreen,
+}) => {
 
     const [nota, setNota] = useState('');
     const [liveStatusNota, setLiveStatusNota] = useState('#33d457')
@@ -87,11 +99,19 @@ const MeseroComandaSlot = ({order, modeInterface, Comanda, updateComanda, remove
         fetchNota();
     },[Comanda])
 
-    // Todas las tarjetas inician contraídas
-    const [toggleArrowStatus, setToggleArrowStatus] = useState(false); // false: plegado, true: desplegado
+    const [fullscreenOpen, setFullscreenOpen] = useState(false);
+
+    // Todas las tarjetas inician contraídas (salvo pantalla completa)
+    const [toggleArrowStatus, setToggleArrowStatus] = useState(forceExpanded); // false: plegado, true: desplegado
 
     const [colorStatus, setColorStatus] = useState('#ffffff');
     const [animOrBg, setAnimOrBg] = useState(false);
+
+    useEffect(() => {
+        if (forceExpanded) {
+            setToggleArrowStatus(true);
+        }
+    }, [forceExpanded]);
 
     useEffect(() => {
         // Mantener lógica de color y animación según otros estados
@@ -99,14 +119,13 @@ const MeseroComandaSlot = ({order, modeInterface, Comanda, updateComanda, remove
             setAnimOrBg(false);
             setColorStatus("#2d2d2d");
         }
-        // Cada vez que pasa a Preparing, se contrae
         if (Comanda.ComandaPaidStatus === "Editing") {
-            setToggleArrowStatus(true);
+            if (!forceExpanded) setToggleArrowStatus(true);
             setColorStatus("#fe8878");
             return;
         }
         if (Comanda.ComandaPrepStatus === "Preparing") {
-            setToggleArrowStatus(true);
+            if (!forceExpanded) setToggleArrowStatus(true);
             setColorStatus("#ffffff");
             return;
         }
@@ -117,10 +136,20 @@ const MeseroComandaSlot = ({order, modeInterface, Comanda, updateComanda, remove
             setAnimOrBg(false);
             setColorStatus("#ffffff");
         }
-    },[Comanda]);
+    },[Comanda, forceExpanded, order.OrderCustStatus]);
+
+    const handleRemoveComanda = (comanda) => {
+        removeComanda(comanda);
+        if (typeof onCloseFullscreen === 'function') {
+            onCloseFullscreen();
+        }
+    };
+
+    const fullscreenTitle = `${Comanda.Platillo} · $${Comanda.Precio}`;
 
     // Manejador para el toggle de la flecha, invoca callback si colapsa una comanda ReadyToServe
     const handleToggleArrow = () => {
+        if (forceExpanded) return;
         const newStatus = !toggleArrowStatus;
         setToggleArrowStatus(newStatus);
         if (Comanda.ComandaPrepStatus === "ReadyToServe" && typeof onBubbleToggle === 'function') {
@@ -128,22 +157,23 @@ const MeseroComandaSlot = ({order, modeInterface, Comanda, updateComanda, remove
         }
     };
 
-    return(
-        <div className="row"><div className="col-12">
-            <div className={`card-body mb-1 divStyle ${animOrBg && 'comandaCardAnimation'}`} style={{backgroundColor: animOrBg ? '' : colorStatus}}>
+    const cardContent = (
+        <div className={`card-body mb-1 divStyle ${animOrBg && 'comandaCardAnimation'}`} style={{backgroundColor: animOrBg ? '' : colorStatus}}>
             <div className="row mb-3">
                 <div className='col'>
                     <div className='row mb-2' style={{padding: "0px 20px"}}>
+                        {!forceExpanded && (
                         <div className="toggleArrowButtons">
                             <button style={{backgroundColor:  toggleArrowStatus ? "#7ed65b" : "#ffffff"}} onClick={handleToggleArrow}>
                                 <FontAwesomeIcon style={{color: toggleArrowStatus ? "#ffffff" : "#5d5d5d"}} icon={toggleArrowStatus ? faAngleUp : faAngleDown} size="2x" />
                             </button>
                         </div>
+                        )}
                             <div
                                 className="faButton ml-auto"
                                 style={{ cursor: 'pointer' }}
                                 title="Solicitar eliminación (requiere autorización)"
-                                onClick={() => removeComanda(Comanda)}
+                                onClick={() => handleRemoveComanda(Comanda)}
                             >
                                 <FontAwesomeIcon icon={faTrash} style={{color: 'red'}} size="xl" />
                             </div>
@@ -317,7 +347,44 @@ const MeseroComandaSlot = ({order, modeInterface, Comanda, updateComanda, remove
                 )
             )}
             </div>
-        </div></div>
+        </div>
+    );
+
+    return(
+        <div className={`mesero-comanda-slot${fullscreenMode ? ' mesero-comanda-slot--fullscreen' : ''}`}>
+            {enableFullscreenFab && (
+                <button
+                    type="button"
+                    className="mesero-comanda-slot__expand-fab"
+                    onClick={() => setFullscreenOpen(true)}
+                    title="Abrir comanda en pantalla completa"
+                    aria-label="Abrir comanda en pantalla completa"
+                >
+                    <FontAwesomeIcon icon={faExpand} />
+                </button>
+            )}
+            <div className="row"><div className="col-12">
+                {cardContent}
+            </div></div>
+            {fullscreenOpen && (
+                <MeseroComandaFullscreenModal
+                    title={fullscreenTitle}
+                    onClose={() => setFullscreenOpen(false)}
+                >
+                    <MeseroComandaSlot
+                        order={order}
+                        modeInterface={modeInterface}
+                        Comanda={Comanda}
+                        updateComanda={updateComanda}
+                        removeComanda={removeComanda}
+                        onBubbleToggle={onBubbleToggle}
+                        forceExpanded
+                        fullscreenMode
+                        onCloseFullscreen={() => setFullscreenOpen(false)}
+                    />
+                </MeseroComandaFullscreenModal>
+            )}
+        </div>
     );
 }
 
