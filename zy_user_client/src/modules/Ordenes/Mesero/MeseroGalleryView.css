@@ -8,9 +8,10 @@
     --zy-depth-navy: #1a2b5c;
     --zy-gap: 12px;
 
-    display: flex;
-    flex-direction: column;
-    flex: 1;
+    display: grid;
+    grid-template-rows: minmax(0, 1fr) auto;
+    grid-template-columns: minmax(0, 1fr);
+    flex: 1 1 0;
     min-height: 0;
     height: 100%;
     overflow: hidden;
@@ -20,7 +21,7 @@
 }
 
 .mesero-gallery__main {
-    flex: 1;
+    grid-row: 1;
     min-height: 0;
     overflow: hidden;
     padding: 10px var(--zy-gap) 8px;
@@ -80,6 +81,14 @@
     flex-direction: column;
     min-height: 0;
     padding: 12px 14px 10px;
+}
+
+.mesero-gallery__content-slot {
+    flex: 1 1 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
 }
 
 .mesero-gallery__panel-slot {
@@ -225,7 +234,9 @@
 }
 
 .mesero-gallery__empty {
-    flex: 1;
+    flex: 1 1 0;
+    min-height: 0;
+    height: 100%;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -246,9 +257,10 @@
     color: rgba(26, 43, 92, 0.5);
 }
 
-/* Filmstrip inferior (~20%) */
+/* Filmstrip inferior — siempre pegado al fondo de la galería */
 .mesero-gallery__filmstrip {
-    flex: 0 0 auto;
+    grid-row: 2;
+    flex-shrink: 0;
     min-height: 132px;
     max-height: 22vh;
     padding: 0 var(--zy-gap) var(--zy-gap);

@@ -123,37 +123,39 @@ const MeseroGalleryView = ({
                                 </>
                             )}
                         </div>
-                        {selectedOrderId ? (
-                            <div className="mesero-gallery__panel-slot">
-                                <MeseroOrderPanel
-                                    key={`${selectedOrderId}-${panelRefreshKey}`}
-                                    galleryLayout
-                                    modeInterface
-                                    iInterface
-                                    OrderID={selectedOrderId}
-                                    DeleteOrder={handleDeleteOrder}
-                                    handleOrderCustStatus={handleOrderCustStatus}
-                                    platillos={platillos}
-                                    onRegisterAddPlatillo={registerAddPlatillo}
-                                />
-                            </div>
-                        ) : (
-                            <div className="mesero-gallery__empty">
-                                {orders.length > 0 ? (
-                                    <>
-                                        <p>Ninguna orden seleccionada.</p>
-                                        <p className="mesero-gallery__empty-hint">
-                                            Elige una orden del cintillo inferior o pulsa &quot;Nueva Orden&quot;.
-                                        </p>
-                                    </>
-                                ) : (
-                                    <>
-                                        <p>No hay órdenes activas.</p>
-                                        <p className="mesero-gallery__empty-hint">Pulsa &quot;Nueva Orden&quot; para comenzar.</p>
-                                    </>
-                                )}
-                            </div>
-                        )}
+                        <div className="mesero-gallery__content-slot">
+                            {selectedOrderId ? (
+                                <div className="mesero-gallery__panel-slot">
+                                    <MeseroOrderPanel
+                                        key={`${selectedOrderId}-${panelRefreshKey}`}
+                                        galleryLayout
+                                        modeInterface
+                                        iInterface
+                                        OrderID={selectedOrderId}
+                                        DeleteOrder={handleDeleteOrder}
+                                        handleOrderCustStatus={handleOrderCustStatus}
+                                        platillos={platillos}
+                                        onRegisterAddPlatillo={registerAddPlatillo}
+                                    />
+                                </div>
+                            ) : (
+                                <div className="mesero-gallery__empty">
+                                    {orders.length > 0 ? (
+                                        <>
+                                            <p>Ninguna orden seleccionada.</p>
+                                            <p className="mesero-gallery__empty-hint">
+                                                Elige una orden del cintillo inferior o pulsa &quot;Nueva Orden&quot;.
+                                            </p>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <p>No hay órdenes activas.</p>
+                                            <p className="mesero-gallery__empty-hint">Pulsa &quot;Nueva Orden&quot; para comenzar.</p>
+                                        </>
+                                    )}
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
             </div>
