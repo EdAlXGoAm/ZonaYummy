@@ -7,10 +7,12 @@
     --zy-yummy-magenta-light: #ff6bb5;
     --zy-depth-navy: #1a2b5c;
     --zy-gap: 12px;
+    --mesero-gallery-filmstrip-h: clamp(132px, 22vh, 220px);
 
-    display: flex;
-    flex-direction: column;
-    flex: 1;
+    display: grid;
+    grid-template-rows: minmax(0, 1fr) var(--mesero-gallery-filmstrip-h);
+    grid-template-columns: minmax(0, 1fr);
+    flex: 1 1 0;
     min-height: 0;
     height: 100%;
     overflow: hidden;
@@ -19,9 +21,12 @@
     color: var(--zy-depth-navy);
 }
 
+/* Zona superior: SIEMPRE ocupa todo el espacio sobre el cintillo */
 .mesero-gallery__main {
-    flex: 1 1 0;
+    grid-row: 1;
+    min-width: 0;
     min-height: 0;
+    height: 100%;
     display: flex;
     flex-direction: column;
     overflow: hidden;
@@ -100,25 +105,24 @@
 
 .mesero-gallery__panel-slot {
     grid-row: 2;
-    position: relative;
     min-width: 0;
     min-height: 0;
+    height: 100%;
     display: flex;
     flex-direction: column;
     overflow: hidden;
 }
 
-.mesero-gallery__panel-slot > .mesero-order-panel--gallery {
-    flex: 1 1 0;
+.mesero-gallery__panel-slot > .mesero-order-panel--gallery,
+.mesero-gallery__panel-slot > .mesero-gallery__empty {
+    flex: 1 1 auto;
     min-height: 0;
     width: 100%;
+    height: 100%;
 }
 
-.mesero-gallery__panel-slot > .mesero-gallery__empty {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
+.mesero-gallery__panel-slot > .mesero-order-panel--gallery {
+    flex: 1 1 0;
 }
 
 .mesero-gallery__main-head-actions {
@@ -241,6 +245,8 @@
 
 .mesero-gallery__empty {
     box-sizing: border-box;
+    flex: 1 1 auto;
+    min-height: 100%;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -264,12 +270,12 @@
     color: rgba(26, 43, 92, 0.5);
 }
 
-/* Filmstrip inferior — siempre pegado al fondo */
+/* Cintillo: fila fija abajo, nunca sube al cerrar la orden */
 .mesero-gallery__filmstrip {
-    flex: 0 0 auto;
-    margin-top: auto;
-    min-height: 132px;
-    max-height: 22vh;
+    grid-row: 2;
+    min-width: 0;
+    min-height: 0;
+    height: 100%;
     padding: 0 var(--zy-gap) var(--zy-gap);
 }
 
