@@ -1,19 +1,124 @@
+/* Inspirado en ZonaYummyCocina frontend/src/home/home.css */
+
 .mesero-gallery {
+    --zy-zona-cyan: #00b7e6;
+    --zy-zona-cyan-light: #5ce1ff;
+    --zy-yummy-magenta: #e91e96;
+    --zy-yummy-magenta-light: #ff6bb5;
+    --zy-depth-navy: #1a2b5c;
+    --zy-gap: 12px;
+
     display: flex;
     flex-direction: column;
     flex: 1;
     min-height: 0;
     height: 100%;
     overflow: hidden;
+    background: #f8fafc;
+    font-family: 'Nunito', system-ui, sans-serif;
+    color: var(--zy-depth-navy);
 }
 
 .mesero-gallery__main {
-    flex: 0 0 80%;
+    flex: 1;
     min-height: 0;
     overflow: hidden;
+    padding: var(--zy-gap) var(--zy-gap) 8px;
+}
+
+.mesero-gallery__main-shell {
+    position: relative;
+    height: 100%;
+    border-radius: 22px;
+    overflow: hidden;
+    box-shadow: 0 6px 14px rgba(26, 43, 92, 0.28);
+    background: linear-gradient(135deg, #e8faff 0%, #fff0f8 50%, #f5f8ff 100%);
+    border: 1.5px solid rgba(255, 255, 255, 0.85);
+}
+
+.mesero-gallery__orb {
+    position: absolute;
+    border-radius: 50%;
+    pointer-events: none;
+}
+
+.mesero-gallery__orb--cyan {
+    width: 120px;
+    height: 120px;
+    right: -28px;
+    top: -24px;
+    background: rgba(0, 183, 230, 0.35);
+}
+
+.mesero-gallery__orb--magenta {
+    width: 100px;
+    height: 100px;
+    left: -20px;
+    bottom: -30px;
+    background: rgba(233, 30, 150, 0.28);
+}
+
+.mesero-gallery__orb--sm.mesero-gallery__orb--cyan {
+    width: 72px;
+    height: 72px;
+    right: -16px;
+    top: -18px;
+}
+
+.mesero-gallery__orb--sm.mesero-gallery__orb--magenta {
+    width: 64px;
+    height: 64px;
+    left: -12px;
+    bottom: -20px;
+}
+
+.mesero-gallery__main-inner {
+    position: relative;
+    z-index: 1;
+    height: 100%;
     display: flex;
     flex-direction: column;
-    padding: 0 8px;
+    min-height: 0;
+    padding: 12px 14px 10px;
+}
+
+.mesero-gallery__main-head {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 8px;
+}
+
+.mesero-gallery__kicker {
+    display: inline-block;
+    padding: 5px 12px;
+    border-radius: 999px;
+    font-size: 0.68rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #fff;
+    background: linear-gradient(180deg, var(--zy-zona-cyan-light), var(--zy-zona-cyan));
+    box-shadow: 0 3px 8px rgba(0, 183, 230, 0.45);
+}
+
+.mesero-gallery__kicker--film {
+    background: linear-gradient(180deg, var(--zy-yummy-magenta-light), var(--zy-yummy-magenta));
+    box-shadow: 0 3px 8px rgba(233, 30, 150, 0.35);
+    margin-bottom: 8px;
+}
+
+.mesero-gallery__main-title {
+    margin: 0;
+    font-size: 1.2rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    background: linear-gradient(90deg, var(--zy-depth-navy), var(--zy-yummy-magenta));
+    background-clip: text;
+    -webkit-background-clip: text;
+    color: transparent;
 }
 
 .mesero-gallery__empty {
@@ -22,42 +127,48 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    color: #6b7280;
-    font-size: 22px;
-    font-weight: 600;
-    background: #f9fafb;
-    border: 2px dashed #d1d5db;
+    color: rgba(26, 43, 92, 0.65);
+    font-size: 1.1rem;
+    font-weight: 700;
     border-radius: 16px;
-    margin: 8px;
+    border: 1.5px dashed rgba(26, 43, 92, 0.15);
+    background: rgba(255, 255, 255, 0.55);
+    margin-top: 4px;
 }
 
 .mesero-gallery__empty-hint {
-    font-size: 16px;
-    font-weight: 500;
+    font-size: 0.92rem;
+    font-weight: 600;
     margin-top: 8px;
-    color: #9ca3af;
+    color: rgba(26, 43, 92, 0.5);
 }
 
+/* Filmstrip inferior (~20%) */
 .mesero-gallery__filmstrip {
-    flex: 0 0 20%;
-    min-height: 0;
+    flex: 0 0 auto;
+    min-height: 132px;
+    max-height: 22vh;
+    padding: 0 var(--zy-gap) var(--zy-gap);
+}
+
+.mesero-gallery__filmstrip-shell {
+    position: relative;
+    height: 100%;
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 8px 18px rgba(26, 43, 92, 0.22);
+    background: linear-gradient(135deg, var(--zy-depth-navy) 0%, #243a6e 55%, #3d1f4a 100%);
+    border: 1.5px solid rgba(255, 255, 255, 0.12);
+}
+
+.mesero-gallery__filmstrip-inner {
+    position: relative;
+    z-index: 1;
+    height: 100%;
     display: flex;
     flex-direction: column;
-    background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
-    border-top: 3px solid #38bdf8;
-    padding: 8px 12px 10px;
-    overflow: hidden;
-}
-
-.mesero-gallery__filmstrip-label {
-    flex-shrink: 0;
-    color: #94a3b8;
-    font-family: Bebas Neue, sans-serif;
-    font-size: 18px;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-    margin-bottom: 6px;
-    padding-left: 4px;
+    padding: 10px 12px 10px;
+    min-height: 0;
 }
 
 .mesero-gallery__filmstrip-scroll {
@@ -68,89 +179,130 @@
     overflow-x: auto;
     overflow-y: hidden;
     align-items: stretch;
-    padding-bottom: 4px;
+    padding-bottom: 2px;
     -webkit-overflow-scrolling: touch;
 }
 
 .mesero-gallery__filmstrip-scroll::-webkit-scrollbar {
-    height: 8px;
-}
-
-.mesero-gallery__filmstrip-scroll::-webkit-scrollbar-track {
-    background: rgba(255, 255, 255, 0.08);
-    border-radius: 4px;
+    height: 6px;
 }
 
 .mesero-gallery__filmstrip-scroll::-webkit-scrollbar-thumb {
-    background: rgba(56, 189, 248, 0.6);
-    border-radius: 4px;
+    background: rgba(92, 225, 255, 0.45);
+    border-radius: 999px;
 }
 
-.mesero-gallery__frame {
+/* Tiles estilo zy-cocina-screen-tile */
+.mesero-gallery__tile {
     flex: 0 0 auto;
-    width: 148px;
-    min-height: 100%;
-    background: #334155;
-    border: 2px solid #475569;
-    border-radius: 10px;
-    padding: 10px 10px 8px;
+    width: 132px;
+    border: none;
+    padding: 0;
+    background: transparent;
     cursor: pointer;
+    font: inherit;
+    text-align: left;
+}
+
+.mesero-gallery__tile-frame {
     display: flex;
     flex-direction: column;
     gap: 6px;
-    text-align: left;
-    transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+    height: 100%;
+    padding: 8px;
+    border-radius: 12px;
+    background: rgba(26, 43, 92, 0.35);
+    border: 1.5px solid rgba(255, 255, 255, 0.14);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+    transition: border-color 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
 }
 
-.mesero-gallery__frame:hover {
-    transform: translateY(-3px);
-    border-color: #7dd3fc;
+.mesero-gallery__tile:hover .mesero-gallery__tile-frame {
+    transform: translateY(-2px);
+    border-color: rgba(92, 225, 255, 0.5);
 }
 
-.mesero-gallery__frame--selected {
-    border-color: #38bdf8;
-    background: linear-gradient(145deg, #1d4ed8 0%, #1e3a8a 100%);
-    box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.45), 0 8px 20px rgba(0, 0, 0, 0.35);
+.mesero-gallery__tile--selected .mesero-gallery__tile-frame {
+    border-color: rgba(0, 183, 230, 0.75);
+    background: rgba(0, 183, 230, 0.18);
+    box-shadow: 0 0 0 2px rgba(92, 225, 255, 0.35), inset 0 0 0 1px rgba(255, 255, 255, 0.2);
 }
 
-.mesero-gallery__frame-top {
+.mesero-gallery__tile-badge {
+    font-size: 0.62rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.mesero-gallery__tile--selected .mesero-gallery__tile-badge {
+    color: var(--zy-zona-cyan-light);
+}
+
+.mesero-gallery__tile-screen {
     display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    gap: 6px;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    flex: 1;
+    min-height: 64px;
+    border-radius: 8px;
+    background: linear-gradient(180deg, #1a2b5c 0%, #243a6e 100%);
+    color: #fff;
+    padding: 6px 4px;
 }
 
-.mesero-gallery__frame-id {
-    font-family: Bebas Neue, sans-serif;
-    font-size: 26px;
-    color: #f8fafc;
-    line-height: 1;
+.mesero-gallery__tile-screen-icon {
+    width: 28px;
+    height: 20px;
+    border-radius: 3px;
+    border: 2px solid rgba(255, 255, 255, 0.35);
+    position: relative;
+    display: block;
 }
 
-.mesero-gallery__frame-total {
-    font-size: 14px;
+.mesero-gallery__tile-screen-icon::after {
+    content: '';
+    position: absolute;
+    inset: 4px 5px;
+    background: repeating-linear-gradient(
+        0deg,
+        rgba(255, 107, 181, 0.9) 0,
+        rgba(255, 107, 181, 0.9) 3px,
+        transparent 3px,
+        transparent 6px
+    );
+    border-radius: 2px;
+}
+
+.mesero-gallery__tile-screen-label {
+    font-size: 0.62rem;
     font-weight: 700;
+    text-align: center;
+    line-height: 1.15;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    padding: 0 2px;
+}
+
+.mesero-gallery__tile-screen-total {
+    font-size: 0.72rem;
+    font-weight: 800;
     color: #86efac;
 }
 
-.mesero-gallery__frame-customer {
-    font-size: 13px;
-    font-weight: 600;
-    color: #e2e8f0;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.mesero-gallery__frame-status {
-    margin-top: auto;
-    font-size: 11px;
+.mesero-gallery__tile-meta {
+    font-size: 0.58rem;
     font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
-    color: #94a3b8;
+    letter-spacing: 0.05em;
+    color: rgba(255, 255, 255, 0.55);
 }
 
-.mesero-gallery__frame--selected .mesero-gallery__frame-status {
-    color: #bfdbfe;
+.mesero-gallery__tile-meta--done {
+    color: #fda4af;
 }

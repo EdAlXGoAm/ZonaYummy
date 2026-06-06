@@ -7,6 +7,7 @@
     flex-direction: column;
     height: 100vh;
     overflow: hidden;
+    background: #f8fafc;
 }
 
 .mesero-orders-shell--gallery > .mesero-gallery {
@@ -14,19 +15,55 @@
     min-height: 0;
 }
 
-.mesero-view-switch {
-    display: flex;
+/* Botón flotante cambio de vista — estilo Zona Yummy */
+.mesero-view-fab {
+    position: fixed;
+    right: 20px;
+    bottom: 20px;
+    z-index: 1600;
+    display: inline-flex;
     align-items: center;
-    justify-content: center;
-    gap: 10px;
-    margin-top: 8px;
-    margin-bottom: 4px;
+    gap: 8px;
+    padding: 10px 16px 10px 12px;
+    border: none;
+    border-radius: 999px;
+    cursor: pointer;
+    font-family: 'Nunito', system-ui, sans-serif;
+    font-size: 0.88rem;
+    font-weight: 800;
+    color: #fff;
+    background: linear-gradient(180deg, #ff6bb5, #e91e96);
+    box-shadow: 0 6px 18px rgba(233, 30, 150, 0.45);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
-.mesero-view-switch__label {
-    font-weight: 700;
-    font-size: 15px;
-    color: #1f2937;
+.mesero-view-fab:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 24px rgba(233, 30, 150, 0.5);
+}
+
+.mesero-view-fab--gallery {
+    bottom: calc(22vh + 20px);
+    background: linear-gradient(180deg, #5ce1ff, #00b7e6);
+    box-shadow: 0 6px 18px rgba(0, 183, 230, 0.45);
+}
+
+.mesero-view-fab--gallery:hover {
+    box-shadow: 0 10px 24px rgba(0, 183, 230, 0.5);
+}
+
+.mesero-view-fab__icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.22);
+}
+
+.mesero-view-fab__label {
+    letter-spacing: 0.02em;
 }
 
 .contenedor-elementos {

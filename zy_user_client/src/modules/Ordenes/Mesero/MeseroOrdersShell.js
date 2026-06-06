@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import MeseroOrderPanel from './MeseroOrderPanel';
 import MeseroGalleryView from './MeseroGalleryView';
 import Button from 'react-bootstrap/Button';
-import BootstrapSwitchButton from 'bootstrap-switch-button-react';
 import './MeseroOrdersShell.css';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -715,16 +714,29 @@ const MeseroOrdersShell = ({ modeInterface }) => {
                             <Button variant="success" size="lg" onClick={() => handleSlideChange(slide + 1)} disabled={isMobile || galleryView}>→</Button>
                         </div>
                     </div>
-                    <div className="mesero-view-switch">
-                        <span className="mesero-view-switch__label">Vista galería</span>
-                        <BootstrapSwitchButton
-                            checked={galleryView}
-                            onlabel="ON"
-                            offlabel="OFF"
-                            onChange={(checked) => setGalleryView(checked)}
-                        />
-                    </div>
                 </div>
+            )}
+            {modeInterface && (
+                <button
+                    type="button"
+                    className={`mesero-view-fab${galleryView ? ' mesero-view-fab--gallery' : ''}`}
+                    onClick={() => setGalleryView((prev) => !prev)}
+                    title={galleryView ? 'Cambiar a vista clásica' : 'Cambiar a vista galería'}
+                    aria-label={galleryView ? 'Cambiar a vista clásica' : 'Cambiar a vista galería'}
+                >
+                    <span className="mesero-view-fab__icon" aria-hidden="true">
+                        {galleryView ? (
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M4 4h7v7H4V4zm9 0h7v7h-7V4zM4 13h7v7H4v-7zm9 0h7v7h-7v-7z" />
+                            </svg>
+                        ) : (
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M4 6h16v2H4V6zm0 5h10v2H4v-2zm0 5h16v2H4v-2z" />
+                            </svg>
+                        )}
+                    </span>
+                    <span className="mesero-view-fab__label">{galleryView ? 'Clásica' : 'Galería'}</span>
+                </button>
             )}
             {renderOrders()}
             {showPasswordModal && (

@@ -8,16 +8,20 @@
     height: auto;
 }
 
-/* Vista galería: panel ocupa el 80% superior sin scroll vertical de página */
+/* Vista galería: panel dentro del shell Zona Yummy */
 .mesero-order-panel--gallery {
-    margin: 4px 0 0;
-    height: 100%;
+    margin: 0;
+    flex: 1;
+    min-height: 0;
+    height: auto;
     max-height: 100%;
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    border-width: 3px;
-    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12);
+    border: 1.5px solid rgba(26, 43, 92, 0.1);
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.72);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.6);
 }
 
 .mesero-order-panel--gallery > .row:first-child,
