@@ -9,6 +9,9 @@ router.get('/get/', comandaController.getComanda);
 // Ruta para obtener todos los platillos por OrderID
 router.get('/getByOrderId/:id', comandaController.getComandasByOrderId);
 
+// Ruta para obtener comandas de varias órdenes en una sola consulta
+router.post('/getByOrderIds', comandaController.getComandasByOrderIds);
+
 // Ruta para obtener un platillo específico por su ID
 router.get('/get/:id', comandaController.getComanda);
 

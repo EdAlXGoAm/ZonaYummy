@@ -62,18 +62,23 @@ const MeseroOrderPickModal = ({ orders, comandasByOrder = {}, onSelectOrder, onC
         });
 
         const fillMissing = async () => {
-            const results = await Promise.all(
-                missingOrders.map((order) =>
-                    comandasApi.getComandasByOrderId(order.OrderID)
-                        .then((comandas) => [Number(order.OrderID), comandas])
-                        .catch(() => [Number(order.OrderID), []])
-                )
-            );
-            if (cancelled) return;
-            setLocalComandasByOrder((prev) => ({
-                ...prev,
-                ...Object.fromEntries(results),
-            }));
+            try {
+                const byOrder = await comandasApi.getComandasByOrderIds(
+                    missingOrders.map((order) => order.OrderID)
+                );
+                if (cancelled) return;
+                const normalized = {};
+                missingOrders.forEach((order) => {
+                    const key = Number(order.OrderID);
+                    normalized[key] = byOrder[key] || byOrder[order.OrderID] || byOrder[String(order.OrderID)] || [];
+                });
+                setLocalComandasByOrder((prev) => ({
+                    ...prev,
+                    ...normalized,
+                }));
+            } catch {
+                if (cancelled) return;
+            }
         };
 
         fillMissing();

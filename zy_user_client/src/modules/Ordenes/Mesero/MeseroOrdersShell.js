@@ -24,6 +24,7 @@ const MeseroOrdersShell = ({ modeInterface }) => {
     const notify = (message) => toast(message);
     const bodyScrollLockRef = useRef({ overflow: '', paddingRight: '' });
     const fetchOrdersTimerRef = useRef(null);
+    const syncComandasTimerRef = useRef(null);
     const ordersRef = useRef([]);
     const [orders, setOrders] = useState([]);
     const [comandasByOrder, setComandasByOrder] = useState({});
@@ -53,43 +54,56 @@ const MeseroOrdersShell = ({ modeInterface }) => {
             return;
         }
         try {
-            const results = await Promise.all(
-                orderList.map((order) =>
-                    comandasApi.getComandasByOrderId(order.OrderID)
-                        .then((comandas) => [Number(order.OrderID), comandas])
-                        .catch(() => [Number(order.OrderID), []])
-                )
-            );
-            setComandasByOrder(Object.fromEntries(results));
+            const orderIds = orderList.map((order) => order.OrderID);
+            const byOrder = await comandasApi.getComandasByOrderIds(orderIds);
+            const normalized = {};
+            orderList.forEach((order) => {
+                const key = Number(order.OrderID);
+                normalized[key] = byOrder[key] || byOrder[order.OrderID] || byOrder[String(order.OrderID)] || [];
+            });
+            setComandasByOrder(normalized);
         } catch (err) {
             console.log(err);
         }
     };
 
+    const syncComandaForOrder = async (orderId) => {
+        const key = Number(orderId);
+        if (!Number.isFinite(key)) return;
+        try {
+            const comandas = await comandasApi.getComandasByOrderId(key);
+            setComandasByOrder((prev) => ({ ...prev, [key]: comandas }));
+        } catch (err) {
+            console.log(err);
+        }
+    };
+
+    const scheduleSyncComandasCache = (orderList = ordersRef.current) => {
+        if (syncComandasTimerRef.current) {
+            clearTimeout(syncComandasTimerRef.current);
+        }
+        syncComandasTimerRef.current = setTimeout(() => {
+            syncComandasTimerRef.current = null;
+            syncComandasCache(orderList);
+        }, 150);
+    };
+
     const fetchOrders = () => {
         if (modeInterface) {
-            let orders = [];
-            ordersApi.getOrdersByOrderCustStatus("Done")
-            .then(data => {
-                orders = [...orders, ...data];
-                ordersApi.getOrdersByOrderCustStatus("InPlace")
-                .then(data2 => {
-                    orders = [...orders, ...data2];
-                    setOrders(prevOrders => {return (orders);});
-                    setNumOrders(prevNumOrders => {return orders.length;});
-                    syncComandasCache(orders);
+            Promise.all([
+                ordersApi.getOrdersByOrderCustStatus('Done'),
+                ordersApi.getOrdersByOrderCustStatus('InPlace'),
+            ])
+                .then(([doneOrders, inPlaceOrders]) => {
+                    const mergedOrders = [...doneOrders, ...inPlaceOrders];
+                    setOrders(mergedOrders);
+                    setNumOrders(mergedOrders.length);
+                    syncComandasCache(mergedOrders);
                 })
-                .catch(err => {
+                .catch((err) => {
                     console.log(err);
                     notify(`Error al cargar las comandas: ${err}`);
-                    // alert("Error al cargar las comandas");
                 });
-            })
-            .catch(err => {
-                console.log(err);
-                notify(`Error al cargar las comandas: ${err}`);
-                // alert("Error al cargar las comandas");
-            });
         }
         else {
             ordersApi.getOrdersByOrderCustStatus("InPlace")
@@ -300,6 +314,9 @@ const MeseroOrdersShell = ({ modeInterface }) => {
             if (fetchOrdersTimerRef.current) {
                 clearTimeout(fetchOrdersTimerRef.current);
             }
+            if (syncComandasTimerRef.current) {
+                clearTimeout(syncComandasTimerRef.current);
+            }
         };
     }, []);
 
@@ -323,8 +340,13 @@ const MeseroOrdersShell = ({ modeInterface }) => {
         const onDeleteComanda = () => {
             scheduleFetchOrders();
         };
-        const onComandaChanged = () => {
-            syncComandasCache(ordersRef.current);
+        const onComandaChanged = (data) => {
+            const orderId = data?.msg?.split?.('-')?.[1];
+            if (orderId) {
+                syncComandaForOrder(orderId);
+                return;
+            }
+            scheduleSyncComandasCache();
         };
 
         socket.on('NuevaOrdenDesdeServidor', onNuevaOrden);

@@ -22,6 +22,16 @@ const comandasApi = {
         }
     },
 
+    getComandasByOrderIds : async (orderIds) => {
+        try {
+            const response = await Axios.post(`${baseURL}/getByOrderIds`, { orderIds });
+            return response.data;
+        } catch (error) {
+            console.error("comandasAPI error: ", error);
+            throw error;
+        }
+    },
+
     getComanda : async (id) => {
         try {
             const response = await Axios.get(`${baseURL}/get/${id}`);

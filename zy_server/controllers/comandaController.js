@@ -14,6 +14,34 @@ exports.getComandasByOrderId = (req, res) => {
         .catch((err) => res.status(400).json("Error: " + err));
 }
 
+exports.getComandasByOrderIds = (req, res) => {
+    const rawIds = Array.isArray(req.body?.orderIds) ? req.body.orderIds : [];
+    const orderIds = [...new Set(
+        rawIds.map((id) => Number(id)).filter((id) => Number.isFinite(id))
+    )];
+
+    if (!orderIds.length) {
+        return res.json({});
+    }
+
+    Comanda.find({ OrderID: { $in: orderIds } })
+        .then((comandas) => {
+            const byOrder = {};
+            orderIds.forEach((id) => {
+                byOrder[id] = [];
+            });
+            comandas.forEach((comanda) => {
+                const orderId = Number(comanda.OrderID);
+                if (!byOrder[orderId]) {
+                    byOrder[orderId] = [];
+                }
+                byOrder[orderId].push(comanda);
+            });
+            res.json(byOrder);
+        })
+        .catch((err) => res.status(400).json("Error: " + err));
+}
+
 exports.getComanda = (req, res) => {
     Comanda.findOne({ ComandaId: req.params.id })
         .then((comanda) => res.json(comanda))
