@@ -8,6 +8,8 @@ import 'react-toastify/dist/ReactToastify.css';
 
 import ordersApi from './../../../api/ordersApi';
 import platillosApi from './../../../api/platillosApi';
+import comandasApi from './../../../api/comandasApi';
+import { buildComandasByOrderId } from './meseroComandasCache';
 
 import OrdenesCocina from './../MeseroPage/OrdenesCocinaComponent';
 import Counter30To0 from '../Global/CounterComponent';
@@ -23,7 +25,9 @@ const MeseroOrdersShell = ({ modeInterface }) => {
     const notify = (message) => toast(message);
     const bodyScrollLockRef = useRef({ overflow: '', paddingRight: '' });
     const fetchOrdersTimerRef = useRef(null);
+    const ordersRef = useRef([]);
     const [orders, setOrders] = useState([]);
+    const [comandasByOrder, setComandasByOrder] = useState({});
     const [numOrders, setNumOrders] = useState(0);
     const [platillos, setPlatillos] = useState([]);
     const [numPlatillos, setNumPlatillos] = useState(0);
@@ -39,6 +43,24 @@ const MeseroOrdersShell = ({ modeInterface }) => {
             saveGalleryViewPreference(isGallery);
         }
     };
+
+    useEffect(() => {
+        ordersRef.current = orders;
+    }, [orders]);
+
+    const syncComandasCache = async (orderList) => {
+        if (!orderList?.length) {
+            setComandasByOrder({});
+            return;
+        }
+        try {
+            const allComandas = await comandasApi.getComandas();
+            setComandasByOrder(buildComandasByOrderId(allComandas, orderList));
+        } catch (err) {
+            console.log(err);
+        }
+    };
+
     const fetchOrders = () => {
         if (modeInterface) {
             let orders = [];
@@ -50,6 +72,7 @@ const MeseroOrdersShell = ({ modeInterface }) => {
                     orders = [...orders, ...data2];
                     setOrders(prevOrders => {return (orders);});
                     setNumOrders(prevNumOrders => {return orders.length;});
+                    syncComandasCache(orders);
                 })
                 .catch(err => {
                     console.log(err);
@@ -121,6 +144,7 @@ const MeseroOrdersShell = ({ modeInterface }) => {
             setNumOrders(mergedOrders.length);
             setPlatillos(platillosData);
             setNumPlatillos(platillosData.length);
+            await syncComandasCache(mergedOrders);
             notify('Datos actualizados');
         } catch (err) {
             console.log(err);
@@ -174,6 +198,7 @@ const MeseroOrdersShell = ({ modeInterface }) => {
                 return (
                     <MeseroGalleryView
                         orders={orders}
+                        comandasByOrder={comandasByOrder}
                         platillos={platillos}
                         handleDeleteOrder={handleDeleteOrder}
                         handleOrderCustStatus={handleOrderCustStatus}
@@ -293,17 +318,24 @@ const MeseroOrdersShell = ({ modeInterface }) => {
         const onDeleteComanda = () => {
             scheduleFetchOrders();
         };
+        const onComandaChanged = () => {
+            syncComandasCache(ordersRef.current);
+        };
 
         socket.on('NuevaOrdenDesdeServidor', onNuevaOrden);
         socket.on('OrdenEliminadaDesdeServidor', onOrdenEliminada);
         socket.on('OrdenActualizadaDesdeServidor', onOrdenActualizada);
         socket.on('DeleteComandaDesdeServidor', onDeleteComanda);
+        socket.on('NuevaComandaDesdeServidor', onComandaChanged);
+        socket.on('UpdateComandaDesdeServidor', onComandaChanged);
 
         return () => {
             socket.off('NuevaOrdenDesdeServidor', onNuevaOrden);
             socket.off('OrdenEliminadaDesdeServidor', onOrdenEliminada);
             socket.off('OrdenActualizadaDesdeServidor', onOrdenActualizada);
             socket.off('DeleteComandaDesdeServidor', onDeleteComanda);
+            socket.off('NuevaComandaDesdeServidor', onComandaChanged);
+            socket.off('UpdateComandaDesdeServidor', onComandaChanged);
         };
     }, []);
 

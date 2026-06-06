@@ -10,6 +10,7 @@ import {
 
 const MeseroGalleryView = ({
     orders,
+    comandasByOrder = {},
     platillos,
     handleDeleteOrder,
     handleOrderCustStatus,
@@ -119,6 +120,7 @@ const MeseroGalleryView = ({
             {showOrderPicker && (
                 <MeseroOrderPickModal
                     orders={sortedOrders}
+                    comandasByOrder={comandasByOrder}
                     onSelectOrder={selectOrder}
                     onClose={() => setPickerDismissed(true)}
                 />

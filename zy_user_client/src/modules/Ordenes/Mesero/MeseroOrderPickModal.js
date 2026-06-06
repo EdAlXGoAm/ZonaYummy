@@ -1,7 +1,6 @@
 import './MeseroOrderPickModal.css';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import comandasApi from '../../../api/comandasApi';
 
 const MAX_BUBBLES = 7;
 
@@ -26,40 +25,8 @@ const sortOrdersForPicker = (orders) => {
     return [...active.sort(byNewest), ...closed.sort(byNewest)];
 };
 
-const MeseroOrderPickModal = ({ orders, onSelectOrder, onClose }) => {
+const MeseroOrderPickModal = ({ orders, comandasByOrder = {}, onSelectOrder, onClose }) => {
     const sortedOrders = useMemo(() => sortOrdersForPicker(orders), [orders]);
-    const [comandasByOrder, setComandasByOrder] = useState({});
-    const [loading, setLoading] = useState(true);
-
-    useEffect(() => {
-        let cancelled = false;
-
-        const loadComandas = async () => {
-            setLoading(true);
-            try {
-                const entries = await Promise.all(
-                    sortedOrders.map(async (order) => {
-                        const comandas = await comandasApi.getComandasByOrderId(order.OrderID);
-                        return [order.OrderID, comandas];
-                    })
-                );
-                if (!cancelled) {
-                    setComandasByOrder(Object.fromEntries(entries));
-                }
-            } catch {
-                if (!cancelled) {
-                    setComandasByOrder({});
-                }
-            } finally {
-                if (!cancelled) {
-                    setLoading(false);
-                }
-            }
-        };
-
-        loadComandas();
-        return () => { cancelled = true; };
-    }, [sortedOrders]);
 
     return createPortal(
         <div className="mesero-order-pick-overlay" onClick={onClose}>
@@ -86,84 +53,80 @@ const MeseroOrderPickModal = ({ orders, onSelectOrder, onClose }) => {
                 </div>
 
                 <div className="mesero-order-pick__body">
-                    {loading ? (
-                        <p className="mesero-order-pick__loading">Cargando órdenes…</p>
-                    ) : (
-                        <ul className="mesero-order-pick__list">
-                            {sortedOrders.map((order) => {
-                                const customer = (order.Customer || '').trim();
-                                const isDone = order.OrderCustStatus === 'Done';
-                                const comandas = comandasByOrder[order.OrderID] || [];
-                                const visible = comandas.slice(0, MAX_BUBBLES);
-                                const overflow = comandas.length - visible.length;
+                    <ul className="mesero-order-pick__list">
+                        {sortedOrders.map((order) => {
+                            const customer = (order.Customer || '').trim();
+                            const isDone = order.OrderCustStatus === 'Done';
+                            const comandas = comandasByOrder[Number(order.OrderID)] || [];
+                            const visible = comandas.slice(0, MAX_BUBBLES);
+                            const overflow = comandas.length - visible.length;
 
-                                return (
-                                    <li key={order.OrderID}>
-                                        <button
-                                            type="button"
-                                            className={`mesero-order-pick__row${isDone ? ' mesero-order-pick__row--done' : ''}`}
-                                            onClick={() => onSelectOrder(order.OrderID)}
-                                        >
-                                            <div className="mesero-order-pick__row-main">
-                                                <div className="mesero-order-pick__row-info">
-                                                    <span className="mesero-order-pick__order-id">
-                                                        #{order.OrderID}
-                                                    </span>
-                                                    <span className="mesero-order-pick__customer">
-                                                        {customer || 'Sin cliente'}
-                                                    </span>
-                                                </div>
-                                                <div className="mesero-order-pick__row-meta">
-                                                    <span className="mesero-order-pick__total">
-                                                        ${Number(order.CuentaTotal || 0).toFixed(0)}
-                                                    </span>
-                                                    <span className={`mesero-order-pick__status${isDone ? ' mesero-order-pick__status--done' : ''}`}>
-                                                        {isDone ? 'Cerrada' : 'En curso'}
-                                                    </span>
-                                                </div>
+                            return (
+                                <li key={order.OrderID}>
+                                    <button
+                                        type="button"
+                                        className={`mesero-order-pick__row${isDone ? ' mesero-order-pick__row--done' : ''}`}
+                                        onClick={() => onSelectOrder(order.OrderID)}
+                                    >
+                                        <div className="mesero-order-pick__row-main">
+                                            <div className="mesero-order-pick__row-info">
+                                                <span className="mesero-order-pick__order-id">
+                                                    #{order.OrderID}
+                                                </span>
+                                                <span className="mesero-order-pick__customer">
+                                                    {customer || 'Sin cliente'}
+                                                </span>
                                             </div>
-                                            <div className="mesero-order-pick__bubbles">
-                                                {visible.length === 0 ? (
-                                                    <span className="mesero-order-pick__empty-items">
-                                                        Sin platillos
-                                                    </span>
-                                                ) : (
-                                                    <>
-                                                        {visible.map((comanda) => {
-                                                            const delivered = isComandaDelivered(comanda);
-                                                            return (
-                                                            <span
-                                                                key={comanda._id || `${comanda.ComandaId}-${comanda.Platillo}`}
-                                                                className={`mesero-order-pick__bubble${delivered ? ' mesero-order-pick__bubble--delivered' : ''}`}
-                                                                title={delivered ? `${comanda.Platillo} (Entregado)` : comanda.Platillo}
-                                                            >
-                                                                <img
-                                                                    src={comanda.Imagen}
-                                                                    alt={comanda.Platillo}
+                                            <div className="mesero-order-pick__row-meta">
+                                                <span className="mesero-order-pick__total">
+                                                    ${Number(order.CuentaTotal || 0).toFixed(0)}
+                                                </span>
+                                                <span className={`mesero-order-pick__status${isDone ? ' mesero-order-pick__status--done' : ''}`}>
+                                                    {isDone ? 'Cerrada' : 'En curso'}
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <div className="mesero-order-pick__bubbles">
+                                            {visible.length === 0 ? (
+                                                <span className="mesero-order-pick__empty-items">
+                                                    Sin platillos
+                                                </span>
+                                            ) : (
+                                                <>
+                                                    {visible.map((comanda) => {
+                                                        const delivered = isComandaDelivered(comanda);
+                                                        return (
+                                                        <span
+                                                            key={comanda._id || `${comanda.ComandaId}-${comanda.Platillo}`}
+                                                            className={`mesero-order-pick__bubble${delivered ? ' mesero-order-pick__bubble--delivered' : ''}`}
+                                                            title={delivered ? `${comanda.Platillo} (Entregado)` : comanda.Platillo}
+                                                        >
+                                                            <img
+                                                                src={comanda.Imagen}
+                                                                alt={comanda.Platillo}
+                                                            />
+                                                            {delivered && (
+                                                                <span
+                                                                    className="mesero-order-pick__bubble-mask"
+                                                                    aria-hidden="true"
                                                                 />
-                                                                {delivered && (
-                                                                    <span
-                                                                        className="mesero-order-pick__bubble-mask"
-                                                                        aria-hidden="true"
-                                                                    />
-                                                                )}
-                                                            </span>
-                                                            );
-                                                        })}
-                                                        {overflow > 0 && (
-                                                            <span className="mesero-order-pick__bubble-overflow">
-                                                                +{overflow}
-                                                            </span>
-                                                        )}
-                                                    </>
-                                                )}
-                                            </div>
-                                        </button>
-                                    </li>
-                                );
-                            })}
-                        </ul>
-                    )}
+                                                            )}
+                                                        </span>
+                                                        );
+                                                    })}
+                                                    {overflow > 0 && (
+                                                        <span className="mesero-order-pick__bubble-overflow">
+                                                            +{overflow}
+                                                        </span>
+                                                    )}
+                                                </>
+                                            )}
+                                        </div>
+                                    </button>
+                                </li>
+                            );
+                        })}
+                    </ul>
                 </div>
             </div>
         </div>,
