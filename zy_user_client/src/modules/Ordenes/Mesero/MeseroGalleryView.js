@@ -1,5 +1,5 @@
 import './MeseroGalleryView.css';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import MeseroOrderPanel from './MeseroOrderPanel';
 import MeseroPlatilloSelector from './MeseroPlatilloSelector';
 
@@ -19,6 +19,15 @@ const MeseroGalleryView = ({
     const [addPlatilloToOrder, setAddPlatilloToOrder] = useState(null);
     const [refreshing, setRefreshing] = useState(false);
     const [panelRefreshKey, setPanelRefreshKey] = useState(0);
+
+    const registerAddPlatillo = useCallback((handler) => {
+        if (handler == null) {
+            setAddPlatilloToOrder(null);
+            return;
+        }
+        // Guardar una función en state requiere devolverla desde el updater
+        setAddPlatilloToOrder(() => handler);
+    }, []);
 
     const sortedOrders = useMemo(
         () => [...orders].sort((a, b) => Number(a.OrderID) - Number(b.OrderID)),
@@ -101,7 +110,7 @@ const MeseroGalleryView = ({
                                 DeleteOrder={handleDeleteOrder}
                                 handleOrderCustStatus={handleOrderCustStatus}
                                 platillos={platillos}
-                                onRegisterAddPlatillo={setAddPlatilloToOrder}
+                                onRegisterAddPlatillo={registerAddPlatillo}
                             />
                         ) : (
                             <div className="mesero-gallery__empty">
