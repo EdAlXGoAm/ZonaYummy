@@ -178,6 +178,7 @@ const MeseroOrdersShell = ({ modeInterface }) => {
                         handleDeleteOrder={handleDeleteOrder}
                         handleOrderCustStatus={handleOrderCustStatus}
                         onRefreshAll={refreshAllData}
+                        onNewOrder={handleNewOrderClick}
                     />
                 );
             }
@@ -764,32 +765,20 @@ const MeseroOrdersShell = ({ modeInterface }) => {
                 </button>
             )}
             {modeInterface && galleryView && (
-                <div className="mesero-gallery-fabs">
-                    <button
-                        type="button"
-                        className="mesero-new-order-fab"
-                        onClick={handleNewOrderClick}
-                        title="Nueva orden"
-                        aria-label="Nueva orden"
-                    >
-                        <span className="mesero-new-order-fab__icon" aria-hidden="true">+</span>
-                        <span className="mesero-new-order-fab__label">Nueva Orden</span>
-                    </button>
-                    <button
-                        type="button"
-                        className="mesero-view-fab mesero-view-fab--gallery"
-                        onClick={() => setGalleryViewPersisted(false)}
-                        title="Cambiar a vista clásica"
-                        aria-label="Cambiar a vista clásica"
-                    >
-                        <span className="mesero-view-fab__icon" aria-hidden="true">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                                <path d="M4 4h7v7H4V4zm9 0h7v7h-7V4zM4 13h7v7H4v-7zm9 0h7v7h-7v-7z" />
-                            </svg>
-                        </span>
-                        <span className="mesero-view-fab__label">Clásica</span>
-                    </button>
-                </div>
+                <button
+                    type="button"
+                    className="mesero-view-fab mesero-view-fab--gallery mesero-view-fab--corner-top"
+                    onClick={() => setGalleryViewPersisted(false)}
+                    title="Cambiar a vista clásica"
+                    aria-label="Cambiar a vista clásica"
+                >
+                    <span className="mesero-view-fab__icon" aria-hidden="true">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M4 4h7v7H4V4zm9 0h7v7h-7V4zM4 13h7v7H4v-7zm9 0h7v7h-7v-7z" />
+                        </svg>
+                    </span>
+                    <span className="mesero-view-fab__label">Clásica</span>
+                </button>
             )}
             {renderOrders()}
             {showPasswordModal && (

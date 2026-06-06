@@ -13,6 +13,7 @@ const MeseroGalleryView = ({
     handleDeleteOrder,
     handleOrderCustStatus,
     onRefreshAll,
+    onNewOrder,
 }) => {
     const [selectedOrderId, setSelectedOrderId] = useState(null);
     const [refreshing, setRefreshing] = useState(false);
@@ -165,33 +166,45 @@ const MeseroGalleryView = ({
                     <div className="mesero-gallery__filmstrip-inner">
                         <div className="mesero-gallery__filmstrip-head">
                             <span className="mesero-gallery__kicker mesero-gallery__kicker--film">Órdenes</span>
-                            <button
-                                type="button"
-                                className={`mesero-gallery__refresh-btn${refreshing ? ' mesero-gallery__refresh-btn--loading' : ''}`}
-                                onClick={handleRefreshAll}
-                                disabled={refreshing}
-                                title="Refrescar órdenes y platillos"
-                                aria-label="Refrescar órdenes y platillos"
-                            >
-                                <svg
-                                    className="mesero-gallery__refresh-icon"
-                                    width="18"
-                                    height="18"
-                                    viewBox="0 0 24 24"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    strokeWidth="2.5"
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    aria-hidden="true"
+                            <div className="mesero-gallery__filmstrip-actions">
+                                <button
+                                    type="button"
+                                    className="mesero-gallery__new-order-btn"
+                                    onClick={onNewOrder}
+                                    title="Nueva orden"
+                                    aria-label="Nueva orden"
                                 >
-                                    <path d="M21 12a9 9 0 1 1-2.64-6.36" />
-                                    <polyline points="21 3 21 9 15 9" />
-                                </svg>
-                                <span className="mesero-gallery__refresh-label">
-                                    {refreshing ? 'Actualizando…' : 'Refrescar'}
-                                </span>
-                            </button>
+                                    <span className="mesero-gallery__new-order-icon" aria-hidden="true">+</span>
+                                    <span className="mesero-gallery__new-order-label">Nueva Orden</span>
+                                </button>
+                                <button
+                                    type="button"
+                                    className={`mesero-gallery__refresh-btn${refreshing ? ' mesero-gallery__refresh-btn--loading' : ''}`}
+                                    onClick={handleRefreshAll}
+                                    disabled={refreshing}
+                                    title="Refrescar órdenes y platillos"
+                                    aria-label="Refrescar órdenes y platillos"
+                                >
+                                    <svg
+                                        className="mesero-gallery__refresh-icon"
+                                        width="18"
+                                        height="18"
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        strokeWidth="2.5"
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        aria-hidden="true"
+                                    >
+                                        <path d="M21 12a9 9 0 1 1-2.64-6.36" />
+                                        <polyline points="21 3 21 9 15 9" />
+                                    </svg>
+                                    <span className="mesero-gallery__refresh-label">
+                                        {refreshing ? 'Actualizando…' : 'Refrescar'}
+                                    </span>
+                                </button>
+                            </div>
                         </div>
                         <div className="mesero-gallery__filmstrip-scroll">
                             {sortedOrders.map((order) => {
