@@ -1,12 +1,11 @@
 import './MeseroGalleryView.css';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import MeseroOrderPanel from './MeseroOrderPanel';
 import MeseroPlatilloSelector from './MeseroPlatilloSelector';
-
-const getLatestOrderId = (orders) => {
-    if (!orders.length) return null;
-    return Math.max(...orders.map((o) => Number(o.OrderID)));
-};
+import {
+    loadGallerySelectedOrderId,
+    saveGallerySelectedOrderId,
+} from './meseroViewCache';
 
 const MeseroGalleryView = ({
     orders,
@@ -15,18 +14,28 @@ const MeseroGalleryView = ({
     handleOrderCustStatus,
     onRefreshAll,
 }) => {
-    const [selectedOrderId, setSelectedOrderId] = useState(() => getLatestOrderId(orders));
+    const [selectedOrderId, setSelectedOrderId] = useState(null);
     const [addPlatilloToOrder, setAddPlatilloToOrder] = useState(null);
     const [refreshing, setRefreshing] = useState(false);
     const [panelRefreshKey, setPanelRefreshKey] = useState(0);
+    const selectionHydratedRef = useRef(false);
 
     const registerAddPlatillo = useCallback((handler) => {
         if (handler == null) {
             setAddPlatilloToOrder(null);
             return;
         }
-        // Guardar una función en state requiere devolverla desde el updater
         setAddPlatilloToOrder(() => handler);
+    }, []);
+
+    const selectOrder = useCallback((orderId) => {
+        setSelectedOrderId(orderId);
+        saveGallerySelectedOrderId(orderId);
+    }, []);
+
+    const clearSelectedOrder = useCallback(() => {
+        setSelectedOrderId(null);
+        saveGallerySelectedOrderId(null);
     }, []);
 
     const sortedOrders = useMemo(
@@ -39,17 +48,33 @@ const MeseroGalleryView = ({
             setSelectedOrderId(null);
             return;
         }
-        if (selectedOrderId == null) {
+
+        if (!selectionHydratedRef.current) {
+            const cachedId = loadGallerySelectedOrderId();
+            if (cachedId == null) {
+                setSelectedOrderId(null);
+            } else {
+                const exists = orders.some((o) => Number(o.OrderID) === Number(cachedId));
+                setSelectedOrderId(exists ? cachedId : null);
+                if (!exists) {
+                    saveGallerySelectedOrderId(null);
+                }
+            }
+            selectionHydratedRef.current = true;
             return;
         }
-        const stillExists = orders.some((o) => Number(o.OrderID) === Number(selectedOrderId));
-        if (!stillExists) {
-            setSelectedOrderId(getLatestOrderId(orders));
+
+        if (
+            selectedOrderId != null
+            && !orders.some((o) => Number(o.OrderID) === Number(selectedOrderId))
+        ) {
+            setSelectedOrderId(null);
+            saveGallerySelectedOrderId(null);
         }
     }, [orders, selectedOrderId]);
 
     const handleCloseOrder = () => {
-        setSelectedOrderId(null);
+        clearSelectedOrder();
     };
 
     const handleRefreshAll = async () => {
@@ -178,7 +203,7 @@ const MeseroGalleryView = ({
                                         key={order.OrderID}
                                         type="button"
                                         className={`mesero-gallery__tile${isSelected ? ' mesero-gallery__tile--selected' : ''}`}
-                                        onClick={() => setSelectedOrderId(order.OrderID)}
+                                        onClick={() => selectOrder(order.OrderID)}
                                     >
                                         <div className="mesero-gallery__tile-frame">
                                             <span className="mesero-gallery__tile-badge">

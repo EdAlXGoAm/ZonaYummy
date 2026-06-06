@@ -15,6 +15,8 @@ import Calendar from 'react-calendar/dist/esm/Calendar.js';
 import 'react-calendar/dist/Calendar.css';
 
 import io from 'socket.io-client';
+import { loadGalleryViewPreference, saveGalleryViewPreference } from './meseroViewCache';
+
 const socket = io(`${process.env.REACT_APP_API_URL}`);
 
 const MeseroOrdersShell = ({ modeInterface }) => {
@@ -27,7 +29,16 @@ const MeseroOrdersShell = ({ modeInterface }) => {
     const [numPlatillos, setNumPlatillos] = useState(0);
     const [ComandasPerScreen, setComandasPerScreen] = useState(3);
     const [slide, setSlide] = useState(1);
-    const [galleryView, setGalleryView] = useState(false);
+    const [galleryView, setGalleryView] = useState(() => (
+        modeInterface ? loadGalleryViewPreference() : false
+    ));
+
+    const setGalleryViewPersisted = (isGallery) => {
+        setGalleryView(isGallery);
+        if (modeInterface) {
+            saveGalleryViewPreference(isGallery);
+        }
+    };
     const fetchOrders = () => {
         if (modeInterface) {
             let orders = [];
@@ -754,7 +765,7 @@ const MeseroOrdersShell = ({ modeInterface }) => {
                 <button
                     type="button"
                     className="mesero-view-fab"
-                    onClick={() => setGalleryView(true)}
+                    onClick={() => setGalleryViewPersisted(true)}
                     title="Cambiar a vista galería"
                     aria-label="Cambiar a vista galería"
                 >
@@ -781,7 +792,7 @@ const MeseroOrdersShell = ({ modeInterface }) => {
                     <button
                         type="button"
                         className="mesero-view-fab mesero-view-fab--gallery"
-                        onClick={() => setGalleryView(false)}
+                        onClick={() => setGalleryViewPersisted(false)}
                         title="Cambiar a vista clásica"
                         aria-label="Cambiar a vista clásica"
                     >
