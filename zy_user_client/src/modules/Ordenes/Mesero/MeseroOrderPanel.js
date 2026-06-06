@@ -814,14 +814,27 @@ const MeseroOrderPanel = ({modeInterface, iInterface, OrderID, DeleteOrder, hand
                     .filter(c => c.ComandaPrepStatus !== 'ReadyToServe' || expandedComandas.includes(c._id))
                     .map((comanda) => (
                         <div key={comanda._id} className={galleryLayout ? 'mesero-order-panel__comanda-cell' : ''}>
-                            <MeseroComandaSlot
-                                order={Order}
-                                modeInterface={modeInterface}
-                                Comanda={comanda}
-                                updateComanda={updateComanda}
-                                removeComanda={removeComanda}
-                                onBubbleToggle={handleBubbleToggle}
-                            />
+                            {galleryLayout ? (
+                                <div className="mesero-order-panel__comanda-scroll">
+                                    <MeseroComandaSlot
+                                        order={Order}
+                                        modeInterface={modeInterface}
+                                        Comanda={comanda}
+                                        updateComanda={updateComanda}
+                                        removeComanda={removeComanda}
+                                        onBubbleToggle={handleBubbleToggle}
+                                    />
+                                </div>
+                            ) : (
+                                <MeseroComandaSlot
+                                    order={Order}
+                                    modeInterface={modeInterface}
+                                    Comanda={comanda}
+                                    updateComanda={updateComanda}
+                                    removeComanda={removeComanda}
+                                    onBubbleToggle={handleBubbleToggle}
+                                />
+                            )}
                         </div>
                 ))}
                 </div>

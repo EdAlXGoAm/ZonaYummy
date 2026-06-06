@@ -82,8 +82,17 @@
     padding: 12px 14px 10px;
 }
 
-.mesero-gallery__main-inner > .mesero-order-panel--gallery {
-    flex: 1;
+.mesero-gallery__panel-slot {
+    flex: 1 1 0;
+    min-height: 0;
+    height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.mesero-gallery__panel-slot > .mesero-order-panel--gallery {
+    flex: 1 1 0;
     min-height: 0;
     width: 100%;
     margin: 0;
