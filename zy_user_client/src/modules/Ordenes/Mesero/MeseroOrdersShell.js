@@ -25,6 +25,9 @@ const MeseroOrdersShell = ({ modeInterface }) => {
     const [numOrders, setNumOrders] = useState(0);
     const [platillos, setPlatillos] = useState([]);
     const [numPlatillos, setNumPlatillos] = useState(0);
+    const [ComandasPerScreen, setComandasPerScreen] = useState(3);
+    const [slide, setSlide] = useState(1);
+    const [galleryView, setGalleryView] = useState(false);
     const fetchOrders = () => {
         if (modeInterface) {
             let orders = [];
@@ -116,9 +119,6 @@ const MeseroOrdersShell = ({ modeInterface }) => {
         }
     }, []); // El array vacío asegura que el efecto se ejecute solo una vez al montar el componente
 
-    const [ComandasPerScreen, setComandasPerScreen] = useState(3);
-    const [slide, setSlide] = useState(1);
-    const [galleryView, setGalleryView] = useState(false);
     const handleSlideChange = (newSlide) => {
         const maxSlide = numOrders;
         if (newSlide > 0 && newSlide <= maxSlide) {
