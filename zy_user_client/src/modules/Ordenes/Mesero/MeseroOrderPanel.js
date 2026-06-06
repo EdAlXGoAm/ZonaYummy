@@ -20,7 +20,7 @@ import performanceLogger from '../../../utils/performanceLogger';
 
 const socket = io(`${process.env.REACT_APP_API_URL}`);
 
-const MeseroOrderPanel = ({modeInterface, iInterface, OrderID, DeleteOrder, handleOrderCustStatus, platillos, numPlatillos, handleOrderClient, preloadedOrder, preloadedComandas, isOptimized }) => {
+const MeseroOrderPanel = ({modeInterface, iInterface, OrderID, DeleteOrder, handleOrderCustStatus, platillos, numPlatillos, handleOrderClient, preloadedOrder, preloadedComandas, isOptimized, galleryLayout = false }) => {
     const notify = (message) => toast(message);
     const [Order, setOrder] = useState({});
     const [comandas, setComandas] = useState([])
@@ -652,7 +652,7 @@ const MeseroOrderPanel = ({modeInterface, iInterface, OrderID, DeleteOrder, hand
 
     return (
         <>
-        <div className="card" style={{backgroundColor: colorOrder}}>
+        <div className={`card${galleryLayout ? ' mesero-order-panel--gallery' : ''}`} style={{backgroundColor: colorOrder}}>
         {/* Text box editable backgroudn red and text blanco BOLD */}
             <div className='row'>
                 <div className='col-10'>
@@ -695,6 +695,7 @@ const MeseroOrderPanel = ({modeInterface, iInterface, OrderID, DeleteOrder, hand
             </div>
 
             <div className="row">
+                {!galleryLayout && (
                 <div className="col-2 d-flex align-items-center justify-content-center pe-0">
                     <div className="toggleArrowButtons">
                         <button style={{backgroundColor:  toggleArrowStatus ? "#ffffff" : "#7ed65b"}} onClick={() => setToggleArrowStatus(!toggleArrowStatus)}>
@@ -702,10 +703,11 @@ const MeseroOrderPanel = ({modeInterface, iInterface, OrderID, DeleteOrder, hand
                         </button>
                     </div>
                 </div>
-                <div className="col-4 d-flex align-items-center orderNum ps-0 pe-0">
+                )}
+                <div className={`${galleryLayout ? 'col-5' : 'col-4'} d-flex align-items-center orderNum ps-0 pe-0`}>
                     <div className="orderNumText">{`Pedido: ${Order.OrderID}`}</div>
                 </div>
-                <div className="col-6 d-flex align-items-center orderTotal ps-0">
+                <div className={`${galleryLayout ? 'col-7' : 'col-6'} d-flex align-items-center orderTotal ps-0`}>
                     <div className="orderPayMini">
                         <div className="orderPayMini__row">
                             <div className={`orderPayMini__title ${cardIsExceeded ? 'isExceeded' : (cardIsPaid ? 'isPaid' : 'isPending')}`}>
@@ -742,13 +744,13 @@ const MeseroOrderPanel = ({modeInterface, iInterface, OrderID, DeleteOrder, hand
                     </div>
                 </div>
             )}
-            {toggleArrowStatus && (
-            <div>
+            {(galleryLayout || toggleArrowStatus) && (
+            <div className={galleryLayout ? 'mesero-order-panel__body' : ''}>
                 {modeInterface && (
                     <MeseroPlatilloSelector addPlatilloToOrder={addComanda} platillos={platillos} />
                 )}
                 {/* Burbujas para comandas ReadyToServe no expandidas */}
-                <div className="bubbles-container" style={{display: 'flex', gap: '8px', margin:'8px 0'}}>
+                <div className="bubbles-container" style={{display: 'flex', gap: '8px', margin:'8px 0', flexShrink: 0}}>
                     {comandas
                         .filter(c => c.ComandaPrepStatus === 'ReadyToServe' && !expandedComandas.includes(c._id))
                         .map(c => (
@@ -769,10 +771,11 @@ const MeseroOrderPanel = ({modeInterface, iInterface, OrderID, DeleteOrder, hand
                         ))}
                 </div>
                 {/* Tarjetas para comandas no ReadyToServe o expandidas */}
+                <div className={galleryLayout ? 'mesero-order-panel__comandas-grid' : ''}>
                 {comandas
                     .filter(c => c.ComandaPrepStatus !== 'ReadyToServe' || expandedComandas.includes(c._id))
                     .map((comanda) => (
-                        <div key={comanda._id}>
+                        <div key={comanda._id} className={galleryLayout ? 'mesero-order-panel__comanda-cell' : ''}>
                             <MeseroComandaSlot
                                 order={Order}
                                 modeInterface={modeInterface}
@@ -783,6 +786,7 @@ const MeseroOrderPanel = ({modeInterface, iInterface, OrderID, DeleteOrder, hand
                             />
                         </div>
                 ))}
+                </div>
             </div>
             )}
         </div>

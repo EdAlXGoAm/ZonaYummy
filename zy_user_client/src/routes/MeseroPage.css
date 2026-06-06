@@ -1,3 +1,20 @@
 .App {
     text-align: center;
 }
+
+.mesero-app-root {
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.mesero-app-root .container-fluid,
+.mesero-app-root .row,
+.mesero-app-root .col {
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}

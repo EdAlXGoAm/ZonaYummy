@@ -1,15 +1,14 @@
 import './MeseroPage.css';
-import React, { useState } from 'react';
+import React from 'react';
 import MeseroOrdersShell from '../modules/Ordenes/Mesero/MeseroOrdersShell';
-import BootstrapSwitchButton from 'bootstrap-switch-button-react';
 
 const MeseroPage = ({ modeInterface }) => {
 
     return (
-    <div className="App">
-        <div className="container-fluid">
-            <div className="row">
-                <div className="col">
+    <div className={`App${modeInterface ? ' mesero-app-root' : ''}`}>
+        <div className="container-fluid h-100">
+            <div className="row h-100">
+                <div className="col h-100">
                 <MeseroOrdersShell modeInterface={modeInterface} />
                 </div>
             </div>

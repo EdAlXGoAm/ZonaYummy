@@ -1,0 +1,156 @@
+.mesero-gallery {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    height: 100%;
+    overflow: hidden;
+}
+
+.mesero-gallery__main {
+    flex: 0 0 80%;
+    min-height: 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    padding: 0 8px;
+}
+
+.mesero-gallery__empty {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: #6b7280;
+    font-size: 22px;
+    font-weight: 600;
+    background: #f9fafb;
+    border: 2px dashed #d1d5db;
+    border-radius: 16px;
+    margin: 8px;
+}
+
+.mesero-gallery__empty-hint {
+    font-size: 16px;
+    font-weight: 500;
+    margin-top: 8px;
+    color: #9ca3af;
+}
+
+.mesero-gallery__filmstrip {
+    flex: 0 0 20%;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+    border-top: 3px solid #38bdf8;
+    padding: 8px 12px 10px;
+    overflow: hidden;
+}
+
+.mesero-gallery__filmstrip-label {
+    flex-shrink: 0;
+    color: #94a3b8;
+    font-family: Bebas Neue, sans-serif;
+    font-size: 18px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+    padding-left: 4px;
+}
+
+.mesero-gallery__filmstrip-scroll {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    gap: 10px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    align-items: stretch;
+    padding-bottom: 4px;
+    -webkit-overflow-scrolling: touch;
+}
+
+.mesero-gallery__filmstrip-scroll::-webkit-scrollbar {
+    height: 8px;
+}
+
+.mesero-gallery__filmstrip-scroll::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 4px;
+}
+
+.mesero-gallery__filmstrip-scroll::-webkit-scrollbar-thumb {
+    background: rgba(56, 189, 248, 0.6);
+    border-radius: 4px;
+}
+
+.mesero-gallery__frame {
+    flex: 0 0 auto;
+    width: 148px;
+    min-height: 100%;
+    background: #334155;
+    border: 2px solid #475569;
+    border-radius: 10px;
+    padding: 10px 10px 8px;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    text-align: left;
+    transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.mesero-gallery__frame:hover {
+    transform: translateY(-3px);
+    border-color: #7dd3fc;
+}
+
+.mesero-gallery__frame--selected {
+    border-color: #38bdf8;
+    background: linear-gradient(145deg, #1d4ed8 0%, #1e3a8a 100%);
+    box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.45), 0 8px 20px rgba(0, 0, 0, 0.35);
+}
+
+.mesero-gallery__frame-top {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 6px;
+}
+
+.mesero-gallery__frame-id {
+    font-family: Bebas Neue, sans-serif;
+    font-size: 26px;
+    color: #f8fafc;
+    line-height: 1;
+}
+
+.mesero-gallery__frame-total {
+    font-size: 14px;
+    font-weight: 700;
+    color: #86efac;
+}
+
+.mesero-gallery__frame-customer {
+    font-size: 13px;
+    font-weight: 600;
+    color: #e2e8f0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.mesero-gallery__frame-status {
+    margin-top: auto;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #94a3b8;
+}
+
+.mesero-gallery__frame--selected .mesero-gallery__frame-status {
+    color: #bfdbfe;
+}

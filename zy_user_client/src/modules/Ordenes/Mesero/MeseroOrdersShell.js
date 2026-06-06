@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import MeseroOrderPanel from './MeseroOrderPanel';
+import MeseroGalleryView from './MeseroGalleryView';
 import Button from 'react-bootstrap/Button';
+import BootstrapSwitchButton from 'bootstrap-switch-button-react';
 import './MeseroOrdersShell.css';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -83,6 +85,20 @@ const MeseroOrdersShell = ({ modeInterface }) => {
         });
     };
 
+    useEffect(() => {
+        if (!modeInterface || !galleryView) {
+            document.body.style.overflow = '';
+            document.documentElement.style.overflow = '';
+            return undefined;
+        }
+        document.body.style.overflow = 'hidden';
+        document.documentElement.style.overflow = 'hidden';
+        return () => {
+            document.body.style.overflow = '';
+            document.documentElement.style.overflow = '';
+        };
+    }, [galleryView, modeInterface]);
+
     // eslint-disable-next-line react-hooks/exhaustive-deps
     useEffect(() => { // fetchOrders
         fetchOrders();
@@ -102,6 +118,7 @@ const MeseroOrdersShell = ({ modeInterface }) => {
 
     const [ComandasPerScreen, setComandasPerScreen] = useState(3);
     const [slide, setSlide] = useState(1);
+    const [galleryView, setGalleryView] = useState(false);
     const handleSlideChange = (newSlide) => {
         const maxSlide = numOrders;
         if (newSlide > 0 && newSlide <= maxSlide) {
@@ -126,6 +143,16 @@ const MeseroOrdersShell = ({ modeInterface }) => {
     const renderOrders = () => {
         const OrdersArray = [];
         if (modeInterface) {
+            if (galleryView) {
+                return (
+                    <MeseroGalleryView
+                        orders={orders}
+                        platillos={platillos}
+                        handleDeleteOrder={handleDeleteOrder}
+                        handleOrderCustStatus={handleOrderCustStatus}
+                    />
+                );
+            }
             const start = (numOrders - (slide - 1));
             const end = Math.max((numOrders - (slide + (modeInterface ? 100 : ComandasPerScreen) - 1)), 0);
             for (let i = start - 1; i >= end; i--) {
@@ -646,7 +673,10 @@ const MeseroOrdersShell = ({ modeInterface }) => {
     }, [selectedDate, showCalendarModal, calendarTab]);
 
     return (
-        <div className="container-fluid" style={{background: (reloadFlag && modeInterface) ? 'linear-gradient(to right, #e0f7fa, #b2ebf2)' : 'none'}}>
+        <div
+            className={`container-fluid mesero-orders-shell${modeInterface && galleryView ? ' mesero-orders-shell--gallery' : ''}`}
+            style={{background: (reloadFlag && modeInterface) ? 'linear-gradient(to right, #e0f7fa, #b2ebf2)' : 'none'}}
+        >
             {/* Header solo visible en vista de mesero */}
             {modeInterface && (
                 <>
@@ -673,20 +703,30 @@ const MeseroOrdersShell = ({ modeInterface }) => {
             {/* ToastContainer siempre visible para notificaciones */}
             {!modeInterface && <ToastContainer />}
             {modeInterface && (
-                <div>
-                    <div className="row">
-                        {/* Botón para navegar entre comandas */}
-                        <div className="col-2">
-                            <Button variant="success" size="lg" onClick={() => handleSlideChange(slide - 1)} disabled={isMobile}>←</Button>
-                        </div>
-                        {/* Botón para agregar una nueva comanda */}
-                        <div className="col-8">
+                <div className="mesero-toolbar">
+                    <div className="row align-items-center g-2">
+                        {!galleryView && (
+                            <div className="col-2">
+                                <Button variant="success" size="lg" onClick={() => handleSlideChange(slide - 1)} disabled={isMobile}>←</Button>
+                            </div>
+                        )}
+                        <div className={galleryView ? 'col-8 offset-2' : 'col-8'}>
                             <Button variant="success" size="lg" onClick={handleNewOrderClick}>Nueva Orden</Button>
                         </div>
-                        {/* Botón para navegar entre comandas */}
-                        <div className="col-2">
-                            <Button variant="success" size="lg" onClick={() => handleSlideChange(slide + 1)} disabled={isMobile}>→</Button>
-                        </div>
+                        {!galleryView && (
+                            <div className="col-2">
+                                <Button variant="success" size="lg" onClick={() => handleSlideChange(slide + 1)} disabled={isMobile}>→</Button>
+                            </div>
+                        )}
+                    </div>
+                    <div className="mesero-view-switch">
+                        <span className="mesero-view-switch__label">Vista galería</span>
+                        <BootstrapSwitchButton
+                            checked={galleryView}
+                            onlabel="ON"
+                            offlabel="OFF"
+                            onChange={(checked) => setGalleryView(checked)}
+                        />
                     </div>
                 </div>
             )}
