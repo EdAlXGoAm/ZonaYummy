@@ -30,6 +30,10 @@ const MeseroOrderPanel = ({modeInterface, iInterface, OrderID, DeleteOrder, hand
     const [colorOrder, setColorOrder] = useState("#ffffff")
     const pendingSkipFetchesRef = useRef(0);
     const comandasHydratedRef = useRef(false);
+    const initialComandasLoadRef = useRef(!(isOptimized && preloadedComandas !== undefined));
+    const [comandasLoading, setComandasLoading] = useState(
+        () => galleryLayout && !(isOptimized && preloadedComandas !== undefined),
+    );
     const fetchOrderTimerRef = useRef(null);
     const fetchComandasTimerRef = useRef(null);
     const [expandedComandas, setExpandedComandas] = useState([]);
@@ -82,6 +86,7 @@ const MeseroOrderPanel = ({modeInterface, iInterface, OrderID, DeleteOrder, hand
 
         await Promise.all(entries.map(([pagoId, m]) => ordersApi.updatePaymentMethod(OrderID, pagoId, m)));
         const fresh = await ordersApi.getOrderV2(OrderID);
+        setOrder(fresh);
         setOrderV2(fresh);
         setPaymentMethodEdits({});
         notify('Cambios guardados');
@@ -91,11 +96,13 @@ const MeseroOrderPanel = ({modeInterface, iInterface, OrderID, DeleteOrder, hand
       }
     };
 
-    // ==== Resumen compacto para tarjeta (usa Order local; no depende del modal/orderV2) ====
+    // ==== Resumen compacto para tarjeta (Order + fallback orderV2 tras cobros) ====
     const cardTotal = Order?.CuentaTotal || 0;
-    // Calcular pagado REAL desde el array de pagos (más confiable que el campo pagado)
-    const cardPagadoFromPagos = (Order?.pagos || []).reduce((sum, p) => sum + (p?.monto || 0), 0);
-    const cardPagado = cardPagadoFromPagos > 0 ? cardPagadoFromPagos : (Order?.pagado || 0);
+    const cardPagosSource = (Order?.pagos?.length > 0 ? Order.pagos : orderV2?.pagos) || [];
+    const cardPagadoFromPagos = cardPagosSource.reduce((sum, p) => sum + (p?.monto || 0), 0);
+    const cardPagado = cardPagadoFromPagos > 0
+        ? cardPagadoFromPagos
+        : (Order?.pagado ?? orderV2?.pagado ?? 0);
     // Calcular pendiente real (puede ser negativo si se excedió)
     const cardPendienteReal = cardTotal - cardPagado;
     // Para mostrar, usamos el valor absoluto si es negativo (muestra el exceso)
@@ -118,9 +125,22 @@ const MeseroOrderPanel = ({modeInterface, iInterface, OrderID, DeleteOrder, hand
             performanceLogger.critical(`⚡ USANDO DATOS PRE-CARGADOS para OrderID: ${OrderID} (${preloadedComandas.length} comandas)`);
             
             comandasHydratedRef.current = true;
+            initialComandasLoadRef.current = false;
+            setComandasLoading(false);
             setOrder(preloadedOrder);
             setComandas(preloadedComandas);
             updateCuentaTotalOrder(preloadedComandas, preloadedOrder);
+            ordersApi.getOrderV2(OrderID)
+                .then((data) => {
+                    setOrderV2(data);
+                    setOrder((prev) => ({
+                        ...prev,
+                        pagos: data.pagos ?? [],
+                        pagado: data.pagado ?? 0,
+                        pendiente: data.pendiente ?? prev.pendiente,
+                    }));
+                })
+                .catch((err) => console.log(err));
             
             performanceLogger.timeEnd(fetchOrderId);
             const optimizedTime = performance.now() - fetchOrderStartTime;
@@ -244,7 +264,11 @@ const MeseroOrderPanel = ({modeInterface, iInterface, OrderID, DeleteOrder, hand
             performanceLogger.log(`✅ updateCuentaTotalOrder COMPLETADO - Tiempo total: ${totalUpdateTime.toFixed(2)}ms`);
             performanceLogger.log(`📊 Desglose Update - Cálculo: ${calcTime.toFixed(2)}ms (${(calcTime/totalUpdateTime*100).toFixed(1)}%) | BD: ${dbUpdateTime.toFixed(2)}ms (${(dbUpdateTime/totalUpdateTime*100).toFixed(1)}%)`);
             
-            setOrder(newOrder); // Actualizar estado local con ambos valores
+            setOrder((prev) => ({
+                ...newOrder,
+                pagos: newOrder.pagos?.length ? newOrder.pagos : (prev.pagos ?? []),
+                pagado: newOrder.pagado ?? prev.pagado ?? 0,
+            }));
         })
         .catch(err => {
             performanceLogger.timeEnd(dbUpdateId);
@@ -280,12 +304,23 @@ const MeseroOrderPanel = ({modeInterface, iInterface, OrderID, DeleteOrder, hand
         onOrderCacheSync(Order);
     }, [galleryLayout, Order, onOrderCacheSync]);
 
+    const finishComandasLoad = () => {
+        if (initialComandasLoadRef.current) {
+            initialComandasLoadRef.current = false;
+            setComandasLoading(false);
+        }
+    };
+
     const fetchComandas = (order) => {
         // Inicia el cronómetro para el proceso completo
         const startTime = performance.now();
         const fetchId = `fetchComandas_Order_${OrderID}_${Date.now()}`;
         performanceLogger.time(fetchId);
         performanceLogger.log(`🚀 [${new Date().toISOString()}] Iniciando fetchComandas para OrderID: ${OrderID}`);
+
+        if (initialComandasLoadRef.current && galleryLayout) {
+            setComandasLoading(true);
+        }
         
         // Cronómetro específico para la llamada a la API
         const apiCallId = `apiCall_${fetchId}`;
@@ -317,12 +352,14 @@ const MeseroOrderPanel = ({modeInterface, iInterface, OrderID, DeleteOrder, hand
             performanceLogger.log(`⚡ Procesamiento local: ${processingTime.toFixed(2)}ms`);
             performanceLogger.log(`✅ fetchComandas COMPLETADO - Tiempo total: ${totalTime.toFixed(2)}ms`);
             performanceLogger.log(`📊 Desglose - API: ${apiCallTime.toFixed(2)}ms (${(apiCallTime/totalTime*100).toFixed(1)}%) | Procesamiento: ${processingTime.toFixed(2)}ms (${(processingTime/totalTime*100).toFixed(1)}%)`);
+            finishComandasLoad();
         })
         .catch((err) => {
             performanceLogger.timeEnd(apiCallId);
             performanceLogger.timeEnd(fetchId);
             const errorTime = performance.now() - startTime;
             performanceLogger.error(`❌ Error en fetchComandas después de ${errorTime.toFixed(2)}ms:`, err);
+            finishComandasLoad();
         });
     };
 
@@ -737,8 +774,10 @@ const MeseroOrderPanel = ({modeInterface, iInterface, OrderID, DeleteOrder, hand
         ordersApi.addPayment(Order.OrderID, { monto, tipoPago: hasAmount ? 'monto' : 'items', itemsPagados: hasAmount ? [] : items, metodoPago })
           .then((updated) => {
             setOrder(updated);
-            // Refrescar orden completa para recalcular pendiente (puede ser negativo si hay exceso)
-            fetchOrder();
+            setOrderV2(updated);
+            if (hasItems) {
+              scheduleFetchComandas(updated);
+            }
             setModalPagoVisible(false);
             setIsProcessingPayment(false);
           })
@@ -774,8 +813,6 @@ const MeseroOrderPanel = ({modeInterface, iInterface, OrderID, DeleteOrder, hand
         .then(updated => {
           setOrder(updated);
           setOrderV2(updated);
-          // Refrescar orden completa para recalcular pendiente
-          fetchOrder();
           setModalPagoVisible(false);
         })
         .catch(err => notify(`Error al cobrar todo: ${err}`));
@@ -939,7 +976,7 @@ const MeseroOrderPanel = ({modeInterface, iInterface, OrderID, DeleteOrder, hand
                     </button>
                 </div>
             </div>
-            {modeInterface && isEmptyOrder && (
+            {modeInterface && isEmptyOrder && !comandasLoading && (
                 <div className="row mt-2">
                     <div className="col-12 d-flex justify-content-center">
                         <button
@@ -956,6 +993,13 @@ const MeseroOrderPanel = ({modeInterface, iInterface, OrderID, DeleteOrder, hand
             )}
             {(galleryLayout || toggleArrowStatus) && (
             <div className={galleryLayout ? 'mesero-order-panel__body' : ''}>
+                {galleryLayout && comandasLoading ? (
+                    <div className="mesero-order-panel__comandas-loading" role="status" aria-live="polite">
+                        <span className="mesero-order-panel__comandas-spinner" aria-hidden="true" />
+                        <span className="mesero-order-panel__comandas-loading-label">Cargando comandas…</span>
+                    </div>
+                ) : (
+                <>
                 {modeInterface && !galleryLayout && (
                     <MeseroPlatilloSelector
                         addPlatilloToOrder={addPlatillosToOrder}
@@ -992,6 +1036,8 @@ const MeseroOrderPanel = ({modeInterface, iInterface, OrderID, DeleteOrder, hand
                     </div>
                 ) : (
                     comandaCards
+                )}
+                </>
                 )}
             </div>
             )}
