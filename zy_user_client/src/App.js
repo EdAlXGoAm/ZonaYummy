@@ -7,6 +7,7 @@ import MeseroPage from './routes/MeseroPage';
 import MeseroPageTest from './routes/MeseroPageTest';
 import CocinaBebidasPage from './routes/CocinaBebidasPage';
 import CocinaNewFeaturesPage from './routes/CocinaNewFeaturesPage';
+import AutorizacionBorradosPage from './routes/AutorizacionBorradosPage';
 import Menu from './routes/Menu';
 
 const LoadingScreen = () => {
@@ -67,6 +68,7 @@ const App = () => {
         <Route path="/2on4yummy-cocina-test" element={<MeseroScreenTest modeInterface={false} />} />
         <Route path="/2on4yummy-cocinabebidas" element={<CocinaBebidasPage />} />
         <Route path="/cocina_new_features" element={<CocinaNewFeaturesPage />} />
+        <Route path="/autorización_borrados" element={<AutorizacionBorradosPage />} />
       </Routes>
     </BrowserRouter>
   )

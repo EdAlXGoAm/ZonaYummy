@@ -123,6 +123,9 @@ io.on('connection', (socket) => {
         console.log('Mensaje recibido del cliente:', data);
         socket.broadcast.emit('DeleteComandaDesdeServidor', data);
     });
+    socket.on('SolicitudBorradoDesdeCliente', (data) => {
+        socket.broadcast.emit('SolicitudBorradoDesdeServidor', data);
+    });
 
     socket.on('disconnect', () => {
         console.log('Cliente desconectado');
@@ -164,10 +167,12 @@ const orderRoutes = require('./routes/orderRoutes');
 const comandaRoutes = require('./routes/comandaRoutes');
 const platilloRoutes = require('./routes/platilloRoutes');
 const orderV2Routes = require('./routes/orderV2Routes');
+const borradoRoutes = require('./routes/borradoRoutes');
 app.use('/api/orders', orderRoutes);
 app.use('/api/comandas', comandaRoutes);
 app.use('/api/platillos', platilloRoutes);
 app.use('/api/orders/v2', orderV2Routes);
+app.use('/api/borrados', borradoRoutes);
 
 
 server.listen(PORT, () => {

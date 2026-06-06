@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import comandasApi from './../../../api/comandasApi';
+import borradosApi from './../../../api/borradosApi';
 import CocinaBebidasComandaCard from './CocinaBebidasComandaCard';
 import './../MeseroPage/OrdenesCocina.css';
 
@@ -37,18 +38,23 @@ const CocinaBebidasDrinksBoard = ({ Orders }) => {
         if (!contextMenu.comanda) return;
 
         const comanda = contextMenu.comanda;
-        const comandaId = comanda._id || comanda.ComandaId;
-        const platillo = comanda.Platillo;
+        const confirmar = window.confirm(
+            '¿Solicitar eliminación de esta comanda? Un supervisor debe autorizarla en /autorización_borrados.',
+        );
+        if (!confirmar) return;
 
         try {
-            await comandasApi.deleteComanda(comandaId);
-            socket.emit('DeleteComandaDesdeCliente', { msg: `Delete-${comanda.OrderID}-${platillo}` });
-            socket.emit('OrdenActualizadaDesdeCliente', { msg: comanda.OrderID });
-            setActiveComandas(prev => prev.filter(c => c.ComandaId !== comanda.ComandaId));
+            await borradosApi.solicitarBorrado(comanda);
+            socket.emit('SolicitudBorradoDesdeCliente', {
+                comandaMongoId: comanda._id,
+                OrderID: comanda.OrderID,
+            });
+            alert('Solicitud de borrado enviada. Pendiente de autorización.');
             closeContextMenu();
         } catch (error) {
-            console.error("Error al eliminar comanda:", error);
-            alert("Error al eliminar la comanda");
+            console.error('Error al solicitar borrado:', error);
+            const msg = error.response?.data?.error || 'Error al solicitar el borrado de la comanda';
+            alert(msg);
         }
     };
 
@@ -217,7 +223,7 @@ const CocinaBebidasDrinksBoard = ({ Orders }) => {
                                 <line x1="10" y1="11" x2="10" y2="17"></line>
                                 <line x1="14" y1="11" x2="14" y2="17"></line>
                             </svg>
-                            Eliminar Comanda
+                            Solicitar borrado
                         </button>
                         <button
                             className="context-menu-btn context-menu-btn-cancel"

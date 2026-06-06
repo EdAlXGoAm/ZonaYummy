@@ -6,6 +6,7 @@ import { faTrash, faCashRegister } from '@fortawesome/free-solid-svg-icons';
 import MeseroPlatilloSelector from './MeseroPlatilloSelector';
 import MeseroComandaSlot from './MeseroComandaSlot'
 import comandasApi from './../../../api/comandasApi';
+import borradosApi from './../../../api/borradosApi';
 import ordersApi from './../../../api/ordersApi';
 import io from 'socket.io-client';
 import { faCheck, faFloppyDisk } from '@fortawesome/free-solid-svg-icons';
@@ -411,21 +412,28 @@ const MeseroOrderPanel = ({modeInterface, iInterface, OrderID, DeleteOrder, hand
     }, [Order, handleComandas, updateCuentaTotalOrder]);
 
     const removeComanda = useCallback((comanda) => {
-        const confirmDel = window.confirm("Eliminar Platillo");
+        const confirmDel = window.confirm(
+            '¿Solicitar eliminación de este platillo? Un supervisor debe autorizarla en /autorización_borrados.',
+        );
         if (!confirmDel) return;
-        setComandas(prev => {
-            const updated = prev.filter(c => c._id !== comanda._id);
-            updateCuentaTotalOrder(updated, Order);
-            skipNextFetch.current = true;
-            return updated;
-        });
-        handleComandas("Del-" + Order.OrderID);
-        comandasApi.deleteComanda(comanda._id)
-            .catch(err => {
+        if (!comanda._id) {
+            notify('No se puede solicitar borrado: comanda sin ID.');
+            return;
+        }
+        borradosApi.solicitarBorrado(comanda)
+            .then(() => {
+                notify('Solicitud de borrado enviada. Pendiente de autorización.');
+                socket.emit('SolicitudBorradoDesdeCliente', {
+                    comandaMongoId: comanda._id,
+                    OrderID: comanda.OrderID,
+                });
+            })
+            .catch((err) => {
                 console.log(err);
-                notify(`Error al eliminar comanda: ${err}`);
+                const msg = err.response?.data?.error || err.message;
+                notify(`Error al solicitar borrado: ${msg}`);
             });
-    }, [Order, handleComandas, updateCuentaTotalOrder]);
+    }, [notify]);
 
     const handleOrderCustStatusButton = () => {
         if (Order.OrderCustStatus === "InPlace") {

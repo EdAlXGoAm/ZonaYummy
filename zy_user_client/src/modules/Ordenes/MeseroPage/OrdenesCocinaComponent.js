@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import ordersApi from './../../../api/ordersApi';
 import comandasApi from './../../../api/comandasApi';
+import borradosApi from './../../../api/borradosApi';
 import ResumeComanda from './ResumeComandaComponent';
 import './OrdenesCocina.css';
 
@@ -53,26 +54,28 @@ const OrdenesCocina = ({modeInterface, Orders}) => {
         setContextMenu({ visible: false, x: 0, y: 0, comanda: null });
     };
 
-    // Eliminar comanda
+    // Solicitar borrado de comanda (requiere autorización)
     const handleDeleteComanda = async () => {
         if (!contextMenu.comanda) return;
-        
+
         const comanda = contextMenu.comanda;
-        const comandaId = comanda._id || comanda.ComandaId; // La API usa _id (MongoDB)
-        const platillo = comanda.Platillo;
-        
+        const confirmar = window.confirm(
+            '¿Solicitar eliminación de esta comanda? Un supervisor debe autorizarla en /autorización_borrados.',
+        );
+        if (!confirmar) return;
+
         try {
-            await comandasApi.deleteComanda(comandaId);
-            // Emitir eventos de socket para actualizar en tiempo real
-            socket.emit('DeleteComandaDesdeCliente', { msg: `Delete-${comanda.OrderID}-${platillo}` });
-            // También emitir actualización de orden para que el mesero refresque
-            socket.emit('OrdenActualizadaDesdeCliente', { msg: comanda.OrderID });
-            // Actualizar estado local inmediatamente
-            setActiveComandas(prev => prev.filter(c => c.ComandaId !== comanda.ComandaId));
+            await borradosApi.solicitarBorrado(comanda);
+            socket.emit('SolicitudBorradoDesdeCliente', {
+                comandaMongoId: comanda._id,
+                OrderID: comanda.OrderID,
+            });
+            alert('Solicitud de borrado enviada. Pendiente de autorización.');
             closeContextMenu();
         } catch (error) {
-            console.error("Error al eliminar comanda:", error);
-            alert("Error al eliminar la comanda");
+            console.error('Error al solicitar borrado:', error);
+            const msg = error.response?.data?.error || 'Error al solicitar el borrado de la comanda';
+            alert(msg);
         }
     };
 
@@ -997,7 +1000,7 @@ const OrdenesCocina = ({modeInterface, Orders}) => {
                                 <line x1="10" y1="11" x2="10" y2="17"></line>
                                 <line x1="14" y1="11" x2="14" y2="17"></line>
                             </svg>
-                            Eliminar Comanda
+                            Solicitar borrado
                         </button>
                         <button 
                             className="context-menu-btn context-menu-btn-cancel"
@@ -1035,7 +1038,7 @@ const OrdenesCocina = ({modeInterface, Orders}) => {
                         {/* Lista de comandas para eliminar individualmente */}
                         {orderContextMenu.order?.comandas && orderContextMenu.order.comandas.length > 0 && (
                             <div className="context-menu-comandas-list">
-                                <div className="context-menu-section-title">Eliminar comanda:</div>
+                                <div className="context-menu-section-title">Solicitar borrado:</div>
                                 {orderContextMenu.order.comandas
                                     .filter(c => c.ComandaPrepStatus !== "ReadyToServe") // Solo mostrar las que no están entregadas
                                     .map((comanda) => (
@@ -1043,18 +1046,23 @@ const OrdenesCocina = ({modeInterface, Orders}) => {
                                             key={comanda.ComandaId}
                                             className="context-menu-btn context-menu-btn-delete-comanda"
                                             onClick={async () => {
-                                                const comandaId = comanda._id || comanda.ComandaId;
-                                                const platillo = comanda.Platillo;
-                                                
+                                                const confirmar = window.confirm(
+                                                    `¿Solicitar borrado de "${comanda.Platillo}"? Requiere autorización.`,
+                                                );
+                                                if (!confirmar) return;
+
                                                 try {
-                                                    await comandasApi.deleteComanda(comandaId);
-                                                    socket.emit('DeleteComandaDesdeCliente', { msg: `Delete-${comanda.OrderID}-${platillo}` });
-                                                    socket.emit('OrdenActualizadaDesdeCliente', { msg: comanda.OrderID });
-                                                    setActiveComandas(prev => prev.filter(c => c.ComandaId !== comanda.ComandaId));
+                                                    await borradosApi.solicitarBorrado(comanda);
+                                                    socket.emit('SolicitudBorradoDesdeCliente', {
+                                                        comandaMongoId: comanda._id,
+                                                        OrderID: comanda.OrderID,
+                                                    });
+                                                    alert('Solicitud de borrado enviada. Pendiente de autorización.');
                                                     closeOrderContextMenu();
                                                 } catch (error) {
-                                                    console.error("Error al eliminar comanda:", error);
-                                                    alert("Error al eliminar la comanda");
+                                                    console.error('Error al solicitar borrado:', error);
+                                                    const msg = error.response?.data?.error || 'Error al solicitar el borrado';
+                                                    alert(msg);
                                                 }
                                             }}
                                         >

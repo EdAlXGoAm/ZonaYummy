@@ -139,10 +139,11 @@ const MeseroComandaSlot = ({order, modeInterface, Comanda, updateComanda, remove
                                 <FontAwesomeIcon style={{color: toggleArrowStatus ? "#ffffff" : "#5d5d5d"}} icon={toggleArrowStatus ? faAngleUp : faAngleDown} size="2x" />
                             </button>
                         </div>
-                            <div 
-                                className="faButton ml-auto" 
-                                style={{ cursor: 'not-allowed', opacity: 0.4 }}
-                                title="Eliminar comanda deshabilitado"
+                            <div
+                                className="faButton ml-auto"
+                                style={{ cursor: 'pointer' }}
+                                title="Solicitar eliminación (requiere autorización)"
+                                onClick={() => removeComanda(Comanda)}
                             >
                                 <FontAwesomeIcon icon={faTrash} style={{color: 'red'}} size="xl" />
                             </div>
