@@ -721,6 +721,41 @@ const MeseroOrderPanel = ({modeInterface, iInterface, OrderID, DeleteOrder, hand
       return null;
     }
 
+    const comandaCards = comandas
+        .filter(c => c.ComandaPrepStatus !== 'ReadyToServe' || expandedComandas.includes(c._id))
+        .map((comanda) => (
+            galleryLayout ? (
+                <div key={comanda._id} className="mesero-order-panel__comanda-cell">
+                    <div
+                        className="mesero-order-panel__comanda-scroll"
+                        style={comandaScrollMaxPx ? {
+                            height: `${comandaScrollMaxPx}px`,
+                            maxHeight: `${comandaScrollMaxPx}px`,
+                        } : undefined}
+                    >
+                        <MeseroComandaSlot
+                            order={Order}
+                            modeInterface={modeInterface}
+                            Comanda={comanda}
+                            updateComanda={updateComanda}
+                            removeComanda={removeComanda}
+                            onBubbleToggle={handleBubbleToggle}
+                        />
+                    </div>
+                </div>
+            ) : (
+                <MeseroComandaSlot
+                    key={comanda._id}
+                    order={Order}
+                    modeInterface={modeInterface}
+                    Comanda={comanda}
+                    updateComanda={updateComanda}
+                    removeComanda={removeComanda}
+                    onBubbleToggle={handleBubbleToggle}
+                />
+            )
+        ));
+
     return (
         <>
         <div className={`card${galleryLayout ? ' mesero-order-panel--gallery' : ''}`} style={{backgroundColor: colorOrder}}>
@@ -845,44 +880,15 @@ const MeseroOrderPanel = ({modeInterface, iInterface, OrderID, DeleteOrder, hand
                         ))}
                 </div>
                 {/* Tarjetas para comandas no ReadyToServe o expandidas */}
-                <div
-                    ref={galleryLayout ? comandasGridRef : null}
-                    className={galleryLayout ? 'mesero-order-panel__comandas-grid' : ''}
-                >
-                {comandas
-                    .filter(c => c.ComandaPrepStatus !== 'ReadyToServe' || expandedComandas.includes(c._id))
-                    .map((comanda) => (
-                        <div key={comanda._id} className={galleryLayout ? 'mesero-order-panel__comanda-cell' : ''}>
-                            {galleryLayout ? (
-                                <div
-                                    className="mesero-order-panel__comanda-scroll"
-                                    style={comandaScrollMaxPx ? {
-                                        height: `${comandaScrollMaxPx}px`,
-                                        maxHeight: `${comandaScrollMaxPx}px`,
-                                    } : undefined}
-                                >
-                                    <MeseroComandaSlot
-                                        order={Order}
-                                        modeInterface={modeInterface}
-                                        Comanda={comanda}
-                                        updateComanda={updateComanda}
-                                        removeComanda={removeComanda}
-                                        onBubbleToggle={handleBubbleToggle}
-                                    />
-                                </div>
-                            ) : (
-                                <MeseroComandaSlot
-                                    order={Order}
-                                    modeInterface={modeInterface}
-                                    Comanda={comanda}
-                                    updateComanda={updateComanda}
-                                    removeComanda={removeComanda}
-                                    onBubbleToggle={handleBubbleToggle}
-                                />
-                            )}
+                {galleryLayout ? (
+                    <div ref={comandasGridRef} className="mesero-order-panel__comandas-track">
+                        <div className="mesero-order-panel__comandas-grid">
+                            {comandaCards}
                         </div>
-                ))}
-                </div>
+                    </div>
+                ) : (
+                    comandaCards
+                )}
             </div>
             )}
         </div>

@@ -51,7 +51,8 @@ html.mesero-app-document-lock #root {
     -webkit-overflow-scrolling: touch;
 }
 
-/* Permitir scroll vertical dentro de comandas en galería (body tiene touch-action: manipulation) */
+/* Scroll anidado: vertical en comanda, horizontal en el track de comandas */
+.mesero-order-panel__comandas-track,
 .mesero-order-panel__comanda-scroll {
-    touch-action: pan-y pinch-zoom;
+    touch-action: pan-x pan-y;
 }
