@@ -5,14 +5,12 @@
 .mesero-orders-shell--gallery {
     display: flex;
     flex-direction: column;
-    height: 100vh;
-    overflow: hidden;
-    background: #f8fafc;
-}
-
-.mesero-app-scroll .mesero-orders-shell--gallery {
+    flex: 1 1 0;
+    min-height: 0;
     height: 100%;
     max-height: 100%;
+    overflow: hidden;
+    background: #f8fafc;
 }
 
 .mesero-orders-shell--gallery > .mesero-gallery {

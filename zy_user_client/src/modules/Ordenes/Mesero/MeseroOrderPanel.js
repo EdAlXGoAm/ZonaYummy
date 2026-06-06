@@ -411,6 +411,9 @@ const MeseroOrderPanel = ({modeInterface, iInterface, OrderID, DeleteOrder, hand
     const addComandaRef = useRef(addComanda);
     addComandaRef.current = addComanda;
 
+    const comandasGridRef = useRef(null);
+    const [comandaScrollMaxPx, setComandaScrollMaxPx] = useState(null);
+
     useEffect(() => {
         if (!galleryLayout || typeof onRegisterAddPlatillo !== 'function') {
             return undefined;
@@ -419,6 +422,39 @@ const MeseroOrderPanel = ({modeInterface, iInterface, OrderID, DeleteOrder, hand
         onRegisterAddPlatillo(invokeAdd);
         return () => onRegisterAddPlatillo(null);
     }, [galleryLayout, onRegisterAddPlatillo]);
+
+    useEffect(() => {
+        if (!galleryLayout) {
+            setComandaScrollMaxPx(null);
+            return undefined;
+        }
+        const gridEl = comandasGridRef.current;
+        if (!gridEl) return undefined;
+
+        const syncScrollHeight = () => {
+            const gridRect = gridEl.getBoundingClientRect();
+            const filmstrip = document.querySelector('.mesero-gallery__filmstrip');
+            const filmstripTop = filmstrip
+                ? filmstrip.getBoundingClientRect().top
+                : window.innerHeight;
+            const available = Math.floor(filmstripTop - gridRect.top - 6);
+            if (available > 120) {
+                setComandaScrollMaxPx(available);
+            }
+        };
+
+        syncScrollHeight();
+        requestAnimationFrame(syncScrollHeight);
+        const ro = new ResizeObserver(() => requestAnimationFrame(syncScrollHeight));
+        ro.observe(gridEl);
+        const panelSlot = gridEl.closest('.mesero-gallery__panel-slot');
+        if (panelSlot) ro.observe(panelSlot);
+        window.addEventListener('resize', syncScrollHeight);
+        return () => {
+            ro.disconnect();
+            window.removeEventListener('resize', syncScrollHeight);
+        };
+    }, [galleryLayout, comandas.length, toggleArrowStatus]);
 
     const updateComanda = useCallback((comanda) => {
         setComandas(prev => {
@@ -809,13 +845,22 @@ const MeseroOrderPanel = ({modeInterface, iInterface, OrderID, DeleteOrder, hand
                         ))}
                 </div>
                 {/* Tarjetas para comandas no ReadyToServe o expandidas */}
-                <div className={galleryLayout ? 'mesero-order-panel__comandas-grid' : ''}>
+                <div
+                    ref={galleryLayout ? comandasGridRef : null}
+                    className={galleryLayout ? 'mesero-order-panel__comandas-grid' : ''}
+                >
                 {comandas
                     .filter(c => c.ComandaPrepStatus !== 'ReadyToServe' || expandedComandas.includes(c._id))
                     .map((comanda) => (
                         <div key={comanda._id} className={galleryLayout ? 'mesero-order-panel__comanda-cell' : ''}>
                             {galleryLayout ? (
-                                <div className="mesero-order-panel__comanda-scroll">
+                                <div
+                                    className="mesero-order-panel__comanda-scroll"
+                                    style={comandaScrollMaxPx ? {
+                                        height: `${comandaScrollMaxPx}px`,
+                                        maxHeight: `${comandaScrollMaxPx}px`,
+                                    } : undefined}
+                                >
                                     <MeseroComandaSlot
                                         order={Order}
                                         modeInterface={modeInterface}

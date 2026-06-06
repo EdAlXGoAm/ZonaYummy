@@ -29,20 +29,19 @@
 .mesero-order-panel__body {
     flex: 1 1 0;
     min-height: 0;
-    height: 0;
     overflow: hidden;
-    display: flex;
-    flex-direction: column;
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr);
 }
 
-.mesero-order-panel__body > :not(.mesero-order-panel__comandas-grid) {
-    flex-shrink: 0;
+.mesero-order-panel__body > .bubbles-container {
+    min-height: 0;
 }
 
 .mesero-order-panel__comandas-grid {
-    flex: 1 1 0;
     min-height: 0;
-    height: 100%;
+    max-height: 100%;
     display: flex;
     flex-direction: row;
     flex-wrap: nowrap;
@@ -68,21 +67,20 @@
     width: min(420px, 42vw);
     min-width: 300px;
     align-self: stretch;
-    display: flex;
-    flex-direction: column;
+    height: 100%;
     min-height: 0;
     max-height: 100%;
     overflow: hidden;
 }
 
 .mesero-order-panel__comanda-scroll {
-    flex: 1 1 0;
+    width: 100%;
     min-height: 0;
     overflow-x: hidden;
     overflow-y: auto;
     overscroll-behavior: contain;
     -webkit-overflow-scrolling: touch;
-    touch-action: pan-y;
+    touch-action: pan-y pinch-zoom;
 }
 
 .mesero-order-panel__comanda-scroll::-webkit-scrollbar {
