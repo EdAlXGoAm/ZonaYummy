@@ -23,7 +23,7 @@
     flex: 1;
     min-height: 0;
     overflow: hidden;
-    padding: var(--zy-gap) var(--zy-gap) 8px;
+    padding: 10px var(--zy-gap) 8px;
 }
 
 .mesero-gallery__main-shell {
@@ -80,6 +80,13 @@
     flex-direction: column;
     min-height: 0;
     padding: 12px 14px 10px;
+}
+
+.mesero-gallery__main-inner > .mesero-order-panel--gallery {
+    flex: 1;
+    min-height: 0;
+    width: 100%;
+    margin: 0;
 }
 
 .mesero-gallery__main-head {

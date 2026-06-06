@@ -37,6 +37,10 @@
     flex-direction: column;
 }
 
+.mesero-order-panel__body > :not(.mesero-order-panel__comandas-grid) {
+    flex-shrink: 0;
+}
+
 .mesero-order-panel__comandas-grid {
     flex: 1;
     min-height: 0;
@@ -46,7 +50,7 @@
     gap: 14px;
     overflow-x: auto;
     overflow-y: hidden;
-    align-items: stretch;
+    align-items: flex-start;
     padding: 4px 2px 8px;
     -webkit-overflow-scrolling: touch;
 }
@@ -64,18 +68,32 @@
     flex: 0 0 auto;
     width: min(420px, 42vw);
     min-width: 300px;
-    height: 100%;
-    overflow: hidden;
+    max-height: 100%;
+    min-height: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.mesero-order-panel__comanda-cell::-webkit-scrollbar {
+    width: 8px;
+}
+
+.mesero-order-panel__comanda-cell::-webkit-scrollbar-thumb {
+    background: rgba(0, 183, 230, 0.55);
+    border-radius: 5px;
 }
 
 .mesero-order-panel__comanda-cell > div {
-    height: 100%;
+    height: auto;
+    min-height: min-content;
 }
 
-.mesero-order-panel--gallery .mesero-order-panel__comanda-cell .card {
+.mesero-order-panel--gallery .mesero-order-panel__comanda-cell .card,
+.mesero-order-panel--gallery .mesero-order-panel__comanda-cell .card-body {
     margin: 0;
-    height: 100%;
-    overflow: hidden;
+    height: auto;
+    overflow: visible;
 }
 
 .toggleArrowButtons > button {

@@ -15,6 +15,57 @@
     min-height: 0;
 }
 
+/* FABs flotantes en vista galería */
+.mesero-gallery-fabs {
+    position: fixed;
+    right: 20px;
+    bottom: calc(22vh + 16px);
+    z-index: 1600;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 10px;
+}
+
+.mesero-gallery-fabs .mesero-view-fab {
+    position: static;
+}
+
+.mesero-new-order-fab {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 18px 10px 14px;
+    border: none;
+    border-radius: 999px;
+    cursor: pointer;
+    font-family: 'Nunito', system-ui, sans-serif;
+    font-size: 0.9rem;
+    font-weight: 800;
+    color: #fff;
+    background: linear-gradient(180deg, #34d399, #16a34a);
+    box-shadow: 0 6px 18px rgba(22, 163, 74, 0.45);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.mesero-new-order-fab:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 24px rgba(22, 163, 74, 0.5);
+}
+
+.mesero-new-order-fab__icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.25);
+    font-size: 1.25rem;
+    line-height: 1;
+    font-weight: 900;
+}
+
 /* Botón flotante cambio de vista — estilo Zona Yummy */
 .mesero-view-fab {
     position: fixed;
@@ -43,7 +94,6 @@
 }
 
 .mesero-view-fab--gallery {
-    bottom: calc(22vh + 20px);
     background: linear-gradient(180deg, #5ce1ff, #00b7e6);
     box-shadow: 0 6px 18px rgba(0, 183, 230, 0.45);
 }

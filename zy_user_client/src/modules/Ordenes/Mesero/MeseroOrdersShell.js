@@ -676,8 +676,8 @@ const MeseroOrdersShell = ({ modeInterface }) => {
             className={`container-fluid mesero-orders-shell${modeInterface && galleryView ? ' mesero-orders-shell--gallery' : ''}`}
             style={{background: (reloadFlag && modeInterface) ? 'linear-gradient(to right, #e0f7fa, #b2ebf2)' : 'none'}}
         >
-            {/* Header solo visible en vista de mesero */}
-            {modeInterface && (
+            {/* Header y toolbar — solo vista clásica de mesero */}
+            {modeInterface && !galleryView && (
                 <>
             <div className="row">
                 <div className="col-4">
@@ -697,46 +697,66 @@ const MeseroOrdersShell = ({ modeInterface }) => {
                 </div>
             </div>
             <hr style={{backgroundColor:"white"}}/>
-                </>
-            )}
-            {/* ToastContainer siempre visible para notificaciones */}
-            {!modeInterface && <ToastContainer />}
-            {modeInterface && (
-                <div>
-                    <div className="row">
-                        <div className="col-2">
-                            <Button variant="success" size="lg" onClick={() => handleSlideChange(slide - 1)} disabled={isMobile || galleryView}>←</Button>
-                        </div>
-                        <div className="col-8">
-                            <Button variant="success" size="lg" onClick={handleNewOrderClick}>Nueva Orden</Button>
-                        </div>
-                        <div className="col-2">
-                            <Button variant="success" size="lg" onClick={() => handleSlideChange(slide + 1)} disabled={isMobile || galleryView}>→</Button>
-                        </div>
+            <div>
+                <div className="row">
+                    <div className="col-2">
+                        <Button variant="success" size="lg" onClick={() => handleSlideChange(slide - 1)} disabled={isMobile}>←</Button>
+                    </div>
+                    <div className="col-8">
+                        <Button variant="success" size="lg" onClick={handleNewOrderClick}>Nueva Orden</Button>
+                    </div>
+                    <div className="col-2">
+                        <Button variant="success" size="lg" onClick={() => handleSlideChange(slide + 1)} disabled={isMobile}>→</Button>
                     </div>
                 </div>
+            </div>
+                </>
             )}
-            {modeInterface && (
+            {modeInterface && galleryView && <ToastContainer />}
+            {!modeInterface && <ToastContainer />}
+            {modeInterface && !galleryView && (
                 <button
                     type="button"
-                    className={`mesero-view-fab${galleryView ? ' mesero-view-fab--gallery' : ''}`}
-                    onClick={() => setGalleryView((prev) => !prev)}
-                    title={galleryView ? 'Cambiar a vista clásica' : 'Cambiar a vista galería'}
-                    aria-label={galleryView ? 'Cambiar a vista clásica' : 'Cambiar a vista galería'}
+                    className="mesero-view-fab"
+                    onClick={() => setGalleryView(true)}
+                    title="Cambiar a vista galería"
+                    aria-label="Cambiar a vista galería"
                 >
                     <span className="mesero-view-fab__icon" aria-hidden="true">
-                        {galleryView ? (
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M4 6h16v2H4V6zm0 5h10v2H4v-2zm0 5h16v2H4v-2z" />
+                        </svg>
+                    </span>
+                    <span className="mesero-view-fab__label">Galería</span>
+                </button>
+            )}
+            {modeInterface && galleryView && (
+                <div className="mesero-gallery-fabs">
+                    <button
+                        type="button"
+                        className="mesero-new-order-fab"
+                        onClick={handleNewOrderClick}
+                        title="Nueva orden"
+                        aria-label="Nueva orden"
+                    >
+                        <span className="mesero-new-order-fab__icon" aria-hidden="true">+</span>
+                        <span className="mesero-new-order-fab__label">Nueva Orden</span>
+                    </button>
+                    <button
+                        type="button"
+                        className="mesero-view-fab mesero-view-fab--gallery"
+                        onClick={() => setGalleryView(false)}
+                        title="Cambiar a vista clásica"
+                        aria-label="Cambiar a vista clásica"
+                    >
+                        <span className="mesero-view-fab__icon" aria-hidden="true">
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
                                 <path d="M4 4h7v7H4V4zm9 0h7v7h-7V4zM4 13h7v7H4v-7zm9 0h7v7h-7v-7z" />
                             </svg>
-                        ) : (
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                                <path d="M4 6h16v2H4V6zm0 5h10v2H4v-2zm0 5h16v2H4v-2z" />
-                            </svg>
-                        )}
-                    </span>
-                    <span className="mesero-view-fab__label">{galleryView ? 'Clásica' : 'Galería'}</span>
-                </button>
+                        </span>
+                        <span className="mesero-view-fab__label">Clásica</span>
+                    </button>
+                </div>
             )}
             {renderOrders()}
             {showPasswordModal && (
