@@ -102,7 +102,35 @@
 }
 
 .mesero-order-pick__row--done {
-    opacity: 0.88;
+    background: #eef1f5;
+    border-color: #d1d9e3;
+}
+
+.mesero-order-pick__row--done:hover {
+    border-color: #b8c4d4;
+    box-shadow: 0 4px 14px rgba(100, 116, 139, 0.15);
+    transform: translateY(-1px);
+}
+
+.mesero-order-pick__row--done .mesero-order-pick__order-id,
+.mesero-order-pick__row--done .mesero-order-pick__total {
+    color: #64748b;
+}
+
+.mesero-order-pick__row--done .mesero-order-pick__customer {
+    color: #94a3b8;
+}
+
+.mesero-order-pick__row--done .mesero-order-pick__bubble {
+    border-color: #cbd5e1;
+    box-shadow: none;
+    opacity: 0.85;
+}
+
+.mesero-order-pick__row--done .mesero-order-pick__bubble-overflow {
+    background: #e2e8f0;
+    border-color: #cbd5e1;
+    color: #64748b;
 }
 
 .mesero-order-pick__row-main {

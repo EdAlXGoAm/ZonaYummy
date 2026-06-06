@@ -1,11 +1,28 @@
 import './MeseroOrderPickModal.css';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import comandasApi from '../../../api/comandasApi';
 
 const MAX_BUBBLES = 7;
 
+const sortOrdersForPicker = (orders) => {
+    const active = [];
+    const closed = [];
+
+    orders.forEach((order) => {
+        if (order.OrderCustStatus === 'Done') {
+            closed.push(order);
+        } else {
+            active.push(order);
+        }
+    });
+
+    const byNewest = (a, b) => Number(b.OrderID) - Number(a.OrderID);
+    return [...active.sort(byNewest), ...closed.sort(byNewest)];
+};
+
 const MeseroOrderPickModal = ({ orders, onSelectOrder, onClose }) => {
+    const sortedOrders = useMemo(() => sortOrdersForPicker(orders), [orders]);
     const [comandasByOrder, setComandasByOrder] = useState({});
     const [loading, setLoading] = useState(true);
 
@@ -16,7 +33,7 @@ const MeseroOrderPickModal = ({ orders, onSelectOrder, onClose }) => {
             setLoading(true);
             try {
                 const entries = await Promise.all(
-                    orders.map(async (order) => {
+                    sortedOrders.map(async (order) => {
                         const comandas = await comandasApi.getComandasByOrderId(order.OrderID);
                         return [order.OrderID, comandas];
                     })
@@ -37,7 +54,7 @@ const MeseroOrderPickModal = ({ orders, onSelectOrder, onClose }) => {
 
         loadComandas();
         return () => { cancelled = true; };
-    }, [orders]);
+    }, [sortedOrders]);
 
     return createPortal(
         <div className="mesero-order-pick-overlay" onClick={onClose}>
@@ -68,7 +85,7 @@ const MeseroOrderPickModal = ({ orders, onSelectOrder, onClose }) => {
                         <p className="mesero-order-pick__loading">Cargando órdenes…</p>
                     ) : (
                         <ul className="mesero-order-pick__list">
-                            {orders.map((order) => {
+                            {sortedOrders.map((order) => {
                                 const customer = (order.Customer || '').trim();
                                 const isDone = order.OrderCustStatus === 'Done';
                                 const comandas = comandasByOrder[order.OrderID] || [];
