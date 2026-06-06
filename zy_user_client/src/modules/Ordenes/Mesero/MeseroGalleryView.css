@@ -321,6 +321,26 @@
     color: rgba(26, 43, 92, 0.5);
 }
 
+.mesero-gallery__open-picker-btn {
+    margin-top: 14px;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 999px;
+    cursor: pointer;
+    font-family: 'Nunito', system-ui, sans-serif;
+    font-size: 0.88rem;
+    font-weight: 800;
+    color: #fff;
+    background: linear-gradient(180deg, var(--zy-zona-cyan-light), var(--zy-zona-cyan));
+    box-shadow: 0 4px 14px rgba(0, 183, 230, 0.35);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.mesero-gallery__open-picker-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 18px rgba(0, 183, 230, 0.45);
+}
+
 /* Cintillo: fila fija abajo, nunca sube al cerrar la orden */
 .mesero-gallery__filmstrip {
     grid-row: 2;

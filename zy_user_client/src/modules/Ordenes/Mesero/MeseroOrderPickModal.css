@@ -1,0 +1,215 @@
+.mesero-order-pick-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 4500;
+    background: rgba(15, 23, 42, 0.55);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+}
+
+.mesero-order-pick {
+    width: min(96vw, 640px);
+    max-height: min(82vh, 720px);
+    background: #ffffff;
+    border-radius: 18px;
+    box-shadow: 0 24px 48px rgba(15, 23, 42, 0.28);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.mesero-order-pick__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 14px 18px;
+    background: linear-gradient(135deg, #1a2b5c 0%, #243a6e 55%, #3d1f4a 100%);
+    color: #fff;
+    flex-shrink: 0;
+}
+
+.mesero-order-pick__title {
+    margin: 0;
+    font-family: Bebas Neue, sans-serif;
+    font-size: 1.65rem;
+    letter-spacing: 0.04em;
+    font-weight: 400;
+}
+
+.mesero-order-pick__close {
+    border: none;
+    background: rgba(255, 255, 255, 0.16);
+    color: #fff;
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 1rem;
+    line-height: 1;
+    flex-shrink: 0;
+}
+
+.mesero-order-pick__close:hover {
+    background: rgba(255, 255, 255, 0.28);
+}
+
+.mesero-order-pick__body {
+    padding: 12px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    flex: 1;
+    min-height: 0;
+    background: #f8fafc;
+}
+
+.mesero-order-pick__loading {
+    margin: 32px 0;
+    text-align: center;
+    color: #64748b;
+    font-weight: 600;
+}
+
+.mesero-order-pick__list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.mesero-order-pick__row {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 12px 14px;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 14px;
+    background: #fff;
+    cursor: pointer;
+    text-align: left;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.mesero-order-pick__row:hover {
+    border-color: #00b7e6;
+    box-shadow: 0 6px 18px rgba(0, 183, 230, 0.18);
+    transform: translateY(-1px);
+}
+
+.mesero-order-pick__row--done {
+    opacity: 0.88;
+}
+
+.mesero-order-pick__row-main {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.mesero-order-pick__row-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.mesero-order-pick__order-id {
+    font-family: Bebas Neue, sans-serif;
+    font-size: 1.35rem;
+    letter-spacing: 0.03em;
+    color: #1a2b5c;
+    line-height: 1.1;
+}
+
+.mesero-order-pick__customer {
+    font-size: 0.92rem;
+    font-weight: 700;
+    color: #475569;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.mesero-order-pick__row-meta {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 4px;
+    flex-shrink: 0;
+}
+
+.mesero-order-pick__total {
+    font-size: 1.05rem;
+    font-weight: 800;
+    color: #0f172a;
+}
+
+.mesero-order-pick__status {
+    font-size: 0.72rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 3px 8px;
+    border-radius: 999px;
+    background: rgba(0, 183, 230, 0.14);
+    color: #0369a1;
+}
+
+.mesero-order-pick__status--done {
+    background: rgba(148, 163, 184, 0.2);
+    color: #64748b;
+}
+
+.mesero-order-pick__bubbles {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    min-height: 44px;
+}
+
+.mesero-order-pick__bubble {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    overflow: hidden;
+    flex-shrink: 0;
+    border: 2px solid #00b7e6;
+    box-shadow: 0 2px 8px rgba(0, 183, 230, 0.25);
+    background: #f1f5f9;
+}
+
+.mesero-order-pick__bubble img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.mesero-order-pick__bubble-overflow {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 0.78rem;
+    font-weight: 800;
+    color: #1a2b5c;
+    background: linear-gradient(180deg, #e0f7fa, #b2ebf2);
+    border: 2px solid rgba(0, 183, 230, 0.45);
+}
+
+.mesero-order-pick__empty-items {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: #94a3b8;
+    font-style: italic;
+}

@@ -1,6 +1,7 @@
 import './MeseroGalleryView.css';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import MeseroOrderPanel from './MeseroOrderPanel';
+import MeseroOrderPickModal from './MeseroOrderPickModal';
 import MeseroPlatilloSelector from './MeseroPlatilloSelector';
 import {
     loadGallerySelectedOrderId,
@@ -18,6 +19,8 @@ const MeseroGalleryView = ({
     const [selectedOrderId, setSelectedOrderId] = useState(null);
     const [refreshing, setRefreshing] = useState(false);
     const [panelRefreshKey, setPanelRefreshKey] = useState(0);
+    const [selectionReady, setSelectionReady] = useState(false);
+    const [pickerDismissed, setPickerDismissed] = useState(false);
     const selectionHydratedRef = useRef(false);
     const addPlatilloRef = useRef(null);
 
@@ -32,11 +35,13 @@ const MeseroGalleryView = ({
     const selectOrder = useCallback((orderId) => {
         setSelectedOrderId(orderId);
         saveGallerySelectedOrderId(orderId);
+        setPickerDismissed(false);
     }, []);
 
     const clearSelectedOrder = useCallback(() => {
         setSelectedOrderId(null);
         saveGallerySelectedOrderId(null);
+        setPickerDismissed(false);
     }, []);
 
     const sortedOrders = useMemo(
@@ -47,6 +52,7 @@ const MeseroGalleryView = ({
     useEffect(() => {
         if (!orders.length) {
             setSelectedOrderId(null);
+            setSelectionReady(true);
             return;
         }
 
@@ -62,6 +68,7 @@ const MeseroGalleryView = ({
                 }
             }
             selectionHydratedRef.current = true;
+            setSelectionReady(true);
             return;
         }
 
@@ -77,6 +84,13 @@ const MeseroGalleryView = ({
     const handleCloseOrder = () => {
         clearSelectedOrder();
     };
+
+    const showOrderPicker = (
+        selectionReady
+        && selectedOrderId == null
+        && sortedOrders.length > 0
+        && !pickerDismissed
+    );
 
     const handleRefreshAll = async () => {
         if (!onRefreshAll || refreshing) return;
@@ -94,6 +108,13 @@ const MeseroGalleryView = ({
 
     return (
         <div className="mesero-gallery">
+            {showOrderPicker && (
+                <MeseroOrderPickModal
+                    orders={sortedOrders}
+                    onSelectOrder={selectOrder}
+                    onClose={() => setPickerDismissed(true)}
+                />
+            )}
             <div className="mesero-gallery__main">
                 <div className="mesero-gallery__main-shell">
                     <span className="mesero-gallery__orb mesero-gallery__orb--cyan" aria-hidden="true" />
@@ -143,8 +164,19 @@ const MeseroGalleryView = ({
                                         <>
                                             <p>Ninguna orden seleccionada.</p>
                                             <p className="mesero-gallery__empty-hint">
-                                                Elige una orden del cintillo inferior o pulsa &quot;Nueva Orden&quot;.
+                                                {pickerDismissed
+                                                    ? 'Elige una orden del cintillo inferior o abre el selector.'
+                                                    : 'Elige una orden en el selector o del cintillo inferior.'}
                                             </p>
+                                            {pickerDismissed && (
+                                                <button
+                                                    type="button"
+                                                    className="mesero-gallery__open-picker-btn"
+                                                    onClick={() => setPickerDismissed(false)}
+                                                >
+                                                    Ver órdenes
+                                                </button>
+                                            )}
                                         </>
                                     ) : (
                                         <>
