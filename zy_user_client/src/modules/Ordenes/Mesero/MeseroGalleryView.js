@@ -37,11 +37,13 @@ const MeseroGalleryView = ({
     orders,
     comandasByOrder = {},
     onComandasCacheSync,
+    onOrderCacheSync,
     platillos,
     handleDeleteOrder,
     handleOrderCustStatus,
     onRefreshAll,
     onNewOrder,
+    onSwitchToClassicView,
 }) => {
     const [selectedOrderId, setSelectedOrderId] = useState(null);
     const [refreshing, setRefreshing] = useState(false);
@@ -112,6 +114,18 @@ const MeseroGalleryView = ({
         clearSelectedOrder();
     };
 
+    const selectedOrder = useMemo(
+        () => sortedOrders.find((o) => Number(o.OrderID) === Number(selectedOrderId)) ?? null,
+        [sortedOrders, selectedOrderId]
+    );
+
+    const selectedOrderComandas = useMemo(() => {
+        if (selectedOrderId == null) return undefined;
+        return resolveOrderComandas(comandasByOrder, selectedOrderId);
+    }, [selectedOrderId, comandasByOrder]);
+
+    const hasPreloadedComandas = selectedOrderComandas !== undefined;
+
     const showOrderPicker = (
         selectionReady
         && selectedOrderId == null
@@ -141,8 +155,30 @@ const MeseroGalleryView = ({
         }
     };
 
+    const showClassicViewFab = (
+        selectionReady
+        && selectedOrderId == null
+        && typeof onSwitchToClassicView === 'function'
+    );
+
     return (
         <div className="mesero-gallery">
+            {showClassicViewFab && (
+                <button
+                    type="button"
+                    className="mesero-view-fab mesero-view-fab--gallery mesero-view-fab--corner-top"
+                    onClick={onSwitchToClassicView}
+                    title="Cambiar a vista clásica"
+                    aria-label="Cambiar a vista clásica"
+                >
+                    <span className="mesero-view-fab__icon" aria-hidden="true">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M4 4h7v7H4V4zm9 0h7v7h-7V4zM4 13h7v7H4v-7zm9 0h7v7h-7v-7z" />
+                        </svg>
+                    </span>
+                    <span className="mesero-view-fab__label">Clásica</span>
+                </button>
+            )}
             {showOrderPicker && (
                 <MeseroOrderPickModal
                     orders={sortedOrders}
@@ -192,8 +228,12 @@ const MeseroGalleryView = ({
                                     DeleteOrder={handleDeleteOrder}
                                     handleOrderCustStatus={handleOrderCustStatus}
                                     platillos={platillos}
+                                    preloadedOrder={selectedOrder}
+                                    preloadedComandas={hasPreloadedComandas ? selectedOrderComandas : undefined}
+                                    isOptimized={hasPreloadedComandas}
                                     onRegisterAddPlatillo={registerAddPlatillo}
                                     onComandasCacheSync={onComandasCacheSync}
+                                    onOrderCacheSync={onOrderCacheSync}
                                 />
                             ) : (
                                 <div className="mesero-gallery__empty">

@@ -9,7 +9,10 @@ import 'react-toastify/dist/ReactToastify.css';
 import ordersApi from './../../../api/ordersApi';
 import platillosApi from './../../../api/platillosApi';
 import comandasApi from './../../../api/comandasApi';
-import { fetchComandasGroupedByOrder } from './meseroComandasCache';
+import {
+    fetchComandasGroupedByOrder,
+    parseOrderIdFromComandaSocketMsg,
+} from './meseroComandasCache';
 
 import OrdenesCocina from './../MeseroPage/OrdenesCocinaComponent';
 import Counter30To0 from '../Global/CounterComponent';
@@ -89,6 +92,38 @@ const MeseroOrdersShell = ({ modeInterface }) => {
             ...prev,
             [key]: Array.isArray(comandas) ? comandas : [],
         }));
+    };
+
+    const syncOrderCacheEntry = (orderPatch) => {
+        const key = Number(orderPatch?.OrderID);
+        if (!Number.isFinite(key)) return;
+        setOrders((prev) => prev.map((order) => (
+            Number(order.OrderID) === key ? { ...order, ...orderPatch } : order
+        )));
+    };
+
+    const syncOrderFromServerTimerRef = useRef({});
+
+    const syncOrderFromServer = async (orderId) => {
+        const key = Number(orderId);
+        if (!Number.isFinite(key)) return;
+        try {
+            const order = await ordersApi.getOrder(key);
+            syncOrderCacheEntry(order);
+        } catch (err) {
+            console.log(err);
+        }
+    };
+
+    const scheduleSyncOrderFromServer = (orderId) => {
+        const timerKey = String(orderId);
+        if (syncOrderFromServerTimerRef.current[timerKey]) {
+            clearTimeout(syncOrderFromServerTimerRef.current[timerKey]);
+        }
+        syncOrderFromServerTimerRef.current[timerKey] = setTimeout(() => {
+            delete syncOrderFromServerTimerRef.current[timerKey];
+            syncOrderFromServer(orderId);
+        }, 400);
     };
 
     const scheduleSyncComandasCache = (orderList = ordersRef.current) => {
@@ -212,6 +247,7 @@ const MeseroOrdersShell = ({ modeInterface }) => {
     const handleOrderCustStatus = (OrderID, Status) => {
         const newOrder = {...orders.find(order => order.OrderID === OrderID)}
         newOrder.OrderCustStatus = Status;
+        syncOrderCacheEntry(newOrder);
         ordersApi.updateOrder(newOrder)
         .then(() => {
             fetchOrders();
@@ -232,11 +268,13 @@ const MeseroOrdersShell = ({ modeInterface }) => {
                         orders={orders}
                         comandasByOrder={comandasByOrder}
                         onComandasCacheSync={syncComandasCacheEntry}
+                        onOrderCacheSync={syncOrderCacheEntry}
                         platillos={platillos}
                         handleDeleteOrder={handleDeleteOrder}
                         handleOrderCustStatus={handleOrderCustStatus}
                         onRefreshAll={refreshAllData}
                         onNewOrder={handleNewOrderClick}
+                        onSwitchToClassicView={() => setGalleryViewPersisted(false)}
                     />
                 );
             }
@@ -285,6 +323,7 @@ const MeseroOrdersShell = ({ modeInterface }) => {
                 .then(() => {
                     setOrders((prevOrders) => [...prevOrders, newOrder]);
                     setNumOrders((prevNumOrders) => prevNumOrders + 1);
+                    syncComandasCacheEntry(newOrderId, []);
                     SocketNewOrder();
                     const audio = new Audio("ComandaAudios/Pedido.wav");
                     audio.play();
@@ -301,8 +340,15 @@ const MeseroOrdersShell = ({ modeInterface }) => {
             if (confirm) {
                 ordersApi.deleteOrder(OrderID)
                 .then(() => {
+                    const key = Number(OrderID);
                     setOrders(prevOrders => prevOrders.filter(order => order.OrderID !== OrderID));
                     setNumOrders(prevNumOrders => prevNumOrders - 1);
+                    setComandasByOrder((prev) => {
+                        if (!Number.isFinite(key)) return prev;
+                        const next = { ...prev };
+                        delete next[key];
+                        return next;
+                    });
                     SocketDeleteOrder();
                 })
                 .catch(err => {
@@ -333,6 +379,8 @@ const MeseroOrdersShell = ({ modeInterface }) => {
             }
             Object.values(syncComandaForOrderTimerRef.current).forEach(clearTimeout);
             syncComandaForOrderTimerRef.current = {};
+            Object.values(syncOrderFromServerTimerRef.current).forEach(clearTimeout);
+            syncOrderFromServerTimerRef.current = {};
         };
     }, []);
 
@@ -350,14 +398,26 @@ const MeseroOrdersShell = ({ modeInterface }) => {
             scheduleFetchOrders();
         };
         const onOrdenActualizada = (data) => {
-            console.log("OrdenActualizadaDesdeServidor Mensaje: ", data)
+            console.log("OrdenActualizadaDesdeServidor Mensaje: ", data);
+            const orderId = Number(data?.msg);
+            if (Number.isFinite(orderId)) {
+                scheduleSyncComandaForOrder(orderId);
+                scheduleSyncOrderFromServer(orderId);
+                return;
+            }
             scheduleFetchOrders();
         };
-        const onDeleteComanda = () => {
+        const onDeleteComanda = (data) => {
+            const orderId = parseOrderIdFromComandaSocketMsg(data?.msg);
+            if (orderId) {
+                scheduleSyncComandaForOrder(orderId);
+                scheduleSyncOrderFromServer(orderId);
+                return;
+            }
             scheduleFetchOrders();
         };
         const onComandaChanged = (data) => {
-            const orderId = data?.msg?.split?.('-')?.[1];
+            const orderId = parseOrderIdFromComandaSocketMsg(data?.msg);
             if (orderId) {
                 scheduleSyncComandaForOrder(orderId);
                 return;
@@ -831,22 +891,6 @@ const MeseroOrdersShell = ({ modeInterface }) => {
                         </svg>
                     </span>
                     <span className="mesero-view-fab__label">Galería</span>
-                </button>
-            )}
-            {modeInterface && galleryView && (
-                <button
-                    type="button"
-                    className="mesero-view-fab mesero-view-fab--gallery mesero-view-fab--corner-top"
-                    onClick={() => setGalleryViewPersisted(false)}
-                    title="Cambiar a vista clásica"
-                    aria-label="Cambiar a vista clásica"
-                >
-                    <span className="mesero-view-fab__icon" aria-hidden="true">
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M4 4h7v7H4V4zm9 0h7v7h-7V4zM4 13h7v7H4v-7zm9 0h7v7h-7v-7z" />
-                        </svg>
-                    </span>
-                    <span className="mesero-view-fab__label">Clásica</span>
                 </button>
             )}
             {renderOrders()}

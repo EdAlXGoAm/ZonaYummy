@@ -1,5 +1,17 @@
 import comandasApi from '../../../api/comandasApi';
 
+const COMANDA_SOCKET_PREFIXES = new Set(['Add', 'Update', 'Del', 'Delete']);
+
+export const parseOrderIdFromComandaSocketMsg = (msg) => {
+    if (typeof msg !== 'string') return null;
+    const parts = msg.split('-');
+    if (parts.length < 2 || !COMANDA_SOCKET_PREFIXES.has(parts[0])) {
+        return null;
+    }
+    const orderId = Number(parts[1]);
+    return Number.isFinite(orderId) ? orderId : null;
+};
+
 export const normalizeComandasByOrder = (byOrder, orderList) => {
     const normalized = {};
     orderList.forEach((order) => {
