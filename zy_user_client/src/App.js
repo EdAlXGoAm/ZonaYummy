@@ -68,7 +68,7 @@ const App = () => {
         <Route path="/2on4yummy-cocina-test" element={<MeseroScreenTest modeInterface={false} />} />
         <Route path="/2on4yummy-cocinabebidas" element={<CocinaBebidasPage />} />
         <Route path="/cocina_new_features" element={<CocinaNewFeaturesPage />} />
-        <Route path="/autorización_borrados" element={<AutorizacionBorradosPage />} />
+        <Route path="/eliminar" element={<AutorizacionBorradosPage />} />
       </Routes>
     </BrowserRouter>
   )

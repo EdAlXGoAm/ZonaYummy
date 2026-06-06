@@ -211,11 +211,10 @@ const MeseroOrdersShell = ({ modeInterface }) => {
         }
     };
 
-    const handleNewOrderClick = () => {
-        ordersApi.getLastOrderID()
-        .then(data => {
+    const handleNewOrderClick = () => ordersApi.getLastOrderID()
+        .then((data) => {
             const newOrderId = data + 1;
-            let newOrder = {
+            const newOrder = {
                 OrderID: newOrderId,
                 OrderPaidStatus: "Pending", // Partial-Paid
                 OrderPrepStatus: "Preparing", // Served-Done
@@ -224,26 +223,21 @@ const MeseroOrdersShell = ({ modeInterface }) => {
                 CuentaTotal: 0,
                 ComandasList: []
             };
-            ordersApi.addOrder(newOrder)
-            .then(() => {
-                setOrders(prevOrders => [...prevOrders, newOrder]);
-                setNumOrders(prevNumOrders => prevNumOrders + 1);
-                SocketNewOrder();
-                const audio = new Audio("ComandaAudios/Pedido.wav");
-                audio.play();
-            })
-            .catch(err => {
-                console.log(err);
-                notify(`Error al agregar una nueva comanda: ${err}`);
-                // alert("Error al agregar una nueva comanda");
-            });
+            return ordersApi.addOrder(newOrder)
+                .then(() => {
+                    setOrders((prevOrders) => [...prevOrders, newOrder]);
+                    setNumOrders((prevNumOrders) => prevNumOrders + 1);
+                    SocketNewOrder();
+                    const audio = new Audio("ComandaAudios/Pedido.wav");
+                    audio.play();
+                    return newOrderId;
+                });
         })
-        .catch(err => {
+        .catch((err) => {
             console.log(err);
-            notify(`Error  de comunicación con la base de datos para 'Ordenes': ${err}`);
-            // alert("Error de comunicación con la base de datos para 'Ordenes'");
+            notify(`Error al crear la orden: ${err}`);
+            return null;
         });
-    };
     const handleDeleteOrder = (OrderID) => {
         const confirm = window.confirm("Eliminar orden");
             if (confirm) {

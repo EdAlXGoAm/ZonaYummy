@@ -106,6 +106,14 @@ const MeseroGalleryView = ({
         }
     };
 
+    const handleNewOrder = async () => {
+        if (!onNewOrder) return;
+        const newOrderId = await onNewOrder();
+        if (newOrderId != null) {
+            selectOrder(newOrderId);
+        }
+    };
+
     return (
         <div className="mesero-gallery">
             {showOrderPicker && (
@@ -202,7 +210,7 @@ const MeseroGalleryView = ({
                                 <button
                                     type="button"
                                     className="mesero-gallery__new-order-btn"
-                                    onClick={onNewOrder}
+                                    onClick={handleNewOrder}
                                     title="Nueva orden"
                                     aria-label="Nueva orden"
                                 >

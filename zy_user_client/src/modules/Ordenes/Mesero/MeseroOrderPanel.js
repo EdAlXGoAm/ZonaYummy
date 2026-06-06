@@ -546,7 +546,7 @@ const MeseroOrderPanel = ({modeInterface, iInterface, OrderID, DeleteOrder, hand
 
     const removeComanda = useCallback((comanda) => {
         const confirmDel = window.confirm(
-            '¿Solicitar eliminación de este platillo? Un supervisor debe autorizarla en /autorización_borrados.',
+            '¿Solicitar eliminación de este platillo? Un supervisor debe autorizarla en /eliminar.',
         );
         if (!confirmDel) return;
         if (!comanda._id) {

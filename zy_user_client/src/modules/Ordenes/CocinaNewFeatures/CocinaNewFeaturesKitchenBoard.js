@@ -49,7 +49,7 @@ const CocinaNewFeaturesKitchenBoard = ({modeInterface, Orders}) => {
 
         const comanda = contextMenu.comanda;
         const confirmar = window.confirm(
-            '¿Solicitar eliminación de esta comanda? Un supervisor debe autorizarla en /autorización_borrados.',
+            '¿Solicitar eliminación de esta comanda? Un supervisor debe autorizarla en /eliminar.',
         );
         if (!confirmar) return;
 
