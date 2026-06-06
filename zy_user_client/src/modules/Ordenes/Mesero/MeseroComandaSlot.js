@@ -346,7 +346,6 @@ const MeseroComandaSlot = ({
                     )
                 )
             )}
-            </div>
         </div>
     );
 
