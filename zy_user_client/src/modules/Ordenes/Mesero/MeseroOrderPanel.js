@@ -1,5 +1,6 @@
 import './MeseroOrderPanel.css';
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { getPaymentSummary, sumPagosMonto } from './meseroPaymentUtils';
 import { createPortal } from 'react-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faAngleUp, faAngleDown, faHandHoldingUsd } from '@fortawesome/free-solid-svg-icons';
@@ -49,15 +50,31 @@ const MeseroOrderPanel = ({modeInterface, iInterface, OrderID, DeleteOrder, hand
     // Edición de método de pago por cobro ya registrado (historial)
     const [paymentMethodEdits, setPaymentMethodEdits] = useState({}); // { [pagoId]: 'cash'|'card'|'transfer' }
     const [isProcessingPayment, setIsProcessingPayment] = useState(false); // Bloquea botón de confirmar
-    // Flags para controles de cobro
-    const hasMontoPago = orderV2.pagos.some(p => p.tipoPago === 'monto');
-    // Calcular pagado REAL desde array de pagos (más confiable que orderV2.pagado)
-    const realPagado = (orderV2?.pagos || []).reduce((sum, p) => sum + (p?.monto || 0), 0);
-    // Calcular pendiente: suma de precios de comandas menos lo ya cobrado REAL
-    const computedPending = comandas.reduce((sum, c) => sum + (c.Precio || 0), 0) - realPagado;
-    const isFullyPaid = computedPending <= 0 && computedPending === 0;
-    const isExceeded = computedPending < 0; // Se cobró de más
-    const excesoMonto = isExceeded ? Math.abs(computedPending) : 0;
+    const pagosSource = useMemo(
+        () => (Order?.pagos?.length > 0 ? Order.pagos : orderV2?.pagos) || [],
+        [Order?.pagos, orderV2?.pagos],
+    );
+
+    const paymentSummary = useMemo(
+        () => getPaymentSummary(comandas, pagosSource),
+        [comandas, pagosSource],
+    );
+
+    const {
+        liveTotal,
+        pagado: realPagado,
+        pending: computedPending,
+        pendingDisplay: pendienteActual,
+        isExceeded,
+        excesoMonto,
+        isFullyPaid,
+        unpaidComandas,
+        paidItemIds,
+    } = paymentSummary;
+
+    const hasMontoPagoHistorial = pagosSource.some((p) => p.tipoPago === 'monto');
+    const hasMontoEnSesion = (montoEspecifico || 0) > 0;
+    const hasItemsEnSesion = itemsSeleccionadosPago.size > 0;
     const isEmptyOrder = (comandas?.length || 0) === 0;
 
     const getMetodoPagoEmoji = (m) => {
@@ -99,14 +116,9 @@ const MeseroOrderPanel = ({modeInterface, iInterface, OrderID, DeleteOrder, hand
       }
     };
 
-    // ==== Resumen compacto para tarjeta (Order + fallback orderV2 tras cobros) ====
-    const cardTotal = Order?.CuentaTotal || 0;
-    const cardPagosSource = (Order?.pagos?.length > 0 ? Order.pagos : orderV2?.pagos) || [];
-    const cardPagadoFromPagos = cardPagosSource.reduce((sum, p) => sum + (p?.monto || 0), 0);
-    const cardPagado = cardPagadoFromPagos > 0
-        ? cardPagadoFromPagos
-        : (Order?.pagado ?? orderV2?.pagado ?? 0);
-    // Calcular pendiente real (puede ser negativo si se excedió)
+    // ==== Resumen compacto para tarjeta (totales en vivo desde comandas) ====
+    const cardTotal = liveTotal || Order?.CuentaTotal || 0;
+    const cardPagado = realPagado;
     const cardPendienteReal = cardTotal - cardPagado;
     // Para mostrar, usamos el valor absoluto si es negativo (muestra el exceso)
     const cardPendiente = Math.max(0, cardPendienteReal);
@@ -250,11 +262,14 @@ const MeseroOrderPanel = ({modeInterface, iInterface, OrderID, DeleteOrder, hand
         }
         const latest = orderRef.current;
         const mergedBase = { ...order, ...latest };
-        const pagadoBase = mergedBase.pagado || 0;
+        const pagosForCalc = mergedBase.pagos?.length ? mergedBase.pagos : (latest.pagos ?? []);
+        const pagadoFromPagos = sumPagosMonto(pagosForCalc);
+        const pagadoBase = pagadoFromPagos > 0 ? pagadoFromPagos : (mergedBase.pagado || 0);
         const newPendiente = cuentaTotal - pagadoBase;
         const newOrder = {
             ...mergedBase,
             CuentaTotal: cuentaTotal,
+            pagado: pagadoBase,
             pendiente: newPendiente,
         };
         
@@ -278,13 +293,22 @@ const MeseroOrderPanel = ({modeInterface, iInterface, OrderID, DeleteOrder, hand
             performanceLogger.log(`✅ updateCuentaTotalOrder COMPLETADO - Tiempo total: ${totalUpdateTime.toFixed(2)}ms`);
             performanceLogger.log(`📊 Desglose Update - Cálculo: ${calcTime.toFixed(2)}ms (${(calcTime/totalUpdateTime*100).toFixed(1)}%) | BD: ${dbUpdateTime.toFixed(2)}ms (${(dbUpdateTime/totalUpdateTime*100).toFixed(1)}%)`);
             
+            const pagosMerged = newOrder.pagos?.length ? newOrder.pagos : (orderRef.current.pagos ?? []);
             setOrder((prev) => ({
                 ...newOrder,
                 OrderCustStatus: prev.OrderCustStatus ?? newOrder.OrderCustStatus,
                 Customer: prev.Customer ?? newOrder.Customer,
                 Origen: prev.Origen ?? newOrder.Origen,
-                pagos: newOrder.pagos?.length ? newOrder.pagos : (prev.pagos ?? []),
-                pagado: newOrder.pagado ?? prev.pagado ?? 0,
+                pagos: pagosMerged,
+                pagado: pagadoBase,
+                pendiente: newPendiente,
+            }));
+            setOrderV2((prev) => ({
+                ...prev,
+                ...newOrder,
+                pagos: pagosMerged,
+                pagado: pagadoBase,
+                pendiente: newPendiente,
             }));
         })
         .catch(err => {
@@ -818,8 +842,14 @@ const MeseroOrderPanel = ({modeInterface, iInterface, OrderID, DeleteOrder, hand
         setMetodoPago('cash');
         setPaymentMethodEdits({});
         ordersApi.getOrderV2(OrderID)
-          .then(data => {
+          .then((data) => {
             setOrderV2(data);
+            setOrder((prev) => ({
+              ...prev,
+              pagos: data.pagos ?? [],
+              pagado: data.pagado ?? sumPagosMonto(data.pagos),
+              pendiente: data.pendiente,
+            }));
           })
           .catch(err => console.error(err));
       }
@@ -854,28 +884,17 @@ const MeseroOrderPanel = ({modeInterface, iInterface, OrderID, DeleteOrder, hand
       return `${hh}:${mm} ${ampm}`;
     };
 
-    // IDs de items ya cobrados en pagos tipo 'items'
-    const paidItemIds = new Set(orderV2.pagos
-      .filter(p => p.tipoPago === 'items')
-      .flatMap(p => p.itemsPagados || [])
-    );
-
     // ==== UI helpers para resumen de cobro (barra de progreso) ====
-    const totalOrden = Order?.CuentaTotal || 0;
-    const pagadoActual = realPagado; // Usar suma real de pagos
-    const pendienteActual = Math.max(0, computedPending || 0);
+    const totalOrden = liveTotal || Order?.CuentaTotal || 0;
+    const pagadoActual = realPagado;
     const percentPaid = totalOrden > 0
       ? Math.min(100, Math.max(0, (pagadoActual / totalOrden) * 100))
       : (isFullyPaid ? 100 : 0);
 
-    const totalCobradoHistorial = realPagado; // Ya calculado arriba
+    const totalCobradoHistorial = realPagado;
 
-    // Función para seleccionar todos los ítems disponibles
     const handleSelectAllItems = () => {
-      const availableIds = comandas
-        .filter(c => !paidItemIds.has(c.ComandaId))
-        .map(c => c.ComandaId);
-      setItemsSeleccionadosPago(new Set(availableIds));
+      setItemsSeleccionadosPago(new Set(unpaidComandas.map((c) => c.ComandaId)));
     };
 
     // Verificación de seguridad: si Order no existe o fue eliminada, no renderizar
@@ -1184,14 +1203,14 @@ const MeseroOrderPanel = ({modeInterface, iInterface, OrderID, DeleteOrder, hand
                       </button>
                     </div>
                     {/* Selección de ítems + monto en una sola vista */}
-                    {hasMontoPago && (
+                    {hasMontoPagoHistorial && unpaidComandas.length > 0 && (
                       <div className='mb-3 text-sm text-gray-600'>
-                        Ya existe un cobro por <b>monto fijo</b>. Por consistencia, la selección de ítems queda deshabilitada; puedes ingresar un monto adicional abajo.
+                        Hay cobros previos por <b>monto</b>. Los platillos ya cubiertos no aparecen abajo; puedes cobrar los pendientes por ítem o por monto.
                       </div>
                     )}
 
                     <div className='flex justify-end mb-2'>
-                      {!hasMontoPago && (
+                      {unpaidComandas.length > 0 && !hasMontoEnSesion && (
                         <button
                           className='text-sm text-blue-600 underline'
                           onClick={() => {
@@ -1205,20 +1224,23 @@ const MeseroOrderPanel = ({modeInterface, iInterface, OrderID, DeleteOrder, hand
                     </div>
 
                     <div className='items-content scrollbar-hide mb-4'>
-                      {comandas.filter(c => !paidItemIds.has(c.ComandaId)).map(c => (
+                      {unpaidComandas.length === 0 ? (
+                        <div className='text-sm text-gray-600 py-2'>
+                          Todos los platillos actuales están cubiertos por cobros anteriores.
+                        </div>
+                      ) : unpaidComandas.map(c => (
                         <div key={c.ComandaId} className='relative'>
                           <input
                             type='checkbox'
                             id={`chk_${c.ComandaId}`}
                             className='item-checkbox'
-                            disabled={hasMontoPago}
+                            disabled={hasMontoEnSesion}
                             checked={itemsSeleccionadosPago.has(c.ComandaId)}
                             onChange={e => {
-                              if (hasMontoPago) return;
+                              if (hasMontoEnSesion) return;
                               const s = new Set(itemsSeleccionadosPago);
                               e.target.checked ? s.add(c.ComandaId) : s.delete(c.ComandaId);
                               setItemsSeleccionadosPago(s);
-                              // Si el usuario selecciona ítems, limpiamos el monto
                               if (s.size > 0) setMontoEspecifico(0);
                             }}
                           />
@@ -1250,10 +1272,11 @@ const MeseroOrderPanel = ({modeInterface, iInterface, OrderID, DeleteOrder, hand
                           type='number'
                           className='w-full pl-8 pr-10 py-3 border rounded-lg focus:ring-blue-500 focus:border-blue-500'
                           placeholder='0.00'
-                          max={computedPending}
+                          max={Math.max(0, computedPending)}
                           min='0'
                           step='0.01'
                           value={montoEspecifico}
+                          disabled={hasItemsEnSesion}
                           onChange={e => {
                             const next = parseFloat(e.target.value);
                             const safe = Number.isFinite(next) ? next : 0;

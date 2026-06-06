@@ -44,6 +44,15 @@ exports.updateOrder = (req, res) => {
             order.ComandasList = req.body.ComandasList;
             order.Origen = req.body.Origen || '';
 
+            if (req.body.pagado !== undefined && req.body.pagado !== null) {
+                order.pagado = req.body.pagado;
+            }
+            if (req.body.pendiente !== undefined && req.body.pendiente !== null) {
+                order.pendiente = req.body.pendiente;
+            } else if (req.body.CuentaTotal !== undefined && req.body.CuentaTotal !== null) {
+                order.pendiente = order.CuentaTotal - (order.pagado || 0);
+            }
+
             order
                 .save()
                 .then(() => res.json("Order updated!"))
