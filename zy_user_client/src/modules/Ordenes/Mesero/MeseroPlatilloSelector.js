@@ -75,16 +75,14 @@ const MeseroPlatilloSelector = ({ addPlatilloToOrder, platillos, floating = fals
     };
 
     const handleConfirmAdd = () => {
-        const entries = Object.values(cart).filter((entry) => entry.qty > 0);
+        const entries = Object.values(cart)
+            .filter((entry) => entry.qty > 0)
+            .map(({ platillo, qty }) => ({ platillo, quantity: qty }));
         if (!entries.length) {
             notify('Selecciona al menos un platillo');
             return;
         }
-        entries.forEach(({ platillo, qty }) => {
-            for (let i = 0; i < qty; i++) {
-                addPlatilloToOrder(platillo);
-            }
-        });
+        addPlatilloToOrder(entries);
         closeModal();
     };
 

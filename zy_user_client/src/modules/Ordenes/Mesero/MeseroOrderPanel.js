@@ -28,8 +28,9 @@ const MeseroOrderPanel = ({modeInterface, iInterface, OrderID, DeleteOrder, hand
     const [comandas, setComandas] = useState([])
     const [toggleArrowStatus, setToggleArrowStatus] = useState(true); // false: plegado, true: desplegado
     const [colorOrder, setColorOrder] = useState("#ffffff")
-    const skipNextFetch = useRef(false);
+    const pendingSkipFetchesRef = useRef(0);
     const fetchOrderTimerRef = useRef(null);
+    const fetchComandasTimerRef = useRef(null);
     const [expandedComandas, setExpandedComandas] = useState([]);
     const [modalPagoVisible, setModalPagoVisible] = useState(false);
     const [montoEspecifico, setMontoEspecifico] = useState(0);
@@ -171,6 +172,9 @@ const MeseroOrderPanel = ({modeInterface, iInterface, OrderID, DeleteOrder, hand
         return () => {
             if (fetchOrderTimerRef.current) {
                 clearTimeout(fetchOrderTimerRef.current);
+            }
+            if (fetchComandasTimerRef.current) {
+                clearTimeout(fetchComandasTimerRef.current);
             }
         };
     }, []);
@@ -350,21 +354,28 @@ const MeseroOrderPanel = ({modeInterface, iInterface, OrderID, DeleteOrder, hand
                 scheduleFetchOrder();
             }
         };
+        const shouldSkipRemoteFetch = () => {
+            if (pendingSkipFetchesRef.current > 0) {
+                pendingSkipFetchesRef.current -= 1;
+                return true;
+            }
+            return false;
+        };
         const onNuevaComanda = (data) => {
             if (matchesComandaMsg(data?.msg)) {
-                if (skipNextFetch.current) { skipNextFetch.current = false; return; }
+                if (shouldSkipRemoteFetch()) return;
                 scheduleFetchOrder();
             }
         };
         const onUpdateComanda = (data) => {
             if (matchesComandaMsg(data?.msg)) {
-                if (skipNextFetch.current) { skipNextFetch.current = false; return; }
+                if (shouldSkipRemoteFetch()) return;
                 scheduleFetchOrder();
             }
         };
         const onDeleteComanda = (data) => {
             if (matchesComandaMsg(data?.msg)) {
-                if (skipNextFetch.current) { skipNextFetch.current = false; return; }
+                if (shouldSkipRemoteFetch()) return;
                 scheduleFetchOrder();
             }
         };
@@ -381,39 +392,94 @@ const MeseroOrderPanel = ({modeInterface, iInterface, OrderID, DeleteOrder, hand
             socket.off('DeleteComandaDesdeServidor', onDeleteComanda);
         };
     }, [OrderID]);
+
+    const buildNewComanda = (platillo, orderId, comandaId) => ({
+        _id: `pending-${orderId}-${comandaId}`,
+        OrderID: orderId,
+        ComandaId: comandaId,
+        Platillo: platillo.NombrePlatillo,
+        Precio: platillo.Variants[0].Precio,
+        Imagen: platillo.Imagen,
+        Categoria: platillo.Categoria,
+        ComandaPaidStatus: "Editing",
+        ComandaPrepStatus: "Preparing",
+        ComandaDeliverMode: "Delivery",
+        ComandaSwitchNota: false,
+        Notas: "",
+        Details: platillo,
+    });
+
+    const scheduleFetchComandas = useCallback((order) => {
+        if (fetchComandasTimerRef.current) {
+            clearTimeout(fetchComandasTimerRef.current);
+        }
+        fetchComandasTimerRef.current = setTimeout(() => {
+            fetchComandasTimerRef.current = null;
+            fetchComandas(order);
+        }, 200);
+    }, []);
+
+    const persistNewComandas = useCallback((newComandas) => {
+        if (!newComandas.length) return;
+
+        pendingSkipFetchesRef.current += newComandas.length;
+
+        newComandas.forEach((comanda) => {
+            handleComandas(`Add-${comanda.OrderID}-${comanda.Platillo}`);
+        });
+
+        Promise.all(newComandas.map((comanda) => comandasApi.addComanda(comanda)))
+            .then(() => scheduleFetchComandas(Order))
+            .catch((err) => {
+                console.log(err);
+                notify(`Error al agregar comandas: ${err}`);
+                scheduleFetchComandas(Order);
+            });
+    }, [Order, handleComandas, scheduleFetchComandas, notify]);
+
     const addComanda = useCallback((platillo) => {
         let newComanda;
         setComandas((prev) => {
-            newComanda = {
-                OrderID: Order.OrderID,
-                ComandaId: prev.length > 0 ? prev[prev.length - 1].ComandaId + 1 : 1,
-                Platillo: platillo.NombrePlatillo,
-                Precio: platillo.Variants[0].Precio,
-                Imagen: platillo.Imagen,
-                Categoria: platillo.Categoria,
-                ComandaPaidStatus: "Editing",
-                ComandaPrepStatus: "Preparing",
-                ComandaDeliverMode: "Delivery",
-                ComandaSwitchNota: false,
-                Notas: "",
-                Details: platillo
-            };
+            const nextId = prev.length > 0 ? prev[prev.length - 1].ComandaId + 1 : 1;
+            newComanda = buildNewComanda(platillo, Order.OrderID, nextId);
             return [...prev, newComanda];
         });
-        handleComandas("Add-" + Order.OrderID + "-" + newComanda.Platillo);
-        comandasApi.addComanda(newComanda)
-            .then(() => {
-                skipNextFetch.current = true;
-                fetchComandas(Order);
-            })
-            .catch(err => {
-                console.log(err);
-                notify(`Error al agregar comanda: ${err}`);
-            });
-    }, [Order, handleComandas, fetchComandas, notify]);
+        persistNewComandas([newComanda]);
+    }, [Order.OrderID, persistNewComandas]);
 
-    const addComandaRef = useRef(addComanda);
-    addComandaRef.current = addComanda;
+    const addComandasBatch = useCallback((items) => {
+        if (!items?.length) return;
+
+        let newComandas = [];
+        setComandas((prev) => {
+            let nextId = prev.length > 0 ? prev[prev.length - 1].ComandaId + 1 : 1;
+            const batch = [];
+            items.forEach(({ platillo, quantity }) => {
+                const qty = Math.max(0, Number(quantity) || 0);
+                for (let i = 0; i < qty; i++) {
+                    batch.push(buildNewComanda(platillo, Order.OrderID, nextId));
+                    nextId += 1;
+                }
+            });
+            newComandas = batch;
+            return batch.length ? [...prev, ...batch] : prev;
+        });
+
+        if (newComandas.length) {
+            persistNewComandas(newComandas);
+        }
+    }, [Order.OrderID, persistNewComandas]);
+
+    const addPlatillosToOrder = useCallback((input) => {
+        if (Array.isArray(input)) {
+            addComandasBatch(input);
+            return;
+        }
+        addComanda(input);
+    }, [addComanda, addComandasBatch]);
+
+    const addPlatillosToOrderRef = useRef(addPlatillosToOrder);
+    addPlatillosToOrderRef.current = addPlatillosToOrder;
 
     const comandasGridRef = useRef(null);
     const [comandaScrollMaxPx, setComandaScrollMaxPx] = useState(null);
@@ -422,7 +488,7 @@ const MeseroOrderPanel = ({modeInterface, iInterface, OrderID, DeleteOrder, hand
         if (!galleryLayout || typeof onRegisterAddPlatillo !== 'function') {
             return undefined;
         }
-        const invokeAdd = (platillo) => addComandaRef.current(platillo);
+        const invokeAdd = (input) => addPlatillosToOrderRef.current(input);
         onRegisterAddPlatillo(invokeAdd);
         return () => onRegisterAddPlatillo(null);
     }, [galleryLayout, onRegisterAddPlatillo]);
@@ -464,7 +530,7 @@ const MeseroOrderPanel = ({modeInterface, iInterface, OrderID, DeleteOrder, hand
         setComandas(prev => {
             const updated = prev.map(c => c.ComandaId === comanda.ComandaId ? comanda : c);
             updateCuentaTotalOrder(updated, Order);
-            skipNextFetch.current = true;
+            pendingSkipFetchesRef.current += 1;
             return updated;
         });
         handleComandas("Update-" + Order.OrderID);
@@ -858,7 +924,7 @@ const MeseroOrderPanel = ({modeInterface, iInterface, OrderID, DeleteOrder, hand
             <div className={galleryLayout ? 'mesero-order-panel__body' : ''}>
                 {modeInterface && !galleryLayout && (
                     <MeseroPlatilloSelector
-                        addPlatilloToOrder={addComanda}
+                        addPlatilloToOrder={addPlatillosToOrder}
                         platillos={platillos}
                     />
                 )}
