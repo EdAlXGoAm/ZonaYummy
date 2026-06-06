@@ -1,0 +1,52 @@
+/* Mesero — documento fijo + scroll interno (patrón Connexiion / Flutter WebView) */
+
+html.mesero-app-document-lock,
+html.mesero-app-document-lock body {
+    height: 100%;
+    overflow: hidden;
+    overscroll-behavior: none;
+    overscroll-behavior-y: none;
+    touch-action: manipulation;
+}
+
+html.mesero-app-document-lock #root {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
+    overflow: hidden;
+}
+
+.mesero-app-shell {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
+    max-height: 100dvh;
+    overflow: hidden;
+    box-sizing: border-box;
+    text-align: initial;
+}
+
+.mesero-app-scroll {
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+}
+
+.mesero-app-scroll > .mesero-orders-shell {
+    flex: 1;
+    min-height: 0;
+}
+
+.mesero-app-scroll > .mesero-orders-shell:not(.mesero-orders-shell--gallery) {
+    overflow: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+}

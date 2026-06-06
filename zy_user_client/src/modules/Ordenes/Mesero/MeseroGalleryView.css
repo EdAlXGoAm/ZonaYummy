@@ -392,12 +392,100 @@
 
 .mesero-gallery__tile-meta {
     font-size: 0.58rem;
-    font-weight: 700;
+    font-weight: 800;
     text-transform: uppercase;
     letter-spacing: 0.05em;
+    padding: 2px 6px;
+    border-radius: 999px;
+    text-align: center;
+}
+
+/* En curso — viva, borde verde-cyan */
+.mesero-gallery__tile--active .mesero-gallery__tile-frame {
+    border-color: rgba(52, 211, 153, 0.5);
+    background: rgba(16, 185, 129, 0.14);
+    box-shadow: inset 0 0 0 1px rgba(110, 231, 183, 0.15);
+}
+
+.mesero-gallery__tile--active .mesero-gallery__tile-screen {
+    background: linear-gradient(180deg, #1a2b5c 0%, #1a3d4a 55%, #14532d 100%);
+}
+
+.mesero-gallery__tile--active .mesero-gallery__tile-screen-icon {
+    border-color: rgba(110, 231, 183, 0.65);
+}
+
+.mesero-gallery__tile--active .mesero-gallery__tile-screen-icon::after {
+    background: repeating-linear-gradient(
+        0deg,
+        rgba(52, 211, 153, 0.95) 0,
+        rgba(52, 211, 153, 0.95) 3px,
+        transparent 3px,
+        transparent 6px
+    );
+}
+
+.mesero-gallery__tile--active .mesero-gallery__tile-meta {
+    color: #064e3b;
+    background: linear-gradient(180deg, #6ee7b7, #34d399);
+}
+
+.mesero-gallery__tile--active.mesero-gallery__tile--selected .mesero-gallery__tile-frame {
+    border-color: rgba(92, 225, 255, 0.85);
+    background: rgba(0, 183, 230, 0.22);
+}
+
+/* Cerrada — apagada, gris-rosa */
+.mesero-gallery__tile--done .mesero-gallery__tile-frame {
+    border-color: rgba(255, 255, 255, 0.08);
+    background: rgba(15, 23, 42, 0.45);
+    opacity: 0.78;
+}
+
+.mesero-gallery__tile--done .mesero-gallery__tile-screen {
+    background: linear-gradient(180deg, #374151 0%, #1f2937 100%);
+}
+
+.mesero-gallery__tile--done .mesero-gallery__tile-screen-icon {
+    border-color: rgba(255, 255, 255, 0.18);
+    opacity: 0.65;
+}
+
+.mesero-gallery__tile--done .mesero-gallery__tile-screen-icon::after {
+    background: repeating-linear-gradient(
+        0deg,
+        rgba(156, 163, 175, 0.55) 0,
+        rgba(156, 163, 175, 0.55) 3px,
+        transparent 3px,
+        transparent 6px
+    );
+}
+
+.mesero-gallery__tile--done .mesero-gallery__tile-screen-label {
     color: rgba(255, 255, 255, 0.55);
 }
 
+.mesero-gallery__tile--done .mesero-gallery__tile-screen-total {
+    color: rgba(255, 255, 255, 0.38);
+}
+
+.mesero-gallery__tile--done .mesero-gallery__tile-badge {
+    color: rgba(255, 255, 255, 0.4);
+}
+
 .mesero-gallery__tile-meta--done {
-    color: #fda4af;
+    color: #7f1d1d;
+    background: linear-gradient(180deg, #fecdd3, #fda4af);
+}
+
+.mesero-gallery__tile--done.mesero-gallery__tile--selected .mesero-gallery__tile-frame {
+    opacity: 1;
+    border-color: rgba(253, 164, 175, 0.65);
+    background: rgba(127, 29, 29, 0.25);
+    box-shadow: 0 0 0 2px rgba(253, 164, 175, 0.3);
+}
+
+.mesero-gallery__tile--done:hover .mesero-gallery__tile-frame {
+    opacity: 0.92;
+    border-color: rgba(253, 164, 175, 0.35);
 }

@@ -129,20 +129,6 @@ const MeseroOrdersShell = ({ modeInterface }) => {
         }
     };
 
-    useEffect(() => {
-        if (!modeInterface || !galleryView) {
-            document.body.style.overflow = '';
-            document.documentElement.style.overflow = '';
-            return undefined;
-        }
-        document.body.style.overflow = 'hidden';
-        document.documentElement.style.overflow = 'hidden';
-        return () => {
-            document.body.style.overflow = '';
-            document.documentElement.style.overflow = '';
-        };
-    }, [galleryView, modeInterface]);
-
     // eslint-disable-next-line react-hooks/exhaustive-deps
     useEffect(() => { // fetchOrders
         fetchOrders();

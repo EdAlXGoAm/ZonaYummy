@@ -408,13 +408,17 @@ const MeseroOrderPanel = ({modeInterface, iInterface, OrderID, DeleteOrder, hand
             });
     }, [Order, handleComandas, updateCuentaTotalOrder, comandas.length]);
 
+    const addComandaRef = useRef(addComanda);
+    addComandaRef.current = addComanda;
+
     useEffect(() => {
         if (!galleryLayout || typeof onRegisterAddPlatillo !== 'function') {
             return undefined;
         }
-        onRegisterAddPlatillo(addComanda);
+        const invokeAdd = (platillo) => addComandaRef.current(platillo);
+        onRegisterAddPlatillo(invokeAdd);
         return () => onRegisterAddPlatillo(null);
-    }, [galleryLayout, addComanda, onRegisterAddPlatillo]);
+    }, [galleryLayout, onRegisterAddPlatillo]);
 
     const updateComanda = useCallback((comanda) => {
         setComandas(prev => {

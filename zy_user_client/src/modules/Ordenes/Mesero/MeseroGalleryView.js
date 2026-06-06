@@ -15,17 +15,17 @@ const MeseroGalleryView = ({
     onRefreshAll,
 }) => {
     const [selectedOrderId, setSelectedOrderId] = useState(null);
-    const [addPlatilloToOrder, setAddPlatilloToOrder] = useState(null);
     const [refreshing, setRefreshing] = useState(false);
     const [panelRefreshKey, setPanelRefreshKey] = useState(0);
     const selectionHydratedRef = useRef(false);
+    const addPlatilloRef = useRef(null);
 
     const registerAddPlatillo = useCallback((handler) => {
-        if (handler == null) {
-            setAddPlatilloToOrder(null);
-            return;
-        }
-        setAddPlatilloToOrder(() => handler);
+        addPlatilloRef.current = handler;
+    }, []);
+
+    const addPlatilloViaRef = useCallback((platillo) => {
+        addPlatilloRef.current?.(platillo);
     }, []);
 
     const selectOrder = useCallback((orderId) => {
@@ -39,7 +39,7 @@ const MeseroGalleryView = ({
     }, []);
 
     const sortedOrders = useMemo(
-        () => [...orders].sort((a, b) => Number(a.OrderID) - Number(b.OrderID)),
+        () => [...orders].sort((a, b) => Number(b.OrderID) - Number(a.OrderID)),
         [orders]
     );
 
@@ -80,7 +80,7 @@ const MeseroGalleryView = ({
     const handleRefreshAll = async () => {
         if (!onRefreshAll || refreshing) return;
         setRefreshing(true);
-        setAddPlatilloToOrder(null);
+        addPlatilloRef.current = null;
         try {
             await onRefreshAll();
             setPanelRefreshKey((key) => key + 1);
@@ -104,14 +104,12 @@ const MeseroGalleryView = ({
                                 <>
                                     <h2 className="mesero-gallery__main-title">Pedido #{selectedOrderId}</h2>
                                     <div className="mesero-gallery__main-head-actions">
-                                        {addPlatilloToOrder && (
-                                            <MeseroPlatilloSelector
-                                                addPlatilloToOrder={addPlatilloToOrder}
-                                                platillos={platillos}
-                                                floating
-                                                inHead
-                                            />
-                                        )}
+                                        <MeseroPlatilloSelector
+                                            addPlatilloToOrder={addPlatilloViaRef}
+                                            platillos={platillos}
+                                            floating
+                                            inHead
+                                        />
                                         <button
                                             type="button"
                                             className="mesero-gallery__close-order"
@@ -202,7 +200,7 @@ const MeseroGalleryView = ({
                                     <button
                                         key={order.OrderID}
                                         type="button"
-                                        className={`mesero-gallery__tile${isSelected ? ' mesero-gallery__tile--selected' : ''}`}
+                                        className={`mesero-gallery__tile${isSelected ? ' mesero-gallery__tile--selected' : ''}${isDone ? ' mesero-gallery__tile--done' : ' mesero-gallery__tile--active'}`}
                                         onClick={() => selectOrder(order.OrderID)}
                                     >
                                         <div className="mesero-gallery__tile-frame">
