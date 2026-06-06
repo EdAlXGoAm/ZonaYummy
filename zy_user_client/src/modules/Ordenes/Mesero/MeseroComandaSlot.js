@@ -169,14 +169,27 @@ const MeseroComandaSlot = ({
                             </button>
                         </div>
                         )}
+                        <div className="mesero-comanda-slot__top-actions ml-auto">
+                            {enableFullscreenFab && (
+                                <button
+                                    type="button"
+                                    className="mesero-comanda-slot__expand-fab"
+                                    onClick={() => setFullscreenOpen(true)}
+                                    title="Abrir comanda en pantalla completa"
+                                    aria-label="Abrir comanda en pantalla completa"
+                                >
+                                    <FontAwesomeIcon icon={faExpand} />
+                                </button>
+                            )}
                             <div
-                                className="faButton ml-auto"
+                                className="faButton"
                                 style={{ cursor: 'pointer' }}
                                 title="Solicitar eliminación (requiere autorización)"
                                 onClick={() => handleRemoveComanda(Comanda)}
                             >
                                 <FontAwesomeIcon icon={faTrash} style={{color: 'red'}} size="xl" />
                             </div>
+                        </div>
                     </div>
                     {modeInterface ? (
                         <div className='row mb-2'>
@@ -351,17 +364,6 @@ const MeseroComandaSlot = ({
 
     return(
         <div className={`mesero-comanda-slot${fullscreenMode ? ' mesero-comanda-slot--fullscreen' : ''}`}>
-            {enableFullscreenFab && (
-                <button
-                    type="button"
-                    className="mesero-comanda-slot__expand-fab"
-                    onClick={() => setFullscreenOpen(true)}
-                    title="Abrir comanda en pantalla completa"
-                    aria-label="Abrir comanda en pantalla completa"
-                >
-                    <FontAwesomeIcon icon={faExpand} />
-                </button>
-            )}
             <div className="row"><div className="col-12">
                 {cardContent}
             </div></div>
