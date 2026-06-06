@@ -53,9 +53,8 @@ const AutorizacionBorradosPage = () => {
         setProcesandoId(solicitud._id);
         try {
             await borradosApi.procederBorrado(solicitud._id);
-            socket.emit('DeleteComandaDesdeCliente', {
-                msg: `Delete-${solicitud.OrderID}-${solicitud.Platillo}`,
-            });
+            const deleteMsg = `Delete-${solicitud.OrderID}-${solicitud.Platillo || ''}`;
+            socket.emit('DeleteComandaDesdeCliente', { msg: deleteMsg });
             socket.emit('OrdenActualizadaDesdeCliente', { msg: solicitud.OrderID });
             setSolicitudes((prev) => prev.filter((s) => s._id !== solicitud._id));
         } catch (err) {

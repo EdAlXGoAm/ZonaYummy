@@ -20,6 +20,7 @@ const socket = io(`${process.env.REACT_APP_API_URL}`);
 const MeseroOrdersShell = ({ modeInterface }) => {
     const notify = (message) => toast(message);
     const bodyScrollLockRef = useRef({ overflow: '', paddingRight: '' });
+    const fetchOrdersTimerRef = useRef(null);
     const [orders, setOrders] = useState([]);
     const [numOrders, setNumOrders] = useState(0);
     const [platillos, setPlatillos] = useState([]);
@@ -72,6 +73,16 @@ const MeseroOrdersShell = ({ modeInterface }) => {
                 // alert("Error al cargar las comandas");
             });
         }
+    };
+
+    const scheduleFetchOrders = () => {
+        if (fetchOrdersTimerRef.current) {
+            clearTimeout(fetchOrdersTimerRef.current);
+        }
+        fetchOrdersTimerRef.current = setTimeout(() => {
+            fetchOrdersTimerRef.current = null;
+            fetchOrders();
+        }, 120);
     };
     
     const fetchPlatillos = () => {
@@ -241,40 +252,45 @@ const MeseroOrdersShell = ({ modeInterface }) => {
         socket.emit('OrdenActualizadaDesdeCliente', {msg: OrderID});
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
+    useEffect(() => {
+        return () => {
+            if (fetchOrdersTimerRef.current) {
+                clearTimeout(fetchOrdersTimerRef.current);
+            }
+        };
+    }, []);
+
     useEffect(() => { //Socket NewOrder
-        socket.on('NuevaOrdenDesdeServidor', (data) => {
+        const onNuevaOrden = (data) => {
             console.log("Mensaje: ", data)
-            fetchOrders();
+            scheduleFetchOrders();
             if (!modeInterface) {
                 const audio = new Audio("ComandaAudios/Pedido.wav");
                 audio.play();
             }
-        });
-
-        return () => {
-            socket.off('NuevaOrdenDesdeServidor');
         };
-    }, []);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    useEffect(() => { // Socket DelOrder
-        socket.on('OrdenEliminadaDesdeServidor', (data) => {
+        const onOrdenEliminada = (data) => {
             console.log("Mensaje: ", data)
-            fetchOrders();
-        });
-
-        return () => {
-            socket.off('OrdenEliminadaDesdeServidor');
+            scheduleFetchOrders();
         };
-    }, []);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    useEffect(() => { // Socket Actualizada
-        socket.on('OrdenActualizadaDesdeServidor', (data) => {
+        const onOrdenActualizada = (data) => {
             console.log("OrdenActualizadaDesdeServidor Mensaje: ", data)
-            fetchOrders();
-        });
+            scheduleFetchOrders();
+        };
+        const onDeleteComanda = () => {
+            scheduleFetchOrders();
+        };
+
+        socket.on('NuevaOrdenDesdeServidor', onNuevaOrden);
+        socket.on('OrdenEliminadaDesdeServidor', onOrdenEliminada);
+        socket.on('OrdenActualizadaDesdeServidor', onOrdenActualizada);
+        socket.on('DeleteComandaDesdeServidor', onDeleteComanda);
 
         return () => {
-            socket.off('OrdenActualizadaDesdeServidor');
+            socket.off('NuevaOrdenDesdeServidor', onNuevaOrden);
+            socket.off('OrdenEliminadaDesdeServidor', onOrdenEliminada);
+            socket.off('OrdenActualizadaDesdeServidor', onOrdenActualizada);
+            socket.off('DeleteComandaDesdeServidor', onDeleteComanda);
         };
     }, []);
 
@@ -676,6 +692,7 @@ const MeseroOrdersShell = ({ modeInterface }) => {
             className={`container-fluid mesero-orders-shell${modeInterface && galleryView ? ' mesero-orders-shell--gallery' : ''}`}
             style={{background: (reloadFlag && modeInterface) ? 'linear-gradient(to right, #e0f7fa, #b2ebf2)' : 'none'}}
         >
+            <ToastContainer position="top-right" autoClose={3000} limit={3} />
             {/* Header y toolbar — solo vista clásica de mesero */}
             {modeInterface && !galleryView && (
                 <>
@@ -693,7 +710,7 @@ const MeseroOrdersShell = ({ modeInterface }) => {
                             title="Doble click para ver balance"
                         >ZonaYummy</span>{' '}
                         <span onDoubleClick={handleDoubleClick}>Comandas</span>
-                    </h1><ToastContainer />
+                    </h1>
                 </div>
             </div>
             <hr style={{backgroundColor:"white"}}/>
@@ -712,8 +729,6 @@ const MeseroOrdersShell = ({ modeInterface }) => {
             </div>
                 </>
             )}
-            {modeInterface && galleryView && <ToastContainer />}
-            {!modeInterface && <ToastContainer />}
             {modeInterface && !galleryView && (
                 <button
                     type="button"

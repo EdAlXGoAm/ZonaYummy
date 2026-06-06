@@ -1,7 +1,6 @@
 import './MeseroPlatilloSelector.css';
 import React, { useMemo, useState } from 'react';
-import { ToastContainer, toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+import { toast } from 'react-toastify';
 
 const CATEGORY_ORDER = ['Postres', 'Botanas', 'Comida', 'Bebidas', 'Waffles'];
 
@@ -96,7 +95,6 @@ const MeseroPlatilloSelector = ({ addPlatilloToOrder, platillos }) => {
                 </div>
             )}
 
-            <ToastContainer />
         </div>
     );
 };

@@ -11,7 +11,7 @@ import ordersApi from './../../../api/ordersApi';
 import io from 'socket.io-client';
 import { faCheck, faFloppyDisk } from '@fortawesome/free-solid-svg-icons';
 
-import { ToastContainer, toast} from 'react-toastify';
+import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
 // ========== LOGGING DE RENDIMIENTO CENTRALIZADO ==========
@@ -28,6 +28,7 @@ const MeseroOrderPanel = ({modeInterface, iInterface, OrderID, DeleteOrder, hand
     const [toggleArrowStatus, setToggleArrowStatus] = useState(true); // false: plegado, true: desplegado
     const [colorOrder, setColorOrder] = useState("#ffffff")
     const skipNextFetch = useRef(false);
+    const fetchOrderTimerRef = useRef(null);
     const [expandedComandas, setExpandedComandas] = useState([]);
     const [modalPagoVisible, setModalPagoVisible] = useState(false);
     const [montoEspecifico, setMontoEspecifico] = useState(0);
@@ -155,6 +156,24 @@ const MeseroOrderPanel = ({modeInterface, iInterface, OrderID, DeleteOrder, hand
         });
     };
 
+    const scheduleFetchOrder = () => {
+        if (fetchOrderTimerRef.current) {
+            clearTimeout(fetchOrderTimerRef.current);
+        }
+        fetchOrderTimerRef.current = setTimeout(() => {
+            fetchOrderTimerRef.current = null;
+            fetchOrder();
+        }, 120);
+    };
+
+    useEffect(() => {
+        return () => {
+            if (fetchOrderTimerRef.current) {
+                clearTimeout(fetchOrderTimerRef.current);
+            }
+        };
+    }, []);
+
     useEffect(() => {
         if (!modeInterface) {
             // Define la función que quieres ejecutar
@@ -280,19 +299,6 @@ const MeseroOrderPanel = ({modeInterface, iInterface, OrderID, DeleteOrder, hand
         fetchOrder();
     },[]);
 
-    useEffect(() => { // Socket DelOrder
-        socket.on('OrdenActualizadaDesdeServidor', (data) => {
-            if (data.msg.toString() === OrderID.toString()) {
-                console.log("OrdenActualizadaDesdeServidor Mensaje: ", data)
-                fetchOrder();
-            }
-        });
-
-        return () => {
-            socket.off('OrdenActualizadaDesdeServidor');
-        };
-    }, []);
-
     useEffect(() => {
         if (!Order || !Order.OrderID) return; // Verificación de seguridad
         fetchColorOrder();
@@ -330,41 +336,50 @@ const MeseroOrderPanel = ({modeInterface, iInterface, OrderID, DeleteOrder, hand
         }
     };
 
-    useEffect(() => { // AddComanda
-        socket.on('NuevaComandaDesdeServidor', (data) => {
-            if (data.msg.split('-')[1] === OrderID.toString()) {
-                if (skipNextFetch.current) { skipNextFetch.current = false; return; }
-                fetchOrder();
-            }
-        });
-        return () => {
-            socket.off('NuevaComandaDesdeServidor');
+    useEffect(() => {
+        const orderIdStr = OrderID.toString();
+        const matchesOrderMsg = (msg) => msg != null && String(msg) === orderIdStr;
+        const matchesComandaMsg = (msg) => {
+            if (typeof msg !== 'string') return false;
+            return msg.split('-')[1] === orderIdStr;
         };
-    }, []);
-    useEffect(() => { // UpdateComanda
-        socket.on('UpdateComandaDesdeServidor', (data) => {
-            console.log("Mensaje: ", data.msg)
-            if (data.msg.split('-')[1] === OrderID.toString()) {
-                if (skipNextFetch.current) { skipNextFetch.current = false; return; }
-                fetchOrder();
+
+        const onOrdenActualizada = (data) => {
+            if (matchesOrderMsg(data?.msg)) {
+                scheduleFetchOrder();
             }
-        });
-        return () => {
-            socket.off('UpdateComandaDesdeServidor');
         };
-    }, []);
-    useEffect(() => { // DeleteComanda
-        socket.on('DeleteComandaDesdeServidor', (data) => {
-            console.log("Mensaje: ", data.msg)
-            if (data.msg.split('-')[1] === OrderID.toString()) {
+        const onNuevaComanda = (data) => {
+            if (matchesComandaMsg(data?.msg)) {
                 if (skipNextFetch.current) { skipNextFetch.current = false; return; }
-                fetchOrder();
+                scheduleFetchOrder();
             }
-        });
-        return () => {
-            socket.off('DeleteComandaDesdeServidor');
         };
-    }, []);
+        const onUpdateComanda = (data) => {
+            if (matchesComandaMsg(data?.msg)) {
+                if (skipNextFetch.current) { skipNextFetch.current = false; return; }
+                scheduleFetchOrder();
+            }
+        };
+        const onDeleteComanda = (data) => {
+            if (matchesComandaMsg(data?.msg)) {
+                if (skipNextFetch.current) { skipNextFetch.current = false; return; }
+                scheduleFetchOrder();
+            }
+        };
+
+        socket.on('OrdenActualizadaDesdeServidor', onOrdenActualizada);
+        socket.on('NuevaComandaDesdeServidor', onNuevaComanda);
+        socket.on('UpdateComandaDesdeServidor', onUpdateComanda);
+        socket.on('DeleteComandaDesdeServidor', onDeleteComanda);
+
+        return () => {
+            socket.off('OrdenActualizadaDesdeServidor', onOrdenActualizada);
+            socket.off('NuevaComandaDesdeServidor', onNuevaComanda);
+            socket.off('UpdateComandaDesdeServidor', onUpdateComanda);
+            socket.off('DeleteComandaDesdeServidor', onDeleteComanda);
+        };
+    }, [OrderID]);
     const addComanda = useCallback((platillo) => {
         const newComanda = {
             OrderID: Order.OrderID,
