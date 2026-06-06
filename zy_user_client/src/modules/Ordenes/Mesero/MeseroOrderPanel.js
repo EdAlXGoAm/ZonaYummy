@@ -1,5 +1,6 @@
 import './MeseroOrderPanel.css';
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faAngleUp, faAngleDown, faHandHoldingUsd } from '@fortawesome/free-solid-svg-icons';
 import { faTrash, faCashRegister } from '@fortawesome/free-solid-svg-icons';
@@ -893,7 +894,7 @@ const MeseroOrderPanel = ({modeInterface, iInterface, OrderID, DeleteOrder, hand
             )}
         </div>
         {/* Cobro Parcial Modal */}
-        {modalPagoVisible && (
+        {modalPagoVisible && createPortal(
           <div className='modal-pago-fondo'>
             <div className='modal-pago-contenedor'>
               <div className='modal-header'>
@@ -1132,7 +1133,8 @@ const MeseroOrderPanel = ({modeInterface, iInterface, OrderID, DeleteOrder, hand
                 </div>
               </div>
             </div>
-          </div>
+          </div>,
+          document.body
         )}
         </>
     );
