@@ -1,61 +1,83 @@
-import React, { useState, useEffect } from 'react';
+import React, { useMemo, useCallback } from 'react';
 import Select from 'react-select';
 
-const DropDown = ({ opciones_in, selectedValue, onDropdownChange, prefix, precios_papas, hide_show_toggle, setToggleChecked }) => {
+const resolvePrecio = (index, { prefix, precios_papas, hide_show_toggle }) => {
+    if (hide_show_toggle) {
+        return precios_papas?.[index] ?? 0;
+    }
+    if (prefix?.length > 0 && prefix[index] !== 0) {
+        return prefix[index];
+    }
+    return 0;
+};
 
-  const handleSelectChange = (option) => {
-    const costt = option.label.props.children[0].props.children.replace('$', '')
-    // Convertir costt en int
-    const costt_int = parseInt(costt, 10)
+const DropDown = ({
+    opciones_in,
+    selectedValue,
+    onDropdownChange,
+    prefix,
+    precios_papas,
+    hide_show_toggle,
+}) => {
+    const opcionesPredeterminadas = ['Opciones'];
+    const opcionesDropdown = opciones_in?.length > 0 ? opciones_in : opcionesPredeterminadas;
 
-    // Aquí puedes manejar y transformar la opción seleccionada como desees
-    const customValue = {
-      value: option.value,
-      precio: costt_int,
-    };
+    const options = useMemo(
+        () => opcionesDropdown.map((opcion, index) => {
+            const precio = resolvePrecio(index, { prefix, precios_papas, hide_show_toggle });
+            return {
+                value: opcion,
+                precio,
+                label: (
+                    <div style={{ display: 'flex', justifyContent: 'left' }}>
+                        <span style={{ color: 'red' }}>
+                            {precio !== 0 ? `$${precio} ` : ''}
+                        </span>
+                        <span style={{ color: 'black' }}>
+                            &nbsp;{opcion}
+                        </span>
+                    </div>
+                ),
+            };
+        }),
+        [opcionesDropdown, prefix, precios_papas, hide_show_toggle]
+    );
 
-    // Luego llamas a handleChange con tu valor personalizado
-    onDropdownChange(customValue);
-  }
+    const selectedOption = useMemo(
+        () => options.find((obj) => obj.value === selectedValue) ?? null,
+        [options, selectedValue]
+    );
 
-  // Asignar opciones_in directamente a opciones
-  const opcionesPredeterminadas = ['Opciones'];
-  const opciones_dropdown = opciones_in && opciones_in.length > 0 ? opciones_in : opcionesPredeterminadas;
+    const handleSelectChange = useCallback((option) => {
+        if (!option) return;
+        onDropdownChange({
+            value: option.value,
+            precio: option.precio ?? 0,
+        });
+    }, [onDropdownChange]);
 
-  const options = opciones_dropdown.map((opcion_dropdown, index) => ({
-    value: opcion_dropdown,//.toLowerCase().replace(/\s/g, '_'),
-    label: (
-      <div style={{ display: 'flex', justifyContent: 'left' }}>
-            <span style={{ color: 'red' }}>
-            {hide_show_toggle
-              ? (precios_papas && precios_papas.length > 0 ? `$${precios_papas[index]} ` : '')
-              : (prefix && prefix.length > 0 ? prefix[index] !== 0 ? `$${prefix[index]} ` : '' : '')}
-            </span>
-            <span style={{ color: 'black' }}>
-            &nbsp;{opcion_dropdown}
-            </span>
-      </div>
-    )
-    ,
-  }));
-
-  const MyComponent = ({selectedValue, handleChange}) => (
-    <div className="mb-3" style={{ fontWeight: 'bold', fontSize: '23px' }}>
-      {/* set selectedValue has selected option */}
-      <Select
-      options={options}
-      value={options.find(obj => obj.value === selectedValue)}
-      onChange={handleChange}
-      isSearchable={false}
-      />
-    </div>
-  )
-
-  return (
-    <div>
-      <MyComponent selectedValue={selectedValue} handleChange={handleSelectChange} />
-    </div>
-  );
+    return (
+        <div
+            className="mb-3 mesero-dropdown-wrap"
+            style={{ fontWeight: 'bold', fontSize: '23px' }}
+            onMouseDown={(e) => e.stopPropagation()}
+            onTouchStart={(e) => e.stopPropagation()}
+        >
+            <Select
+                options={options}
+                value={selectedOption}
+                onChange={handleSelectChange}
+                isSearchable={false}
+                menuPortalTarget={document.body}
+                menuPosition="fixed"
+                closeMenuOnScroll={false}
+                menuShouldScrollIntoView={false}
+                styles={{
+                    menuPortal: (base) => ({ ...base, zIndex: 10100 }),
+                }}
+            />
+        </div>
+    );
 };
 
 export default DropDown;
