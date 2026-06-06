@@ -123,21 +123,19 @@ const MeseroGalleryView = ({
                                 </>
                             )}
                         </div>
-                        <div className="mesero-gallery__content-slot">
+                        <div className="mesero-gallery__panel-slot">
                             {selectedOrderId ? (
-                                <div className="mesero-gallery__panel-slot">
-                                    <MeseroOrderPanel
-                                        key={`${selectedOrderId}-${panelRefreshKey}`}
-                                        galleryLayout
-                                        modeInterface
-                                        iInterface
-                                        OrderID={selectedOrderId}
-                                        DeleteOrder={handleDeleteOrder}
-                                        handleOrderCustStatus={handleOrderCustStatus}
-                                        platillos={platillos}
-                                        onRegisterAddPlatillo={registerAddPlatillo}
-                                    />
-                                </div>
+                                <MeseroOrderPanel
+                                    key={`${selectedOrderId}-${panelRefreshKey}`}
+                                    galleryLayout
+                                    modeInterface
+                                    iInterface
+                                    OrderID={selectedOrderId}
+                                    DeleteOrder={handleDeleteOrder}
+                                    handleOrderCustStatus={handleOrderCustStatus}
+                                    platillos={platillos}
+                                    onRegisterAddPlatillo={registerAddPlatillo}
+                                />
                             ) : (
                                 <div className="mesero-gallery__empty">
                                     {orders.length > 0 ? (

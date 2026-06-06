@@ -172,15 +172,13 @@ const MeseroOrdersShell = ({ modeInterface }) => {
         if (modeInterface) {
             if (galleryView) {
                 return (
-                    <div className="mesero-gallery-host">
-                        <MeseroGalleryView
-                            orders={orders}
-                            platillos={platillos}
-                            handleDeleteOrder={handleDeleteOrder}
-                            handleOrderCustStatus={handleOrderCustStatus}
-                            onRefreshAll={refreshAllData}
-                        />
-                    </div>
+                    <MeseroGalleryView
+                        orders={orders}
+                        platillos={platillos}
+                        handleDeleteOrder={handleDeleteOrder}
+                        handleOrderCustStatus={handleOrderCustStatus}
+                        onRefreshAll={refreshAllData}
+                    />
                 );
             }
             const start = (numOrders - (slide - 1));
