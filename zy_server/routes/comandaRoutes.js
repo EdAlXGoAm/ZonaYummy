@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const comandaController = require('../controllers/comandaController');
+const borradoController = require('../controllers/borradoController');
 
 // Ruta para obtener todos los platillos
 router.get('/get/', comandaController.getComanda);
@@ -19,5 +20,11 @@ router.put('/update/', comandaController.updateComanda);
 
 // Ruta para eliminar un platillo por su ID
 router.delete('/delete/:id', comandaController.deleteComanda);
+
+// Solicitudes de borrado (bajo /api/comandas/borrados/…)
+router.post('/borrados/solicitar', borradoController.solicitarBorrado);
+router.get('/borrados/pendientes', borradoController.getPendientes);
+router.post('/borrados/proceder/:id', borradoController.procederBorrado);
+router.post('/borrados/rechazar/:id', borradoController.rechazarBorrado);
 
 module.exports = router;
