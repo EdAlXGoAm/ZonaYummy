@@ -22,7 +22,7 @@ import performanceLogger from '../../../utils/performanceLogger';
 
 const socket = io(`${process.env.REACT_APP_API_URL}`);
 
-const MeseroOrderPanel = ({modeInterface, iInterface, OrderID, DeleteOrder, handleOrderCustStatus, platillos, numPlatillos, handleOrderClient, preloadedOrder, preloadedComandas, isOptimized, galleryLayout = false, onRegisterAddPlatillo }) => {
+const MeseroOrderPanel = ({modeInterface, iInterface, OrderID, DeleteOrder, handleOrderCustStatus, platillos, numPlatillos, handleOrderClient, preloadedOrder, preloadedComandas, isOptimized, galleryLayout = false, onRegisterAddPlatillo, onComandasCacheSync }) => {
     const notify = (message) => toast(message);
     const [Order, setOrder] = useState({});
     const [comandas, setComandas] = useState([])
@@ -255,6 +255,13 @@ const MeseroOrderPanel = ({modeInterface, iInterface, OrderID, DeleteOrder, hand
         });
     }
 
+    const pushComandasToCache = useCallback((nextComandas, orderId = Order?.OrderID) => {
+        if (!galleryLayout || typeof onComandasCacheSync !== 'function' || !orderId) {
+            return;
+        }
+        onComandasCacheSync(orderId, nextComandas);
+    }, [galleryLayout, onComandasCacheSync, Order?.OrderID]);
+
     const fetchComandas = (order) => {
         // Inicia el cronómetro para el proceso completo
         const startTime = performance.now();
@@ -279,6 +286,7 @@ const MeseroOrderPanel = ({modeInterface, iInterface, OrderID, DeleteOrder, hand
             performanceLogger.time(processingId);
             
             setComandas(res);
+            pushComandasToCache(res, order?.OrderID ?? OrderID);
             updateCuentaTotalOrder(res, order);
             
             // Finaliza cronómetros
@@ -442,10 +450,12 @@ const MeseroOrderPanel = ({modeInterface, iInterface, OrderID, DeleteOrder, hand
         setComandas((prev) => {
             const nextId = prev.length > 0 ? prev[prev.length - 1].ComandaId + 1 : 1;
             newComanda = buildNewComanda(platillo, Order.OrderID, nextId);
-            return [...prev, newComanda];
+            const next = [...prev, newComanda];
+            pushComandasToCache(next);
+            return next;
         });
         persistNewComandas([newComanda]);
-    }, [Order.OrderID, persistNewComandas]);
+    }, [Order.OrderID, persistNewComandas, pushComandasToCache]);
 
     const addComandasBatch = useCallback((items) => {
         if (!items?.length) return;
@@ -462,13 +472,17 @@ const MeseroOrderPanel = ({modeInterface, iInterface, OrderID, DeleteOrder, hand
                 }
             });
             newComandas = batch;
-            return batch.length ? [...prev, ...batch] : prev;
+            const next = batch.length ? [...prev, ...batch] : prev;
+            if (batch.length) {
+                pushComandasToCache(next);
+            }
+            return next;
         });
 
         if (newComandas.length) {
             persistNewComandas(newComandas);
         }
-    }, [Order.OrderID, persistNewComandas]);
+    }, [Order.OrderID, persistNewComandas, pushComandasToCache]);
 
     const addPlatillosToOrder = useCallback((input) => {
         if (Array.isArray(input)) {
@@ -529,6 +543,7 @@ const MeseroOrderPanel = ({modeInterface, iInterface, OrderID, DeleteOrder, hand
     const updateComanda = useCallback((comanda) => {
         setComandas(prev => {
             const updated = prev.map(c => c.ComandaId === comanda.ComandaId ? comanda : c);
+            pushComandasToCache(updated);
             updateCuentaTotalOrder(updated, Order);
             pendingSkipFetchesRef.current += 1;
             return updated;
@@ -542,7 +557,7 @@ const MeseroOrderPanel = ({modeInterface, iInterface, OrderID, DeleteOrder, hand
                 console.log(err);
                 notify(`Error al actualizar comanda: ${err}`);
             });
-    }, [Order, handleComandas, updateCuentaTotalOrder]);
+    }, [Order, handleComandas, updateCuentaTotalOrder, pushComandasToCache]);
 
     const removeComanda = useCallback((comanda) => {
         const confirmDel = window.confirm(

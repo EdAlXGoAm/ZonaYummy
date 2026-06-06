@@ -24,7 +24,12 @@ exports.getComandasByOrderIds = (req, res) => {
         return res.json({});
     }
 
-    Comanda.find({ OrderID: { $in: orderIds } })
+    const orderIdValues = [
+        ...orderIds,
+        ...orderIds.map((id) => String(id)),
+    ];
+
+    Comanda.find({ OrderID: { $in: orderIdValues } })
         .then((comandas) => {
             const byOrder = {};
             orderIds.forEach((id) => {
@@ -32,8 +37,8 @@ exports.getComandasByOrderIds = (req, res) => {
             });
             comandas.forEach((comanda) => {
                 const orderId = Number(comanda.OrderID);
-                if (!byOrder[orderId]) {
-                    byOrder[orderId] = [];
+                if (!Number.isFinite(orderId) || !Object.prototype.hasOwnProperty.call(byOrder, orderId)) {
+                    return;
                 }
                 byOrder[orderId].push(comanda);
             });

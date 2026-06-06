@@ -1,7 +1,7 @@
 import './MeseroOrderPickModal.css';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import comandasApi from '../../../api/comandasApi';
+import { fetchComandasGroupedByOrder } from './meseroComandasCache';
 
 const MAX_BUBBLES = 7;
 
@@ -63,15 +63,8 @@ const MeseroOrderPickModal = ({ orders, comandasByOrder = {}, onSelectOrder, onC
 
         const fillMissing = async () => {
             try {
-                const byOrder = await comandasApi.getComandasByOrderIds(
-                    missingOrders.map((order) => order.OrderID)
-                );
+                const normalized = await fetchComandasGroupedByOrder(missingOrders);
                 if (cancelled) return;
-                const normalized = {};
-                missingOrders.forEach((order) => {
-                    const key = Number(order.OrderID);
-                    normalized[key] = byOrder[key] || byOrder[order.OrderID] || byOrder[String(order.OrderID)] || [];
-                });
                 setLocalComandasByOrder((prev) => ({
                     ...prev,
                     ...normalized,

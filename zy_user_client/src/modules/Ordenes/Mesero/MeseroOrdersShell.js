@@ -9,6 +9,7 @@ import 'react-toastify/dist/ReactToastify.css';
 import ordersApi from './../../../api/ordersApi';
 import platillosApi from './../../../api/platillosApi';
 import comandasApi from './../../../api/comandasApi';
+import { fetchComandasGroupedByOrder } from './meseroComandasCache';
 
 import OrdenesCocina from './../MeseroPage/OrdenesCocinaComponent';
 import Counter30To0 from '../Global/CounterComponent';
@@ -49,19 +50,9 @@ const MeseroOrdersShell = ({ modeInterface }) => {
     }, [orders]);
 
     const syncComandasCache = async (orderList) => {
-        if (!orderList?.length) {
-            setComandasByOrder({});
-            return;
-        }
         try {
-            const orderIds = orderList.map((order) => order.OrderID);
-            const byOrder = await comandasApi.getComandasByOrderIds(orderIds);
-            const normalized = {};
-            orderList.forEach((order) => {
-                const key = Number(order.OrderID);
-                normalized[key] = byOrder[key] || byOrder[order.OrderID] || byOrder[String(order.OrderID)] || [];
-            });
-            setComandasByOrder(normalized);
+            const grouped = await fetchComandasGroupedByOrder(orderList);
+            setComandasByOrder(grouped);
         } catch (err) {
             console.log(err);
         }
@@ -76,6 +67,28 @@ const MeseroOrdersShell = ({ modeInterface }) => {
         } catch (err) {
             console.log(err);
         }
+    };
+
+    const syncComandaForOrderTimerRef = useRef({});
+
+    const scheduleSyncComandaForOrder = (orderId) => {
+        const key = String(orderId);
+        if (syncComandaForOrderTimerRef.current[key]) {
+            clearTimeout(syncComandaForOrderTimerRef.current[key]);
+        }
+        syncComandaForOrderTimerRef.current[key] = setTimeout(() => {
+            delete syncComandaForOrderTimerRef.current[key];
+            syncComandaForOrder(orderId);
+        }, 400);
+    };
+
+    const syncComandasCacheEntry = (orderId, comandas) => {
+        const key = Number(orderId);
+        if (!Number.isFinite(key)) return;
+        setComandasByOrder((prev) => ({
+            ...prev,
+            [key]: Array.isArray(comandas) ? comandas : [],
+        }));
     };
 
     const scheduleSyncComandasCache = (orderList = ordersRef.current) => {
@@ -218,6 +231,7 @@ const MeseroOrdersShell = ({ modeInterface }) => {
                     <MeseroGalleryView
                         orders={orders}
                         comandasByOrder={comandasByOrder}
+                        onComandasCacheSync={syncComandasCacheEntry}
                         platillos={platillos}
                         handleDeleteOrder={handleDeleteOrder}
                         handleOrderCustStatus={handleOrderCustStatus}
@@ -317,6 +331,8 @@ const MeseroOrdersShell = ({ modeInterface }) => {
             if (syncComandasTimerRef.current) {
                 clearTimeout(syncComandasTimerRef.current);
             }
+            Object.values(syncComandaForOrderTimerRef.current).forEach(clearTimeout);
+            syncComandaForOrderTimerRef.current = {};
         };
     }, []);
 
@@ -343,7 +359,7 @@ const MeseroOrdersShell = ({ modeInterface }) => {
         const onComandaChanged = (data) => {
             const orderId = data?.msg?.split?.('-')?.[1];
             if (orderId) {
-                syncComandaForOrder(orderId);
+                scheduleSyncComandaForOrder(orderId);
                 return;
             }
             scheduleSyncComandasCache();

@@ -36,6 +36,7 @@ const isOrderWithoutComandas = (order, comandasByOrder) => {
 const MeseroGalleryView = ({
     orders,
     comandasByOrder = {},
+    onComandasCacheSync,
     platillos,
     handleDeleteOrder,
     handleOrderCustStatus,
@@ -192,6 +193,7 @@ const MeseroGalleryView = ({
                                     handleOrderCustStatus={handleOrderCustStatus}
                                     platillos={platillos}
                                     onRegisterAddPlatillo={registerAddPlatillo}
+                                    onComandasCacheSync={onComandasCacheSync}
                                 />
                             ) : (
                                 <div className="mesero-gallery__empty">
