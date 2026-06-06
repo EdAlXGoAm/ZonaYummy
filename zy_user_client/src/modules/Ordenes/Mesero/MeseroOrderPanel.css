@@ -37,7 +37,11 @@
     flex-direction: column;
 }
 
-.mesero-order-panel__body > :not(.mesero-order-panel__comandas-grid) {
+.mesero-order-panel__body--with-fab {
+    position: relative;
+}
+
+.mesero-order-panel__body > :not(.mesero-order-panel__comandas-grid):not(.mesero-platillo-selector--floating) {
     flex-shrink: 0;
 }
 

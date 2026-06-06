@@ -768,9 +768,13 @@ const MeseroOrderPanel = ({modeInterface, iInterface, OrderID, DeleteOrder, hand
                 </div>
             )}
             {(galleryLayout || toggleArrowStatus) && (
-            <div className={galleryLayout ? 'mesero-order-panel__body' : ''}>
+            <div className={galleryLayout ? 'mesero-order-panel__body mesero-order-panel__body--with-fab' : ''}>
                 {modeInterface && (
-                    <MeseroPlatilloSelector addPlatilloToOrder={addComanda} platillos={platillos} />
+                    <MeseroPlatilloSelector
+                        addPlatilloToOrder={addComanda}
+                        platillos={platillos}
+                        floating={galleryLayout}
+                    />
                 )}
                 {/* Burbujas para comandas ReadyToServe no expandidas */}
                 <div className="bubbles-container" style={{display: 'flex', gap: '8px', margin:'8px 0', flexShrink: 0}}>

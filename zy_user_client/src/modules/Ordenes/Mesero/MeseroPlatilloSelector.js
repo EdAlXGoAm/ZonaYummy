@@ -4,7 +4,7 @@ import { toast } from 'react-toastify';
 
 const CATEGORY_ORDER = ['Postres', 'Botanas', 'Comida', 'Bebidas', 'Waffles'];
 
-const MeseroPlatilloSelector = ({ addPlatilloToOrder, platillos }) => {
+const MeseroPlatilloSelector = ({ addPlatilloToOrder, platillos, floating = false }) => {
     const [modalOpen, setModalOpen] = useState(false);
     const notify = (message) => toast(message);
 
@@ -35,13 +35,22 @@ const MeseroPlatilloSelector = ({ addPlatilloToOrder, platillos }) => {
     };
 
     return (
-        <div className="mesero-platillo-selector">
+        <div className={`mesero-platillo-selector${floating ? ' mesero-platillo-selector--floating' : ''}`}>
             <button
                 type="button"
-                className="mesero-add-platillo-btn"
+                className={`mesero-add-platillo-btn${floating ? ' mesero-add-platillo-btn--fab' : ''}`}
                 onClick={() => setModalOpen(true)}
+                title="Agregar platillo"
+                aria-label="Agregar platillo"
             >
-                + Agregar platillo
+                {floating ? (
+                    <>
+                        <span className="mesero-add-platillo-btn__icon" aria-hidden="true">+</span>
+                        <span className="mesero-add-platillo-btn__label">Platillo</span>
+                    </>
+                ) : (
+                    '+ Agregar platillo'
+                )}
             </button>
 
             {modalOpen && (

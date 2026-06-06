@@ -4,6 +4,19 @@
     padding: 10px 0;
 }
 
+.mesero-platillo-selector--floating {
+    position: absolute;
+    top: 6px;
+    right: 8px;
+    z-index: 12;
+    padding: 0;
+    pointer-events: none;
+}
+
+.mesero-platillo-selector--floating .mesero-add-platillo-btn {
+    pointer-events: auto;
+}
+
 .mesero-add-platillo-btn {
     background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
     color: #ffffff;
@@ -19,6 +32,44 @@
 
 .mesero-add-platillo-btn:hover {
     background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+}
+
+.mesero-add-platillo-btn--fab {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 14px 8px 10px;
+    border-radius: 999px;
+    font-family: 'Nunito', system-ui, sans-serif;
+    font-size: 0.85rem;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+    background: linear-gradient(180deg, #34d399, #16a34a);
+    box-shadow: 0 4px 14px rgba(22, 163, 74, 0.45);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.mesero-add-platillo-btn--fab:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 20px rgba(22, 163, 74, 0.5);
+    background: linear-gradient(180deg, #4ade80, #16a34a);
+}
+
+.mesero-add-platillo-btn__icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.25);
+    font-size: 1.2rem;
+    line-height: 1;
+    font-weight: 900;
+}
+
+.mesero-add-platillo-btn__label {
+    line-height: 1;
 }
 
 .platillo-modal-overlay {

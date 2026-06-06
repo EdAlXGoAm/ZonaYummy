@@ -25,11 +25,18 @@ const MeseroGalleryView = ({
             setSelectedOrderId(null);
             return;
         }
+        if (selectedOrderId == null) {
+            return;
+        }
         const stillExists = orders.some((o) => Number(o.OrderID) === Number(selectedOrderId));
         if (!stillExists) {
             setSelectedOrderId(getLatestOrderId(orders));
         }
     }, [orders, selectedOrderId]);
+
+    const handleCloseOrder = () => {
+        setSelectedOrderId(null);
+    };
 
     return (
         <div className="mesero-gallery">
@@ -41,7 +48,18 @@ const MeseroGalleryView = ({
                         <div className="mesero-gallery__main-head">
                             <span className="mesero-gallery__kicker">Orden activa</span>
                             {selectedOrderId && (
-                                <h2 className="mesero-gallery__main-title">Pedido #{selectedOrderId}</h2>
+                                <>
+                                    <h2 className="mesero-gallery__main-title">Pedido #{selectedOrderId}</h2>
+                                    <button
+                                        type="button"
+                                        className="mesero-gallery__close-order"
+                                        onClick={handleCloseOrder}
+                                        title="Cerrar orden seleccionada"
+                                        aria-label="Cerrar orden seleccionada"
+                                    >
+                                        ✕
+                                    </button>
+                                </>
                             )}
                         </div>
                         {selectedOrderId ? (
@@ -57,8 +75,19 @@ const MeseroGalleryView = ({
                             />
                         ) : (
                             <div className="mesero-gallery__empty">
-                                <p>No hay órdenes activas.</p>
-                                <p className="mesero-gallery__empty-hint">Pulsa &quot;Nueva Orden&quot; para comenzar.</p>
+                                {orders.length > 0 ? (
+                                    <>
+                                        <p>Ninguna orden seleccionada.</p>
+                                        <p className="mesero-gallery__empty-hint">
+                                            Elige una orden del cintillo inferior o pulsa &quot;Nueva Orden&quot;.
+                                        </p>
+                                    </>
+                                ) : (
+                                    <>
+                                        <p>No hay órdenes activas.</p>
+                                        <p className="mesero-gallery__empty-hint">Pulsa &quot;Nueva Orden&quot; para comenzar.</p>
+                                    </>
+                                )}
                             </div>
                         )}
                     </div>
