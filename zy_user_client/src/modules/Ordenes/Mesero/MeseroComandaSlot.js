@@ -1,5 +1,5 @@
 import './MeseroComandaSlot.css';
-import React, { useState, useEffect, memo } from 'react';
+import React, { useState, useEffect, useRef, useCallback, memo } from 'react';
 import BootstrapSwitchButton from 'bootstrap-switch-button-react';
 import MeseroComandaEditor from './MeseroComandaEditor';
 import ResumeComanda from './../MeseroPage/ResumeComandaComponent';
@@ -24,13 +24,24 @@ const MeseroComandaSlot = ({
 }) => {
 
     const [nota, setNota] = useState('');
-    const [liveStatusNota, setLiveStatusNota] = useState('#33d457')
+    const [liveStatusNota, setLiveStatusNota] = useState('#33d457');
+    const notaDirtyRef = useRef(false);
+    const saveTimerRef = useRef(null);
+    const comandaRef = useRef(Comanda);
+    const notaRef = useRef(nota);
+    const updateComandaRef = useRef(updateComanda);
+
+    comandaRef.current = Comanda;
+    notaRef.current = nota;
+    updateComandaRef.current = updateComanda;
 
     const handleUpdateComandaPaidStatus = (status) => {
+        flushPendingNota();
         const updatedComanda = {
             ...Comanda,
-            ComandaPaidStatus: status
-        }
+            ComandaPaidStatus: status,
+            Notas: notaRef.current ?? Comanda.Notas,
+        };
         updateComanda(updatedComanda);
     };
 
@@ -76,28 +87,104 @@ const MeseroComandaSlot = ({
         updateComanda(updatedComanda);
     };
 
-    const handleChangeNota = (event) => {
-        setNota(event.target.value);
-      };
-    
-    const handleNoteNew = () => {
-        const updatedComanda = {
-            ...Comanda,
-            Notas: nota
-        }
-        updateComanda(updatedComanda);
-        setLiveStatusNota('#33d457')
-    }
+    const NOTA_AUTOSAVE_MS = 1000;
 
-    const handleUpdateNota = (event) => {
-        setLiveStatusNota('#ff69b4')
+    const persistNota = useCallback((value) => {
+        if (!modeInterface) return;
+        const current = comandaRef.current;
+        const normalized = value ?? '';
+        if (!current || normalized === (current.Notas ?? '')) {
+            notaDirtyRef.current = false;
+            setLiveStatusNota('#33d457');
+            return;
+        }
+        updateComandaRef.current(
+            { ...current, Notas: normalized },
+            { notesOnly: true },
+        );
+        notaDirtyRef.current = false;
+        setLiveStatusNota('#33d457');
+    }, [modeInterface]);
+
+    const flushPendingNota = useCallback(() => {
+        if (saveTimerRef.current) {
+            clearTimeout(saveTimerRef.current);
+            saveTimerRef.current = null;
+        }
+        if (notaDirtyRef.current) {
+            persistNota(notaRef.current);
+        }
+    }, [persistNota]);
+
+    const scheduleNotaAutoSave = useCallback((value) => {
+        if (!modeInterface) return;
+        notaDirtyRef.current = true;
+        setLiveStatusNota('#ff69b4');
+        if (saveTimerRef.current) {
+            clearTimeout(saveTimerRef.current);
+        }
+        saveTimerRef.current = setTimeout(() => {
+            saveTimerRef.current = null;
+            persistNota(value);
+        }, NOTA_AUTOSAVE_MS);
+    }, [modeInterface, persistNota]);
+
+    const handleChangeNota = (event) => {
+        const value = event.target.value;
+        setNota(value);
+        scheduleNotaAutoSave(value);
     };
-    const fetchNota = () => {
-        setNota(Comanda.Notas);
+
+    const handleBlurNota = () => {
+        if (!modeInterface || !notaDirtyRef.current) return;
+        if (saveTimerRef.current) {
+            clearTimeout(saveTimerRef.current);
+            saveTimerRef.current = null;
+        }
+        persistNota(notaRef.current);
     };
+
+    const handleNoteNew = () => {
+        if (saveTimerRef.current) {
+            clearTimeout(saveTimerRef.current);
+            saveTimerRef.current = null;
+        }
+        persistNota(notaRef.current);
+    };
+
     useEffect(() => {
-        fetchNota();
-    },[Comanda])
+        notaDirtyRef.current = false;
+        if (saveTimerRef.current) {
+            clearTimeout(saveTimerRef.current);
+            saveTimerRef.current = null;
+        }
+        setNota(Comanda.Notas ?? '');
+        setLiveStatusNota('#33d457');
+    }, [Comanda.ComandaId]);
+
+    useEffect(() => {
+        if (!notaDirtyRef.current) {
+            setNota(Comanda.Notas ?? '');
+        }
+    }, [Comanda.Notas]);
+
+    useEffect(() => () => {
+        if (saveTimerRef.current) {
+            clearTimeout(saveTimerRef.current);
+        }
+    }, []);
+
+    useEffect(() => () => {
+        if (!modeInterface || !notaDirtyRef.current) return;
+        const current = comandaRef.current;
+        const value = notaRef.current ?? '';
+        if (current && value !== (current.Notas ?? '')) {
+            updateComandaRef.current(
+                { ...current, Notas: value },
+                { notesOnly: true },
+            );
+        }
+    }, [modeInterface]);
 
     const [fullscreenOpen, setFullscreenOpen] = useState(false);
 
@@ -146,6 +233,39 @@ const MeseroComandaSlot = ({
     };
 
     const fullscreenTitle = `${Comanda.Platillo} · $${Comanda.Precio}`;
+
+    const notaTextareaId = `NotaTextArea_${Comanda._id}${fullscreenMode ? '_fs' : ''}`;
+
+    const renderNotaTextarea = (rows, fontSize, showSendButton = true) => (
+        <div className='row'>
+            <div className={showSendButton ? 'col-10' : 'col-12'}>
+                <textarea
+                    className="form-control mesero-comanda-slot__nota-input"
+                    id={notaTextareaId}
+                    rows={rows}
+                    placeholder="Agregar notas"
+                    onChange={handleChangeNota}
+                    onBlur={handleBlurNota}
+                    value={nota}
+                    style={{
+                        backgroundColor: liveStatusNota,
+                        color: '#fff',
+                        fontWeight: 'bold',
+                        fontSize,
+                    }}
+                />
+            </div>
+            {showSendButton && (
+                <div className='col-2'>
+                    <div className="form-group">
+                        <button type="button" className="btn btn-light" onClick={handleNoteNew}>
+                            <FontAwesomeIcon icon={faPaperPlane} style={{ color: '#7ed65b' }} size="2x" />
+                        </button>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
 
     // Manejador para el toggle de la flecha, invoca callback si colapsa una comanda ReadyToServe
     const handleToggleArrow = () => {
@@ -251,21 +371,7 @@ const MeseroComandaSlot = ({
                             </div>
                             <div className="row" style={{display: !Comanda.ComandaSwitchNota ? 'none' : 'flex'}}>
                                 <div className='col'>
-                                {/* Text box editable backgroudn red and text blanco BOLD */}
-                                    <div className='row'>
-                                        <div className='col-10'>
-                                        <textarea className="form-control" id={`NotaTextArea_${Comanda._id}`} rows="3" placeholder="Agregar notas" onChange={handleChangeNota} onKeyDown={handleUpdateNota}
-                                        value={nota} style={{backgroundColor: liveStatusNota, color: '#fff', fontWeight: 'bold', fontSize: '30px'
-                                        }}
-                                        ></textarea>
-                                        </div>
-                                        <div className='col-2'>
-                                            {/* Add Variant at Level 1 */}
-                                            <div className="form-group">
-                                                <button type="button" className="btn btn-light" onClick={handleNoteNew}><FontAwesomeIcon icon={faPaperPlane} style={{color: '#7ed65b'}} size="2x" /></button>
-                                            </div>
-                                        </div>
-                                    </div>
+                                    {renderNotaTextarea(3, '30px')}
                                 </div>
                             </div>
                             <div className="row">
@@ -289,21 +395,7 @@ const MeseroComandaSlot = ({
                                 </div>
                             <div className="row" style={{display: !Comanda.ComandaSwitchNota ? 'none' : 'flex'}}>
                                 <div className='col'>
-                                {/* Text box editable backgroudn red and text blanco BOLD */}
-                                    <div className='row'>
-                                        <div className='col-10'>
-                                        <textarea className="form-control" id={`NotaTextArea_${Comanda._id}`} rows="3" placeholder="Agregar notas" onChange={handleChangeNota} onKeyDown={handleUpdateNota}
-                                        value={nota} style={{backgroundColor: liveStatusNota, color: '#fff', fontWeight: 'bold', fontSize: '30px'
-                                        }}
-                                        ></textarea>
-                                        </div>
-                                        <div className='col-2'>
-                                            {/* Add Variant at Level 1 */}
-                                            <div className="form-group">
-                                                <button type="button" className="btn btn-light" onClick={handleNoteNew}><FontAwesomeIcon icon={faPaperPlane} style={{color: '#7ed65b'}} size="2x" /></button>
-                                            </div>
-                                        </div>
-                                    </div>
+                                    {renderNotaTextarea(3, '30px')}
                                 </div>
                             </div>
                             <div className="row">
@@ -344,15 +436,7 @@ const MeseroComandaSlot = ({
                             </div>
                             <div className="row" style={{display: !Comanda.ComandaSwitchNota ? 'none' : 'flex'}}>
                                 <div className='col'>
-                                {/* Text box editable backgroudn red and text blanco BOLD */}
-                                    <div className='row'>
-                                        <div className='col'>
-                                        <textarea className="form-control" id={`NotaTextArea_${Comanda._id}`} rows="2" placeholder="Agregar notas" onChange={handleChangeNota} onKeyDown={handleUpdateNota}
-                                        value={nota} style={{backgroundColor: liveStatusNota, color: '#fff', fontWeight: 'bold', fontSize: '50px'
-                                        }}
-                                        ></textarea>
-                                        </div>
-                                    </div>
+                                    {renderNotaTextarea(2, '50px', false)}
                                 </div>
                             </div>
                         </div>

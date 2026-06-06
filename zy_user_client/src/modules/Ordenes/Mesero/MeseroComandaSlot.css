@@ -31,6 +31,10 @@
     height: 16px;
 }
 
+.mesero-comanda-slot__nota-input {
+    touch-action: manipulation;
+}
+
 .comandaTextStyle {
     background-color: #2d2d2d;
     color: #ffffff;

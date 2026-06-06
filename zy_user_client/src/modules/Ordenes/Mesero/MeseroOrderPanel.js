@@ -554,11 +554,14 @@ const MeseroOrderPanel = ({modeInterface, iInterface, OrderID, DeleteOrder, hand
         };
     }, [galleryLayout, comandas.length, toggleArrowStatus]);
 
-    const updateComanda = useCallback((comanda) => {
+    const updateComanda = useCallback((comanda, options = {}) => {
+        const { notesOnly = false } = options;
         comandasHydratedRef.current = true;
         setComandas(prev => {
             const updated = prev.map(c => c.ComandaId === comanda.ComandaId ? comanda : c);
-            updateCuentaTotalOrder(updated, Order);
+            if (!notesOnly) {
+                updateCuentaTotalOrder(updated, Order);
+            }
             pendingSkipFetchesRef.current += 1;
             return updated;
         });
