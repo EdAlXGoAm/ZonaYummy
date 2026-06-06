@@ -64,7 +64,7 @@ const MeseroComandaSlot = ({
                     ComandaPrepStatus: Comanda.ComandaPrepStatus === "Preparing" ? "ReadyToServe" : "Preparing"
                 }
                 if (Comanda.ComandaPrepStatus === "ReadyToServe" && typeof onBubbleToggle === 'function') {
-                    onBubbleToggle(Comanda._id);
+                    onBubbleToggle(Comanda.ComandaId);
                 }
                 updateComanda(updatedComanda);
             }
@@ -273,7 +273,7 @@ const MeseroComandaSlot = ({
         const newStatus = !toggleArrowStatus;
         setToggleArrowStatus(newStatus);
         if (Comanda.ComandaPrepStatus === "ReadyToServe" && typeof onBubbleToggle === 'function') {
-            onBubbleToggle(Comanda._id);
+            onBubbleToggle(Comanda.ComandaId);
         }
     };
 

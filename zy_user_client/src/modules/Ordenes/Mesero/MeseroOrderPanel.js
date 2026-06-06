@@ -1,6 +1,7 @@
 import './MeseroOrderPanel.css';
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { getPaymentSummary, sumPagosMonto } from './meseroPaymentUtils';
+import { normalizeComandasList, getNextComandaId, isPendingComandaDoc } from './meseroComandasUtils';
 import { createPortal } from 'react-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faAngleUp, faAngleDown, faHandHoldingUsd } from '@fortawesome/free-solid-svg-icons';
@@ -148,7 +149,7 @@ const MeseroOrderPanel = ({modeInterface, iInterface, OrderID, DeleteOrder, hand
                 Customer: prev.Customer ?? preloadedOrder.Customer,
                 Origen: prev.Origen ?? preloadedOrder.Origen,
             }));
-            setComandas(preloadedComandas);
+            setComandas(normalizeComandasList(preloadedComandas));
             updateCuentaTotalOrder(preloadedComandas, preloadedOrder);
             ordersApi.getOrderV2(OrderID)
                 .then((data) => {
@@ -380,8 +381,9 @@ const MeseroOrderPanel = ({modeInterface, iInterface, OrderID, DeleteOrder, hand
             performanceLogger.time(processingId);
             
             comandasHydratedRef.current = true;
-            setComandas(res);
-            updateCuentaTotalOrder(res, order);
+            const normalized = normalizeComandasList(res);
+            setComandas(normalized);
+            updateCuentaTotalOrder(normalized, order);
             
             // Finaliza cronómetros
             performanceLogger.timeEnd(processingId);
@@ -537,7 +539,22 @@ const MeseroOrderPanel = ({modeInterface, iInterface, OrderID, DeleteOrder, hand
         });
 
         Promise.all(newComandas.map((comanda) => comandasApi.addComanda(comanda)))
-            .then(() => scheduleFetchComandas(Order))
+            .then((createdList) => {
+                setComandas((prev) => normalizeComandasList(
+                    prev.map((local) => {
+                        const saved = createdList.find((c) => c.ComandaId === local.ComandaId);
+                        if (!saved || !isPendingComandaDoc(local)) return local;
+                        return {
+                            ...saved,
+                            ComandaPaidStatus: local.ComandaPaidStatus ?? saved.ComandaPaidStatus,
+                            ComandaPrepStatus: local.ComandaPrepStatus ?? saved.ComandaPrepStatus,
+                            Notas: local.Notas ?? saved.Notas,
+                            ComandaDeliverMode: local.ComandaDeliverMode ?? saved.ComandaDeliverMode,
+                        };
+                    }),
+                ));
+                scheduleFetchComandas(Order);
+            })
             .catch((err) => {
                 console.log(err);
                 notify(`Error al agregar comandas: ${err}`);
@@ -549,9 +566,9 @@ const MeseroOrderPanel = ({modeInterface, iInterface, OrderID, DeleteOrder, hand
         comandasHydratedRef.current = true;
         let newComanda;
         setComandas((prev) => {
-            const nextId = prev.length > 0 ? prev[prev.length - 1].ComandaId + 1 : 1;
+            const nextId = getNextComandaId(prev);
             newComanda = buildNewComanda(platillo, Order.OrderID, nextId);
-            return [...prev, newComanda];
+            return normalizeComandasList([...prev, newComanda]);
         });
         persistNewComandas([newComanda]);
     }, [Order.OrderID, persistNewComandas]);
@@ -562,7 +579,7 @@ const MeseroOrderPanel = ({modeInterface, iInterface, OrderID, DeleteOrder, hand
         comandasHydratedRef.current = true;
         let newComandas = [];
         setComandas((prev) => {
-            let nextId = prev.length > 0 ? prev[prev.length - 1].ComandaId + 1 : 1;
+            let nextId = getNextComandaId(prev);
             const batch = [];
             items.forEach(({ platillo, quantity }) => {
                 const qty = Math.max(0, Number(quantity) || 0);
@@ -572,7 +589,7 @@ const MeseroOrderPanel = ({modeInterface, iInterface, OrderID, DeleteOrder, hand
                 }
             });
             newComandas = batch;
-            return batch.length ? [...prev, ...batch] : prev;
+            return batch.length ? normalizeComandasList([...prev, ...batch]) : prev;
         });
 
         if (newComandas.length) {
@@ -640,7 +657,9 @@ const MeseroOrderPanel = ({modeInterface, iInterface, OrderID, DeleteOrder, hand
         const { notesOnly = false } = options;
         comandasHydratedRef.current = true;
         setComandas(prev => {
-            const updated = prev.map(c => c.ComandaId === comanda.ComandaId ? comanda : c);
+            const updated = normalizeComandasList(
+                prev.map(c => c.ComandaId === comanda.ComandaId ? comanda : c),
+            );
             if (!notesOnly) {
                 updateCuentaTotalOrder(updated, Order);
             }
@@ -765,11 +784,11 @@ const MeseroOrderPanel = ({modeInterface, iInterface, OrderID, DeleteOrder, hand
             });
     }
 
-    const handleBubbleToggle = (comandaId) => {
+    const handleBubbleToggle = (comandaComandaId) => {
         setExpandedComandas(prev =>
-            prev.includes(comandaId)
-                ? prev.filter(id => id !== comandaId)
-                : [...prev, comandaId]
+            prev.includes(comandaComandaId)
+                ? prev.filter(id => id !== comandaComandaId)
+                : [...prev, comandaComandaId]
         );
     };
 
@@ -903,10 +922,10 @@ const MeseroOrderPanel = ({modeInterface, iInterface, OrderID, DeleteOrder, hand
     }
 
     const comandaCards = comandas
-        .filter(c => c.ComandaPrepStatus !== 'ReadyToServe' || expandedComandas.includes(c._id))
+        .filter(c => c.ComandaPrepStatus !== 'ReadyToServe' || expandedComandas.includes(c.ComandaId))
         .map((comanda) => (
             galleryLayout ? (
-                <div key={comanda._id} className="mesero-order-panel__comanda-cell">
+                <div key={comanda.ComandaId} className="mesero-order-panel__comanda-cell">
                     <div
                         className="mesero-order-panel__comanda-scroll"
                         style={comandaScrollMaxPx ? {
@@ -927,7 +946,7 @@ const MeseroOrderPanel = ({modeInterface, iInterface, OrderID, DeleteOrder, hand
                 </div>
             ) : (
                 <MeseroComandaSlot
-                    key={comanda._id}
+                    key={comanda.ComandaId}
                     order={Order}
                     modeInterface={modeInterface}
                     Comanda={comanda}
@@ -1051,15 +1070,15 @@ const MeseroOrderPanel = ({modeInterface, iInterface, OrderID, DeleteOrder, hand
                 {/* Burbujas para comandas ReadyToServe no expandidas */}
                 <div className="bubbles-container" style={{display: 'flex', gap: '8px', margin:'8px 0', flexShrink: 0}}>
                     {comandas
-                        .filter(c => c.ComandaPrepStatus === 'ReadyToServe' && !expandedComandas.includes(c._id))
+                        .filter(c => c.ComandaPrepStatus === 'ReadyToServe' && !expandedComandas.includes(c.ComandaId))
                         .map(c => (
                             <div
-                                key={c._id}
+                                key={c.ComandaId}
                                 className="comanda-bubble"
                                 style={{
                                     width: '60px', height: '60px', borderRadius: '50%', overflow: 'hidden', cursor: 'pointer', border: '2px solid #00ff5e'
                                 }}
-                                onClick={() => handleBubbleToggle(c._id)}
+                                onClick={() => handleBubbleToggle(c.ComandaId)}
                             >
                                 <img
                                     src={c.Imagen}
@@ -1187,7 +1206,7 @@ const MeseroOrderPanel = ({modeInterface, iInterface, OrderID, DeleteOrder, hand
                     </div>
                   </div>
                 )}
-                {!isFullyPaid && (
+                {(computedPending > 0 || unpaidComandas.length > 0) && (
                   <>
                     <div className='flex items-center justify-between mb-3'>
                       <div className='text-sm text-gray-600'>
@@ -1307,7 +1326,7 @@ const MeseroOrderPanel = ({modeInterface, iInterface, OrderID, DeleteOrder, hand
                     </>
                   ) : (
                     <>
-                      {!isFullyPaid && (
+                      {(computedPending > 0 || unpaidComandas.length > 0) && (
                         <button
                           className={`${isProcessingPayment ? 'bg-gray-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700'} text-white px-4 py-2 rounded-lg transition flex items-center`}
                           onClick={confirmarCobroParcial}
