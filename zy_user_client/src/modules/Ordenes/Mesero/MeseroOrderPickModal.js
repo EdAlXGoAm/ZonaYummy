@@ -124,18 +124,21 @@ const MeseroOrderPickModal = ({ orders, onSelectOrder, onClose }) => {
                                                     </span>
                                                 ) : (
                                                     <>
-                                                        {visible.map((comanda) => (
+                                                        {visible.map((comanda) => {
+                                                            const isServed = comanda.ComandaPrepStatus === 'Served';
+                                                            return (
                                                             <span
                                                                 key={comanda._id || `${comanda.ComandaId}-${comanda.Platillo}`}
-                                                                className="mesero-order-pick__bubble"
-                                                                title={comanda.Platillo}
+                                                                className={`mesero-order-pick__bubble${isServed ? ' mesero-order-pick__bubble--served' : ''}`}
+                                                                title={isServed ? `${comanda.Platillo} (Entregado)` : comanda.Platillo}
                                                             >
                                                                 <img
                                                                     src={comanda.Imagen}
                                                                     alt={comanda.Platillo}
                                                                 />
                                                             </span>
-                                                        ))}
+                                                            );
+                                                        })}
                                                         {overflow > 0 && (
                                                             <span className="mesero-order-pick__bubble-overflow">
                                                                 +{overflow}

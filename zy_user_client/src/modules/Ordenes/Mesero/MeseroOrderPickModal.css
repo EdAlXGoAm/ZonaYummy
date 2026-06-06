@@ -124,7 +124,10 @@
 .mesero-order-pick__row--done .mesero-order-pick__bubble {
     border-color: #cbd5e1;
     box-shadow: none;
-    opacity: 0.85;
+}
+
+.mesero-order-pick__row--done .mesero-order-pick__bubble--served::after {
+    background: rgba(100, 116, 139, 0.48);
 }
 
 .mesero-order-pick__row--done .mesero-order-pick__bubble-overflow {
@@ -203,6 +206,7 @@
 }
 
 .mesero-order-pick__bubble {
+    position: relative;
     width: 44px;
     height: 44px;
     border-radius: 50%;
@@ -211,6 +215,15 @@
     border: 2px solid #00b7e6;
     box-shadow: 0 2px 8px rgba(0, 183, 230, 0.25);
     background: #f1f5f9;
+}
+
+.mesero-order-pick__bubble--served::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background: rgba(100, 116, 139, 0.38);
+    pointer-events: none;
 }
 
 .mesero-order-pick__bubble img {
