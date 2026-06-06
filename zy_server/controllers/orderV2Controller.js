@@ -52,7 +52,66 @@ exports.addPayment = async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
-}; 
+};
+
+const sanitizePagoInput = (pago = {}) => {
+  const tipoPago = ['monto', 'items'].includes(pago.tipoPago) ? pago.tipoPago : 'monto';
+  const metodoPago = ['cash', 'card', 'transfer'].includes(pago.metodoPago)
+    ? pago.metodoPago
+    : 'cash';
+
+  const sanitized = {
+    fecha: pago.fecha ? new Date(pago.fecha) : new Date(),
+    monto: Number(pago.monto) || 0,
+    tipoPago,
+    metodoPago,
+    itemsPagados: Array.isArray(pago.itemsPagados)
+      ? pago.itemsPagados.map((id) => Number(id)).filter((id) => Number.isFinite(id))
+      : [],
+  };
+
+  if (pago._id) {
+    sanitized._id = pago._id;
+  }
+
+  return sanitized;
+};
+
+// Reemplazar el bloque de cobro de una orden (pagos + totales) desde JSON
+exports.replaceOrderCobro = async (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    const { pagos, pagado, pendiente, CuentaTotal } = req.body;
+
+    if (!Array.isArray(pagos)) {
+      return res.status(400).json({ error: 'Se requiere un array "pagos"' });
+    }
+
+    const order = await OrderV2.findOne({ OrderID: id });
+    if (!order) return res.status(404).json({ error: 'Orden no encontrada' });
+
+    if (CuentaTotal !== undefined && CuentaTotal !== null) {
+      order.CuentaTotal = Number(CuentaTotal) || 0;
+    }
+
+    order.pagos = pagos.map(sanitizePagoInput);
+    order.markModified('pagos');
+
+    const sumPagos = order.pagos.reduce((sum, p) => sum + (Number(p.monto) || 0), 0);
+    order.pagado = pagado !== undefined && pagado !== null ? Number(pagado) : sumPagos;
+
+    if (pendiente !== undefined && pendiente !== null) {
+      order.pendiente = Number(pendiente);
+    } else {
+      order.pendiente = (order.CuentaTotal || 0) - order.pagado;
+    }
+
+    await order.save();
+    res.json(order);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
 
 // Actualizar método de pago de un pago existente (compatibilidad: si faltaba, se asume 'cash')
 exports.updatePaymentMethod = async (req, res) => {
@@ -131,6 +190,65 @@ exports.deletePayment = async (req, res) => {
     // Recalcular pagado y pendiente
     order.pagado = Math.max(0, (order.pagado || 0) - montoEliminado);
     order.pendiente = order.CuentaTotal - order.pagado;
+
+    await order.save();
+    res.json(order);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+const sanitizePagoInput = (pago = {}) => {
+  const tipoPago = ['monto', 'items'].includes(pago.tipoPago) ? pago.tipoPago : 'monto';
+  const metodoPago = ['cash', 'card', 'transfer'].includes(pago.metodoPago)
+    ? pago.metodoPago
+    : 'cash';
+
+  const sanitized = {
+    fecha: pago.fecha ? new Date(pago.fecha) : new Date(),
+    monto: Number(pago.monto) || 0,
+    tipoPago,
+    metodoPago,
+    itemsPagados: Array.isArray(pago.itemsPagados)
+      ? pago.itemsPagados.map((id) => Number(id)).filter((id) => Number.isFinite(id))
+      : [],
+  };
+
+  if (pago._id) {
+    sanitized._id = pago._id;
+  }
+
+  return sanitized;
+};
+
+// Reemplazar el bloque de cobro de una orden (pagos + totales) desde JSON
+exports.replaceOrderCobro = async (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    const { pagos, pagado, pendiente, CuentaTotal } = req.body;
+
+    if (!Array.isArray(pagos)) {
+      return res.status(400).json({ error: 'Se requiere un array "pagos"' });
+    }
+
+    const order = await OrderV2.findOne({ OrderID: id });
+    if (!order) return res.status(404).json({ error: 'Orden no encontrada' });
+
+    if (CuentaTotal !== undefined && CuentaTotal !== null) {
+      order.CuentaTotal = Number(CuentaTotal) || 0;
+    }
+
+    order.pagos = pagos.map(sanitizePagoInput);
+    order.markModified('pagos');
+
+    const sumPagos = order.pagos.reduce((sum, p) => sum + (Number(p.monto) || 0), 0);
+    order.pagado = pagado !== undefined && pagado !== null ? Number(pagado) : sumPagos;
+
+    if (pendiente !== undefined && pendiente !== null) {
+      order.pendiente = Number(pendiente);
+    } else {
+      order.pendiente = (order.CuentaTotal || 0) - order.pagado;
+    }
 
     await order.save();
     res.json(order);

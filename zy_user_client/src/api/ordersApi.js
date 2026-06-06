@@ -193,6 +193,17 @@ const ordersApi = {
             throw error;
         }
     },
+
+    // Reemplazar pagos y totales de cobro de una orden (edición JSON)
+    replaceOrderCobro: async (orderID, cobroPayload) => {
+        try {
+            const response = await Axios.put(`${baseURL}/v2/${orderID}/cobro`, cobroPayload);
+            return response.data;
+        } catch (error) {
+            console.error("ordersAPI error: ", error);
+            throw error;
+        }
+    },
 }
 
 export default ordersApi;

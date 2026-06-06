@@ -9,6 +9,8 @@ router.get('/', orderV2Controller.getOrders);
 router.get('/:id', orderV2Controller.getOrder);
 // Agregar un pago parcial o total a una orden
 router.post('/:id/pagos', orderV2Controller.addPayment);
+// Reemplazar bloque de cobro (pagos + totales) desde JSON
+router.put('/:id/cobro', orderV2Controller.replaceOrderCobro);
 // Actualizar método de pago de un pago existente (solo compat/UI)
 router.put('/:id/pagos/:pagoId', orderV2Controller.updatePaymentMethod);
 // Actualizar monto de un pago existente

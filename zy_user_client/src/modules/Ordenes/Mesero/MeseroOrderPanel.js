@@ -7,7 +7,8 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faAngleUp, faAngleDown, faHandHoldingUsd } from '@fortawesome/free-solid-svg-icons';
 import { faTrash, faCashRegister } from '@fortawesome/free-solid-svg-icons';
 import MeseroPlatilloSelector from './MeseroPlatilloSelector';
-import MeseroComandaSlot from './MeseroComandaSlot'
+import MeseroComandaSlot from './MeseroComandaSlot';
+import MeseroCobroJsonModal from './MeseroCobroJsonModal';
 import comandasApi from './../../../api/comandasApi';
 import borradosApi from './../../../api/borradosApi';
 import ordersApi from './../../../api/ordersApi';
@@ -43,6 +44,10 @@ const MeseroOrderPanel = ({modeInterface, iInterface, OrderID, DeleteOrder, hand
     const fetchComandasTimerRef = useRef(null);
     const [expandedComandas, setExpandedComandas] = useState([]);
     const [modalPagoVisible, setModalPagoVisible] = useState(false);
+    const [modalCobroJsonVisible, setModalCobroJsonVisible] = useState(false);
+    const cobroLongPressTimerRef = useRef(null);
+    const cobroLongPressTriggeredRef = useRef(false);
+    const COBRO_LONG_PRESS_MS = 550;
     const [montoEspecifico, setMontoEspecifico] = useState(0);
     const [itemsSeleccionadosPago, setItemsSeleccionadosPago] = useState(new Set());
     const [orderV2, setOrderV2] = useState({ pagos: [], pagado: 0, pendiente: 0 });
@@ -792,6 +797,48 @@ const MeseroOrderPanel = ({modeInterface, iInterface, OrderID, DeleteOrder, hand
         );
     };
 
+    const clearCobroLongPress = useCallback(() => {
+        if (cobroLongPressTimerRef.current) {
+            clearTimeout(cobroLongPressTimerRef.current);
+            cobroLongPressTimerRef.current = null;
+        }
+    }, []);
+
+    const handleCobroPressStart = useCallback(() => {
+        cobroLongPressTriggeredRef.current = false;
+        clearCobroLongPress();
+        cobroLongPressTimerRef.current = setTimeout(() => {
+            cobroLongPressTriggeredRef.current = true;
+            setModalCobroJsonVisible(true);
+        }, COBRO_LONG_PRESS_MS);
+    }, [clearCobroLongPress]);
+
+    const handleCobroPressEnd = useCallback(() => {
+        clearCobroLongPress();
+    }, [clearCobroLongPress]);
+
+    const handleCobroClick = useCallback(() => {
+        if (cobroLongPressTriggeredRef.current) {
+            cobroLongPressTriggeredRef.current = false;
+            return;
+        }
+        setModalPagoVisible(true);
+    }, []);
+
+    const handleCobroJsonSaved = useCallback((updated) => {
+        setOrderV2(updated);
+        setOrder((prev) => ({
+            ...prev,
+            pagos: updated.pagos ?? [],
+            pagado: updated.pagado ?? 0,
+            pendiente: updated.pendiente ?? prev.pendiente,
+            CuentaTotal: updated.CuentaTotal ?? prev.CuentaTotal,
+        }));
+        scheduleFetchComandas(Order);
+    }, [Order, scheduleFetchComandas]);
+
+    useEffect(() => () => clearCobroLongPress(), [clearCobroLongPress]);
+
     // Agrego lógica para determinar dinámicamente el ícono y su color según estado
     const savedCliente = Order?.Customer || '';
     const isEditing = cliente !== savedCliente;
@@ -1029,7 +1076,17 @@ const MeseroOrderPanel = ({modeInterface, iInterface, OrderID, DeleteOrder, hand
                             <div className="orderPayMini__fill" style={{ width: `${cardPercentPaid}%` }} />
                         </div>
                     </div>
-                    <button onClick={() => setModalPagoVisible(true)} style={{ marginRight: '8px' }}>
+                    <button
+                        type="button"
+                        style={{ marginRight: '8px' }}
+                        title="Cobro parcial (mantén presionado para editar JSON)"
+                        onPointerDown={handleCobroPressStart}
+                        onPointerUp={handleCobroPressEnd}
+                        onPointerLeave={handleCobroPressEnd}
+                        onPointerCancel={handleCobroPressEnd}
+                        onContextMenu={(e) => e.preventDefault()}
+                        onClick={handleCobroClick}
+                    >
                         <FontAwesomeIcon icon={faHandHoldingUsd} size='2x' />
                     </button>
                     <button onClick={handleOrderCustStatusButton}> {/* Will allow change Paid Prep and Cust Status */}
@@ -1349,6 +1406,15 @@ const MeseroOrderPanel = ({modeInterface, iInterface, OrderID, DeleteOrder, hand
             </div>
           </div>,
           document.body
+        )}
+        {modalCobroJsonVisible && (
+            <MeseroCobroJsonModal
+                orderId={Order.OrderID}
+                liveTotal={liveTotal}
+                onClose={() => setModalCobroJsonVisible(false)}
+                onSaved={handleCobroJsonSaved}
+                notify={notify}
+            />
         )}
         </>
     );
