@@ -98,6 +98,26 @@ const MeseroOrdersShell = ({ modeInterface }) => {
         });
     };
 
+    const refreshAllData = async () => {
+        try {
+            const [doneOrders, inPlaceOrders, platillosData] = await Promise.all([
+                ordersApi.getOrdersByOrderCustStatus('Done'),
+                ordersApi.getOrdersByOrderCustStatus('InPlace'),
+                platillosApi.getPlatillos(),
+            ]);
+            const mergedOrders = [...doneOrders, ...inPlaceOrders];
+            setOrders(mergedOrders);
+            setNumOrders(mergedOrders.length);
+            setPlatillos(platillosData);
+            setNumPlatillos(platillosData.length);
+            notify('Datos actualizados');
+        } catch (err) {
+            console.log(err);
+            notify(`Error al refrescar: ${err}`);
+            throw err;
+        }
+    };
+
     useEffect(() => {
         if (!modeInterface || !galleryView) {
             document.body.style.overflow = '';
@@ -160,6 +180,7 @@ const MeseroOrdersShell = ({ modeInterface }) => {
                         platillos={platillos}
                         handleDeleteOrder={handleDeleteOrder}
                         handleOrderCustStatus={handleOrderCustStatus}
+                        onRefreshAll={refreshAllData}
                     />
                 );
             }

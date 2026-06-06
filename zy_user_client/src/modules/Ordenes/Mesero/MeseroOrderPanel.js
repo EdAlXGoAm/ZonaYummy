@@ -21,7 +21,7 @@ import performanceLogger from '../../../utils/performanceLogger';
 
 const socket = io(`${process.env.REACT_APP_API_URL}`);
 
-const MeseroOrderPanel = ({modeInterface, iInterface, OrderID, DeleteOrder, handleOrderCustStatus, platillos, numPlatillos, handleOrderClient, preloadedOrder, preloadedComandas, isOptimized, galleryLayout = false }) => {
+const MeseroOrderPanel = ({modeInterface, iInterface, OrderID, DeleteOrder, handleOrderCustStatus, platillos, numPlatillos, handleOrderClient, preloadedOrder, preloadedComandas, isOptimized, galleryLayout = false, onRegisterAddPlatillo }) => {
     const notify = (message) => toast(message);
     const [Order, setOrder] = useState({});
     const [comandas, setComandas] = useState([])
@@ -408,6 +408,14 @@ const MeseroOrderPanel = ({modeInterface, iInterface, OrderID, DeleteOrder, hand
             });
     }, [Order, handleComandas, updateCuentaTotalOrder, comandas.length]);
 
+    useEffect(() => {
+        if (!galleryLayout || typeof onRegisterAddPlatillo !== 'function') {
+            return undefined;
+        }
+        onRegisterAddPlatillo(addComanda);
+        return () => onRegisterAddPlatillo(null);
+    }, [galleryLayout, addComanda, onRegisterAddPlatillo]);
+
     const updateComanda = useCallback((comanda) => {
         setComandas(prev => {
             const updated = prev.map(c => c.ComandaId === comanda.ComandaId ? comanda : c);
@@ -768,12 +776,11 @@ const MeseroOrderPanel = ({modeInterface, iInterface, OrderID, DeleteOrder, hand
                 </div>
             )}
             {(galleryLayout || toggleArrowStatus) && (
-            <div className={galleryLayout ? 'mesero-order-panel__body mesero-order-panel__body--with-fab' : ''}>
-                {modeInterface && (
+            <div className={galleryLayout ? 'mesero-order-panel__body' : ''}>
+                {modeInterface && !galleryLayout && (
                     <MeseroPlatilloSelector
                         addPlatilloToOrder={addComanda}
                         platillos={platillos}
-                        floating={galleryLayout}
                     />
                 )}
                 {/* Burbujas para comandas ReadyToServe no expandidas */}

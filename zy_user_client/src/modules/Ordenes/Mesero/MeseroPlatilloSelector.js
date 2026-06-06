@@ -4,7 +4,7 @@ import { toast } from 'react-toastify';
 
 const CATEGORY_ORDER = ['Postres', 'Botanas', 'Comida', 'Bebidas', 'Waffles'];
 
-const MeseroPlatilloSelector = ({ addPlatilloToOrder, platillos, floating = false }) => {
+const MeseroPlatilloSelector = ({ addPlatilloToOrder, platillos, floating = false, inHead = false }) => {
     const [modalOpen, setModalOpen] = useState(false);
     const notify = (message) => toast(message);
 
@@ -35,7 +35,7 @@ const MeseroPlatilloSelector = ({ addPlatilloToOrder, platillos, floating = fals
     };
 
     return (
-        <div className={`mesero-platillo-selector${floating ? ' mesero-platillo-selector--floating' : ''}`}>
+        <div className={`mesero-platillo-selector${floating ? ' mesero-platillo-selector--floating' : ''}${inHead ? ' mesero-platillo-selector--in-head' : ''}`}>
             <button
                 type="button"
                 className={`mesero-add-platillo-btn${floating ? ' mesero-add-platillo-btn--fab' : ''}`}
