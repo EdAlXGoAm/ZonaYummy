@@ -745,7 +745,7 @@ const MeseroOrderPanel = ({modeInterface, iInterface, OrderID, DeleteOrder, hand
             {toggleArrowStatus && (
             <div>
                 {modeInterface && (
-                    <MeseroPlatilloSelector addPlatilloToOrder={addComanda} platillos={platillos} numPlatillos={numPlatillos}/>
+                    <MeseroPlatilloSelector addPlatilloToOrder={addComanda} platillos={platillos} />
                 )}
                 {/* Burbujas para comandas ReadyToServe no expandidas */}
                 <div className="bubbles-container" style={{display: 'flex', gap: '8px', margin:'8px 0'}}>

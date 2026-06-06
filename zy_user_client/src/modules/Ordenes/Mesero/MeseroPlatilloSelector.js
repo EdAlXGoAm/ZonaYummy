@@ -1,59 +1,104 @@
 import './MeseroPlatilloSelector.css';
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
-const MeseroPlatilloSelector = ({addPlatilloToOrder, platillos}) => {
-    const [selectedCategory, setSelectedCategory] = useState(null);
-    // Lista de categorías fijas
-    const categories = ["Postres", "Botanas", "Comida", "Bebidas", "Waffles"];
+const CATEGORY_ORDER = ['Postres', 'Botanas', 'Comida', 'Bebidas', 'Waffles'];
+
+const MeseroPlatilloSelector = ({ addPlatilloToOrder, platillos }) => {
+    const [modalOpen, setModalOpen] = useState(false);
     const notify = (message) => toast(message);
 
-    // Función para renderizar los botones de categorías
-    const renderCategoryButtons = () => {
-        return categories.map((cat, index) => (
-            <button key={index} className="categoryButton" onClick={() => setSelectedCategory(cat)}>
-                <div className="textCategoryButton">{cat}</div>
-            </button>
-        ));
-    };
+    const platillosByCategory = useMemo(() => {
+        const known = new Set(CATEGORY_ORDER);
+        const extras = [...new Set(
+            platillos
+                .map((p) => p.Categoria)
+                .filter((c) => c && !known.has(c))
+        )];
+        const orderedCategories = [...CATEGORY_ORDER, ...extras];
 
-    // Función para renderizar los platillos filtrados por categoría
-    const renderPlatillosButtons = () => {
-        const filtered = platillos.filter(p => p.Categoria === selectedCategory);
-        return filtered.map((p, index) => (
-            p.Disponibilidad !== 0 ? (
-                <button key={index} className="platilloButton" onClick={() => addPlatilloToOrder(p)}>
-                    <div className="divImagePlatilloButton">
-                        <img src={p.Imagen} alt={p.NombrePlatillo} style={{ width: '60px', height: '60px' }} />
-                    </div>
-                    <div className="textPlatilloButton">{p.NombrePlatillo}</div>
-                </button>
-            ) : (
-                <button key={index} className="platilloButton disabled" onClick={() => notify("Platillo no disponible") }>
-                    <div className="divImagePlatilloButton">
-                        <img src={p.Imagen} alt={p.NombrePlatillo} style={{ width: '60px', height: '60px' }} />
-                    </div>
-                    <div className="textPlatilloButton">{p.NombrePlatillo}</div>
-                </button>
-            )
-        ));
+        return orderedCategories
+            .map((name) => ({
+                name,
+                items: platillos.filter((p) => p.Categoria === name),
+            }))
+            .filter((section) => section.items.length > 0);
+    }, [platillos]);
+
+    const handleSelectPlatillo = (platillo) => {
+        if (platillo.Disponibilidad === 0) {
+            notify('Platillo no disponible');
+            return;
+        }
+        addPlatilloToOrder(platillo);
+        setModalOpen(false);
     };
 
     return (
-        <div className="platillo-scroll-container">
-            {selectedCategory === null
-                ? renderCategoryButtons()
-                : (
-                    <>
-                        <button className="backBubble" onClick={() => setSelectedCategory(null)}>←</button>
-                        {renderPlatillosButtons()}
-                    </>
-                )
-            }
+        <div className="mesero-platillo-selector">
+            <button
+                type="button"
+                className="mesero-add-platillo-btn"
+                onClick={() => setModalOpen(true)}
+            >
+                + Agregar platillo
+            </button>
+
+            {modalOpen && (
+                <div
+                    className="platillo-modal-overlay"
+                    onClick={() => setModalOpen(false)}
+                >
+                    <div
+                        className="platillo-modal"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="platillo-modal__header">
+                            <span className="platillo-modal__title">Agregar platillo</span>
+                            <button
+                                type="button"
+                                className="platillo-modal__close"
+                                onClick={() => setModalOpen(false)}
+                                title="Cerrar"
+                            >
+                                ✕
+                            </button>
+                        </div>
+                        <div className="platillo-modal__body">
+                            {platillosByCategory.length === 0 ? (
+                                <p className="platillo-modal__empty">No hay platillos disponibles.</p>
+                            ) : (
+                                platillosByCategory.map((section) => (
+                                    <section key={section.name} className="platillo-modal__section">
+                                        <h3 className="platillo-modal__category">{section.name}</h3>
+                                        <div className="platillo-modal__grid">
+                                            {section.items.map((platillo, index) => (
+                                                <button
+                                                    key={`${section.name}-${platillo.NombrePlatillo}-${index}`}
+                                                    type="button"
+                                                    className={`platillo-modal__item${platillo.Disponibilidad === 0 ? ' platillo-modal__item--disabled' : ''}`}
+                                                    onClick={() => handleSelectPlatillo(platillo)}
+                                                >
+                                                    <img
+                                                        src={platillo.Imagen}
+                                                        alt={platillo.NombrePlatillo}
+                                                    />
+                                                    <span>{platillo.NombrePlatillo}</span>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </section>
+                                ))
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
+
             <ToastContainer />
         </div>
-    )
-}
+    );
+};
 
 export default MeseroPlatilloSelector;
