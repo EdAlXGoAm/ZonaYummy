@@ -5,8 +5,11 @@ import { toast } from 'react-toastify';
 
 const CATEGORY_ORDER = ['Postres', 'Botanas', 'Comida', 'Bebidas', 'Waffles'];
 
+const platilloKey = (platillo) => platillo.NombrePlatillo;
+
 const MeseroPlatilloSelector = ({ addPlatilloToOrder, platillos, floating = false, inHead = false }) => {
     const [modalOpen, setModalOpen] = useState(false);
+    const [cart, setCart] = useState({});
     const notify = (message) => toast(message);
 
     const platillosByCategory = useMemo(() => {
@@ -26,13 +29,63 @@ const MeseroPlatilloSelector = ({ addPlatilloToOrder, platillos, floating = fals
             .filter((section) => section.items.length > 0);
     }, [platillos]);
 
-    const handleSelectPlatillo = (platillo) => {
+    const totalItems = useMemo(
+        () => Object.values(cart).reduce((sum, entry) => sum + entry.qty, 0),
+        [cart]
+    );
+
+    const closeModal = () => {
+        setModalOpen(false);
+        setCart({});
+    };
+
+    const openModal = () => {
+        setCart({});
+        setModalOpen(true);
+    };
+
+    const setCartQty = (platillo, qty) => {
+        const key = platilloKey(platillo);
+        setCart((prev) => {
+            const next = { ...prev };
+            if (qty <= 0) {
+                delete next[key];
+            } else {
+                next[key] = { platillo, qty };
+            }
+            return next;
+        });
+    };
+
+    const handlePlatilloTap = (platillo) => {
         if (platillo.Disponibilidad === 0) {
             notify('Platillo no disponible');
             return;
         }
-        addPlatilloToOrder(platillo);
-        setModalOpen(false);
+        const key = platilloKey(platillo);
+        const current = cart[key]?.qty || 0;
+        setCartQty(platillo, current + 1);
+    };
+
+    const adjustQty = (platillo, delta) => {
+        if (platillo.Disponibilidad === 0) return;
+        const key = platilloKey(platillo);
+        const current = cart[key]?.qty || 0;
+        setCartQty(platillo, current + delta);
+    };
+
+    const handleConfirmAdd = () => {
+        const entries = Object.values(cart).filter((entry) => entry.qty > 0);
+        if (!entries.length) {
+            notify('Selecciona al menos un platillo');
+            return;
+        }
+        entries.forEach(({ platillo, qty }) => {
+            for (let i = 0; i < qty; i++) {
+                addPlatilloToOrder(platillo);
+            }
+        });
+        closeModal();
     };
 
     return (
@@ -40,7 +93,7 @@ const MeseroPlatilloSelector = ({ addPlatilloToOrder, platillos, floating = fals
             <button
                 type="button"
                 className={`mesero-add-platillo-btn${floating ? ' mesero-add-platillo-btn--fab' : ''}`}
-                onClick={() => setModalOpen(true)}
+                onClick={openModal}
                 title="Agregar platillo"
                 aria-label="Agregar platillo"
             >
@@ -57,18 +110,18 @@ const MeseroPlatilloSelector = ({ addPlatilloToOrder, platillos, floating = fals
             {modalOpen && createPortal(
                 <div
                     className="platillo-modal-overlay"
-                    onClick={() => setModalOpen(false)}
+                    onClick={closeModal}
                 >
                     <div
                         className="platillo-modal"
                         onClick={(e) => e.stopPropagation()}
                     >
                         <div className="platillo-modal__header">
-                            <span className="platillo-modal__title">Agregar platillo</span>
+                            <span className="platillo-modal__title">Agregar platillos</span>
                             <button
                                 type="button"
                                 className="platillo-modal__close"
-                                onClick={() => setModalOpen(false)}
+                                onClick={closeModal}
                                 title="Cerrar"
                             >
                                 ✕
@@ -82,24 +135,67 @@ const MeseroPlatilloSelector = ({ addPlatilloToOrder, platillos, floating = fals
                                     <section key={section.name} className="platillo-modal__section">
                                         <h3 className="platillo-modal__category">{section.name}</h3>
                                         <div className="platillo-modal__grid">
-                                            {section.items.map((platillo, index) => (
-                                                <button
-                                                    key={`${section.name}-${platillo.NombrePlatillo}-${index}`}
-                                                    type="button"
-                                                    className={`platillo-modal__item${platillo.Disponibilidad === 0 ? ' platillo-modal__item--disabled' : ''}`}
-                                                    onClick={() => handleSelectPlatillo(platillo)}
-                                                >
-                                                    <img
-                                                        src={platillo.Imagen}
-                                                        alt={platillo.NombrePlatillo}
-                                                    />
-                                                    <span>{platillo.NombrePlatillo}</span>
-                                                </button>
-                                            ))}
+                                            {section.items.map((platillo, index) => {
+                                                const disabled = platillo.Disponibilidad === 0;
+                                                const key = platilloKey(platillo);
+                                                const qty = cart[key]?.qty || 0;
+                                                const inCart = qty > 0;
+
+                                                return (
+                                                    <div
+                                                        key={`${section.name}-${platillo.NombrePlatillo}-${index}`}
+                                                        className={`platillo-modal__item${disabled ? ' platillo-modal__item--disabled' : ''}${inCart ? ' platillo-modal__item--in-cart' : ''}`}
+                                                    >
+                                                        <button
+                                                            type="button"
+                                                            className="platillo-modal__item-main"
+                                                            onClick={() => handlePlatilloTap(platillo)}
+                                                            disabled={disabled}
+                                                        >
+                                                            <img
+                                                                src={platillo.Imagen}
+                                                                alt={platillo.NombrePlatillo}
+                                                            />
+                                                            <span>{platillo.NombrePlatillo}</span>
+                                                        </button>
+                                                        {inCart && (
+                                                            <div className="platillo-modal__qty">
+                                                                <button
+                                                                    type="button"
+                                                                    className="platillo-modal__qty-btn"
+                                                                    onClick={() => adjustQty(platillo, -1)}
+                                                                    aria-label={`Quitar uno de ${platillo.NombrePlatillo}`}
+                                                                >
+                                                                    −
+                                                                </button>
+                                                                <span className="platillo-modal__qty-value">{qty}</span>
+                                                                <button
+                                                                    type="button"
+                                                                    className="platillo-modal__qty-btn"
+                                                                    onClick={() => adjustQty(platillo, 1)}
+                                                                    aria-label={`Agregar uno de ${platillo.NombrePlatillo}`}
+                                                                >
+                                                                    +
+                                                                </button>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                );
+                                            })}
                                         </div>
                                     </section>
                                 ))
                             )}
+                        </div>
+                        <div className="platillo-modal__footer">
+                            <button
+                                type="button"
+                                className="platillo-modal__confirm"
+                                onClick={handleConfirmAdd}
+                                disabled={totalItems === 0}
+                            >
+                                Agregar{totalItems > 0 ? ` (${totalItems})` : ''}
+                            </button>
                         </div>
                     </div>
                 </div>,

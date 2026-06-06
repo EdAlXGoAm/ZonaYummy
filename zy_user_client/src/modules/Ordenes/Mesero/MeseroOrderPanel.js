@@ -382,21 +382,24 @@ const MeseroOrderPanel = ({modeInterface, iInterface, OrderID, DeleteOrder, hand
         };
     }, [OrderID]);
     const addComanda = useCallback((platillo) => {
-        const newComanda = {
-            OrderID: Order.OrderID,
-            ComandaId: comandas.length > 0 ? comandas[comandas.length - 1].ComandaId + 1 : 1,
-            Platillo: platillo.NombrePlatillo,
-            Precio: platillo.Variants[0].Precio,
-            Imagen: platillo.Imagen,
-            Categoria: platillo.Categoria,
-            ComandaPaidStatus: "Editing",
-            ComandaPrepStatus: "Preparing",
-            ComandaDeliverMode: "Delivery",
-            ComandaSwitchNota: false,
-            Notas: "",
-            Details: platillo
-        };
-        setComandas(prev => [...prev, newComanda]);
+        let newComanda;
+        setComandas((prev) => {
+            newComanda = {
+                OrderID: Order.OrderID,
+                ComandaId: prev.length > 0 ? prev[prev.length - 1].ComandaId + 1 : 1,
+                Platillo: platillo.NombrePlatillo,
+                Precio: platillo.Variants[0].Precio,
+                Imagen: platillo.Imagen,
+                Categoria: platillo.Categoria,
+                ComandaPaidStatus: "Editing",
+                ComandaPrepStatus: "Preparing",
+                ComandaDeliverMode: "Delivery",
+                ComandaSwitchNota: false,
+                Notas: "",
+                Details: platillo
+            };
+            return [...prev, newComanda];
+        });
         handleComandas("Add-" + Order.OrderID + "-" + newComanda.Platillo);
         comandasApi.addComanda(newComanda)
             .then(() => {
@@ -407,7 +410,7 @@ const MeseroOrderPanel = ({modeInterface, iInterface, OrderID, DeleteOrder, hand
                 console.log(err);
                 notify(`Error al agregar comanda: ${err}`);
             });
-    }, [Order, handleComandas, updateCuentaTotalOrder, comandas.length]);
+    }, [Order, handleComandas, fetchComandas, notify]);
 
     const addComandaRef = useRef(addComanda);
     addComandaRef.current = addComanda;
