@@ -25,10 +25,13 @@ const socket = io(`${process.env.REACT_APP_API_URL}`);
 const MeseroOrderPanel = ({modeInterface, iInterface, OrderID, DeleteOrder, handleOrderCustStatus, platillos, numPlatillos, handleOrderClient, preloadedOrder, preloadedComandas, isOptimized, galleryLayout = false, onRegisterAddPlatillo, onComandasCacheSync, onOrderCacheSync }) => {
     const notify = (message) => toast(message);
     const [Order, setOrder] = useState({});
+    const orderRef = useRef(Order);
+    orderRef.current = Order;
     const [comandas, setComandas] = useState([])
     const [toggleArrowStatus, setToggleArrowStatus] = useState(true); // false: plegado, true: desplegado
     const [colorOrder, setColorOrder] = useState("#ffffff")
     const pendingSkipFetchesRef = useRef(0);
+    const pendingSkipOrderStatusFetchRef = useRef(0);
     const comandasHydratedRef = useRef(false);
     const initialComandasLoadRef = useRef(!(isOptimized && preloadedComandas !== undefined));
     const [comandasLoading, setComandasLoading] = useState(
@@ -127,7 +130,12 @@ const MeseroOrderPanel = ({modeInterface, iInterface, OrderID, DeleteOrder, hand
             comandasHydratedRef.current = true;
             initialComandasLoadRef.current = false;
             setComandasLoading(false);
-            setOrder(preloadedOrder);
+            setOrder((prev) => ({
+                ...preloadedOrder,
+                OrderCustStatus: prev.OrderCustStatus ?? preloadedOrder.OrderCustStatus,
+                Customer: prev.Customer ?? preloadedOrder.Customer,
+                Origen: prev.Origen ?? preloadedOrder.Origen,
+            }));
             setComandas(preloadedComandas);
             updateCuentaTotalOrder(preloadedComandas, preloadedOrder);
             ordersApi.getOrderV2(OrderID)
@@ -240,9 +248,15 @@ const MeseroOrderPanel = ({modeInterface, iInterface, OrderID, DeleteOrder, hand
                 cuentaTotal = cuentaTotal + comanda.Precio;
             })
         }
-        // Calcular el nuevo pendiente basado en la nueva cuenta total y lo ya pagado
-        const newPendiente = cuentaTotal - (order.pagado || 0);
-        const newOrder = {...order, CuentaTotal: cuentaTotal, pendiente: newPendiente}; // Actualizar también pendiente
+        const latest = orderRef.current;
+        const mergedBase = { ...order, ...latest };
+        const pagadoBase = mergedBase.pagado || 0;
+        const newPendiente = cuentaTotal - pagadoBase;
+        const newOrder = {
+            ...mergedBase,
+            CuentaTotal: cuentaTotal,
+            pendiente: newPendiente,
+        };
         
         const calcTime = performance.now() - calcStartTime;
         performanceLogger.log(`🧮 Cálculo de totales: ${calcTime.toFixed(2)}ms - Comandas procesadas: ${comandasDB ? comandasDB.length : 0}, Total: $${cuentaTotal}`);
@@ -266,6 +280,9 @@ const MeseroOrderPanel = ({modeInterface, iInterface, OrderID, DeleteOrder, hand
             
             setOrder((prev) => ({
                 ...newOrder,
+                OrderCustStatus: prev.OrderCustStatus ?? newOrder.OrderCustStatus,
+                Customer: prev.Customer ?? newOrder.Customer,
+                Origen: prev.Origen ?? newOrder.Origen,
                 pagos: newOrder.pagos?.length ? newOrder.pagos : (prev.pagos ?? []),
                 pagado: newOrder.pagado ?? prev.pagado ?? 0,
             }));
@@ -414,6 +431,10 @@ const MeseroOrderPanel = ({modeInterface, iInterface, OrderID, DeleteOrder, hand
 
         const onOrdenActualizada = (data) => {
             if (matchesOrderMsg(data?.msg)) {
+                if (pendingSkipOrderStatusFetchRef.current > 0) {
+                    pendingSkipOrderStatusFetchRef.current -= 1;
+                    return;
+                }
                 scheduleFetchOrder();
             }
         };
@@ -641,6 +662,7 @@ const MeseroOrderPanel = ({modeInterface, iInterface, OrderID, DeleteOrder, hand
         if (Order.OrderCustStatus === "InPlace") {
             const confirm = window.confirm("La ORDEN ha sido COMPLETADA?");
                 if (confirm) {
+                    pendingSkipOrderStatusFetchRef.current = 2;
                     setColorOrder("#5d5d5d");
                     const newOrder = { ...Order };
                     newOrder.OrderCustStatus = "Done";
@@ -650,6 +672,7 @@ const MeseroOrderPanel = ({modeInterface, iInterface, OrderID, DeleteOrder, hand
         } else if (Order.OrderCustStatus === "Done") {
             const confirm = window.confirm("Deseas regresar la orden a PREPARANDO?");
                 if (confirm) {
+                    pendingSkipOrderStatusFetchRef.current = 2;
                     setColorOrder("#ffffff");
                     const newOrder = { ...Order };
                     newOrder.OrderCustStatus = "InPlace";

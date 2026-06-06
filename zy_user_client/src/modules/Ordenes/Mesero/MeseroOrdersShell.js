@@ -245,18 +245,19 @@ const MeseroOrdersShell = ({ modeInterface }) => {
     };
     
     const handleOrderCustStatus = (OrderID, Status) => {
-        const newOrder = {...orders.find(order => order.OrderID === OrderID)}
-        newOrder.OrderCustStatus = Status;
+        const existingOrder = orders.find((order) => order.OrderID === OrderID);
+        if (!existingOrder) return;
+        const previousStatus = existingOrder.OrderCustStatus;
+        const newOrder = { ...existingOrder, OrderCustStatus: Status };
         syncOrderCacheEntry(newOrder);
         ordersApi.updateOrder(newOrder)
         .then(() => {
-            fetchOrders();
             SocketUpdateOrder(OrderID);
         })
         .catch(err => {
             console.log(err);
+            syncOrderCacheEntry({ ...existingOrder, OrderCustStatus: previousStatus });
             notify(`Error al actualizar una comanda: ${err}`);
-            // alert("Error al actualizar una comanda");
         });
     }
     const renderOrders = () => {
