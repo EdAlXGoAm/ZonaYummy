@@ -126,8 +126,8 @@
     box-shadow: none;
 }
 
-.mesero-order-pick__row--done .mesero-order-pick__bubble--served::after {
-    background: rgba(100, 116, 139, 0.48);
+.mesero-order-pick__row--done .mesero-order-pick__bubble-mask {
+    background: rgba(71, 85, 105, 0.58);
 }
 
 .mesero-order-pick__row--done .mesero-order-pick__bubble-overflow {
@@ -217,20 +217,20 @@
     background: #f1f5f9;
 }
 
-.mesero-order-pick__bubble--served::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    border-radius: 50%;
-    background: rgba(100, 116, 139, 0.38);
-    pointer-events: none;
-}
-
 .mesero-order-pick__bubble img {
     width: 100%;
     height: 100%;
     object-fit: cover;
     display: block;
+}
+
+.mesero-order-pick__bubble-mask {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background: rgba(71, 85, 105, 0.52);
+    z-index: 1;
+    pointer-events: none;
 }
 
 .mesero-order-pick__bubble-overflow {

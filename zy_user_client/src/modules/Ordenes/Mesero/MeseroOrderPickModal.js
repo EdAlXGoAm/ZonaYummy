@@ -5,6 +5,11 @@ import comandasApi from '../../../api/comandasApi';
 
 const MAX_BUBBLES = 7;
 
+const isComandaDelivered = (comanda) => (
+    comanda.ComandaPrepStatus === 'ReadyToServe'
+    || comanda.ComandaPrepStatus === 'Served'
+);
+
 const sortOrdersForPicker = (orders) => {
     const active = [];
     const closed = [];
@@ -125,17 +130,23 @@ const MeseroOrderPickModal = ({ orders, onSelectOrder, onClose }) => {
                                                 ) : (
                                                     <>
                                                         {visible.map((comanda) => {
-                                                            const isServed = comanda.ComandaPrepStatus === 'Served';
+                                                            const delivered = isComandaDelivered(comanda);
                                                             return (
                                                             <span
                                                                 key={comanda._id || `${comanda.ComandaId}-${comanda.Platillo}`}
-                                                                className={`mesero-order-pick__bubble${isServed ? ' mesero-order-pick__bubble--served' : ''}`}
-                                                                title={isServed ? `${comanda.Platillo} (Entregado)` : comanda.Platillo}
+                                                                className={`mesero-order-pick__bubble${delivered ? ' mesero-order-pick__bubble--delivered' : ''}`}
+                                                                title={delivered ? `${comanda.Platillo} (Entregado)` : comanda.Platillo}
                                                             >
                                                                 <img
                                                                     src={comanda.Imagen}
                                                                     alt={comanda.Platillo}
                                                                 />
+                                                                {delivered && (
+                                                                    <span
+                                                                        className="mesero-order-pick__bubble-mask"
+                                                                        aria-hidden="true"
+                                                                    />
+                                                                )}
                                                             </span>
                                                             );
                                                         })}
