@@ -494,6 +494,24 @@
     color: #86efac;
 }
 
+.mesero-gallery__tile-screen-empty {
+    font-family: Bebas Neue, sans-serif;
+    font-size: 1.05rem;
+    letter-spacing: 0.08em;
+    color: rgba(255, 255, 255, 0.55);
+    text-transform: uppercase;
+}
+
+.mesero-gallery__tile--empty .mesero-gallery__tile-screen {
+    background: linear-gradient(180deg, #1a2b5c 0%, #2a3548 100%);
+    border: 1.5px dashed rgba(255, 255, 255, 0.22);
+    box-sizing: border-box;
+}
+
+.mesero-gallery__tile--empty .mesero-gallery__tile-frame {
+    border-color: rgba(148, 163, 184, 0.35);
+}
+
 .mesero-gallery__tile-meta {
     font-size: 0.58rem;
     font-weight: 800;

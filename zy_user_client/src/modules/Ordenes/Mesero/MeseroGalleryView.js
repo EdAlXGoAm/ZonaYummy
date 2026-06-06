@@ -8,6 +8,31 @@ import {
     saveGallerySelectedOrderId,
 } from './meseroViewCache';
 
+const resolveOrderComandas = (comandasByOrder, orderId) => {
+    const key = Number(orderId);
+    if (Object.prototype.hasOwnProperty.call(comandasByOrder, key)) {
+        return comandasByOrder[key];
+    }
+    if (Object.prototype.hasOwnProperty.call(comandasByOrder, orderId)) {
+        return comandasByOrder[orderId];
+    }
+    if (Object.prototype.hasOwnProperty.call(comandasByOrder, String(orderId))) {
+        return comandasByOrder[String(orderId)];
+    }
+    return undefined;
+};
+
+const isOrderWithoutComandas = (order, comandasByOrder) => {
+    const comandas = resolveOrderComandas(comandasByOrder, order.OrderID);
+    if (comandas !== undefined) {
+        return comandas.length === 0;
+    }
+    if (Array.isArray(order.ComandasList)) {
+        return order.ComandasList.length === 0;
+    }
+    return Number(order.CuentaTotal || 0) === 0;
+};
+
 const MeseroGalleryView = ({
     orders,
     comandasByOrder = {},
@@ -253,11 +278,12 @@ const MeseroGalleryView = ({
                                 const isSelected = Number(order.OrderID) === Number(selectedOrderId);
                                 const customer = (order.Customer || '').trim();
                                 const isDone = order.OrderCustStatus === 'Done';
+                                const isEmpty = isOrderWithoutComandas(order, comandasByOrder);
                                 return (
                                     <button
                                         key={order.OrderID}
                                         type="button"
-                                        className={`mesero-gallery__tile${isSelected ? ' mesero-gallery__tile--selected' : ''}${isDone ? ' mesero-gallery__tile--done' : ' mesero-gallery__tile--active'}`}
+                                        className={`mesero-gallery__tile${isSelected ? ' mesero-gallery__tile--selected' : ''}${isDone ? ' mesero-gallery__tile--done' : ' mesero-gallery__tile--active'}${isEmpty ? ' mesero-gallery__tile--empty' : ''}`}
                                         onClick={() => selectOrder(order.OrderID)}
                                     >
                                         <div className="mesero-gallery__tile-frame">
@@ -265,13 +291,21 @@ const MeseroGalleryView = ({
                                                 #{order.OrderID}
                                             </span>
                                             <div className="mesero-gallery__tile-screen">
-                                                <span className="mesero-gallery__tile-screen-icon" />
-                                                <span className="mesero-gallery__tile-screen-label">
-                                                    {customer || 'Sin cliente'}
-                                                </span>
-                                                <span className="mesero-gallery__tile-screen-total">
-                                                    ${Number(order.CuentaTotal || 0).toFixed(0)}
-                                                </span>
+                                                {isEmpty ? (
+                                                    <span className="mesero-gallery__tile-screen-empty">
+                                                        Vacía
+                                                    </span>
+                                                ) : (
+                                                    <>
+                                                        <span className="mesero-gallery__tile-screen-icon" />
+                                                        <span className="mesero-gallery__tile-screen-label">
+                                                            {customer || 'Sin cliente'}
+                                                        </span>
+                                                        <span className="mesero-gallery__tile-screen-total">
+                                                            ${Number(order.CuentaTotal || 0).toFixed(0)}
+                                                        </span>
+                                                    </>
+                                                )}
                                             </div>
                                             <span className={`mesero-gallery__tile-meta${isDone ? ' mesero-gallery__tile-meta--done' : ''}`}>
                                                 {isDone ? 'Cerrada' : 'En curso'}

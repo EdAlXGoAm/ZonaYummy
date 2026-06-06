@@ -1,6 +1,7 @@
 import './MeseroOrderPickModal.css';
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import comandasApi from '../../../api/comandasApi';
 
 const MAX_BUBBLES = 7;
 
@@ -25,8 +26,59 @@ const sortOrdersForPicker = (orders) => {
     return [...active.sort(byNewest), ...closed.sort(byNewest)];
 };
 
+const hasCacheEntry = (cache, orderId) => (
+    Object.prototype.hasOwnProperty.call(cache, Number(orderId))
+);
+
+const resolveComandas = (cache, orderId) => {
+    const key = Number(orderId);
+    return cache[key] || cache[orderId] || cache[String(orderId)] || [];
+};
+
 const MeseroOrderPickModal = ({ orders, comandasByOrder = {}, onSelectOrder, onClose }) => {
     const sortedOrders = useMemo(() => sortOrdersForPicker(orders), [orders]);
+    const [localComandasByOrder, setLocalComandasByOrder] = useState(comandasByOrder);
+    const fetchedOrderIdsRef = useRef(new Set());
+
+    useEffect(() => {
+        setLocalComandasByOrder((prev) => ({ ...prev, ...comandasByOrder }));
+    }, [comandasByOrder]);
+
+    useEffect(() => {
+        let cancelled = false;
+
+        const missingOrders = sortedOrders.filter((order) => {
+            const key = Number(order.OrderID);
+            if (hasCacheEntry(comandasByOrder, key)) return false;
+            if (hasCacheEntry(localComandasByOrder, key)) return false;
+            if (fetchedOrderIdsRef.current.has(key)) return false;
+            return true;
+        });
+
+        if (!missingOrders.length) return undefined;
+
+        missingOrders.forEach((order) => {
+            fetchedOrderIdsRef.current.add(Number(order.OrderID));
+        });
+
+        const fillMissing = async () => {
+            const results = await Promise.all(
+                missingOrders.map((order) =>
+                    comandasApi.getComandasByOrderId(order.OrderID)
+                        .then((comandas) => [Number(order.OrderID), comandas])
+                        .catch(() => [Number(order.OrderID), []])
+                )
+            );
+            if (cancelled) return;
+            setLocalComandasByOrder((prev) => ({
+                ...prev,
+                ...Object.fromEntries(results),
+            }));
+        };
+
+        fillMissing();
+        return () => { cancelled = true; };
+    }, [sortedOrders, comandasByOrder, localComandasByOrder]);
 
     return createPortal(
         <div className="mesero-order-pick-overlay" onClick={onClose}>
@@ -57,7 +109,7 @@ const MeseroOrderPickModal = ({ orders, comandasByOrder = {}, onSelectOrder, onC
                         {sortedOrders.map((order) => {
                             const customer = (order.Customer || '').trim();
                             const isDone = order.OrderCustStatus === 'Done';
-                            const comandas = comandasByOrder[Number(order.OrderID)] || [];
+                            const comandas = resolveComandas(localComandasByOrder, order.OrderID);
                             const visible = comandas.slice(0, MAX_BUBBLES);
                             const overflow = comandas.length - visible.length;
 

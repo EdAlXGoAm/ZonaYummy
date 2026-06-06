@@ -9,7 +9,6 @@ import 'react-toastify/dist/ReactToastify.css';
 import ordersApi from './../../../api/ordersApi';
 import platillosApi from './../../../api/platillosApi';
 import comandasApi from './../../../api/comandasApi';
-import { buildComandasByOrderId } from './meseroComandasCache';
 
 import OrdenesCocina from './../MeseroPage/OrdenesCocinaComponent';
 import Counter30To0 from '../Global/CounterComponent';
@@ -54,8 +53,14 @@ const MeseroOrdersShell = ({ modeInterface }) => {
             return;
         }
         try {
-            const allComandas = await comandasApi.getComandas();
-            setComandasByOrder(buildComandasByOrderId(allComandas, orderList));
+            const results = await Promise.all(
+                orderList.map((order) =>
+                    comandasApi.getComandasByOrderId(order.OrderID)
+                        .then((comandas) => [Number(order.OrderID), comandas])
+                        .catch(() => [Number(order.OrderID), []])
+                )
+            );
+            setComandasByOrder(Object.fromEntries(results));
         } catch (err) {
             console.log(err);
         }
