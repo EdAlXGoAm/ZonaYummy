@@ -22,13 +22,18 @@
 .mesero-gallery__main {
     flex: 1 1 0;
     min-height: 0;
+    display: flex;
+    flex-direction: column;
     overflow: hidden;
     padding: 10px var(--zy-gap) 8px;
 }
 
 .mesero-gallery__main-shell {
     position: relative;
-    height: 100%;
+    flex: 1 1 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
     border-radius: 22px;
     overflow: hidden;
     box-shadow: 0 6px 14px rgba(26, 43, 92, 0.28);
@@ -75,35 +80,45 @@
 .mesero-gallery__main-inner {
     position: relative;
     z-index: 1;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
+    flex: 1 1 0;
     min-height: 0;
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr);
     padding: 12px 14px 10px;
 }
 
+.mesero-gallery__main-head {
+    grid-row: 1;
+    min-height: 0;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 8px;
+}
+
 .mesero-gallery__panel-slot {
-    flex: 1 1 0;
+    grid-row: 2;
+    position: relative;
+    min-width: 0;
     min-height: 0;
     display: flex;
     flex-direction: column;
     overflow: hidden;
 }
 
-.mesero-gallery__panel-slot > .mesero-order-panel--gallery,
-.mesero-gallery__panel-slot > .mesero-gallery__empty {
+.mesero-gallery__panel-slot > .mesero-order-panel--gallery {
     flex: 1 1 0;
     min-height: 0;
     width: 100%;
 }
 
-.mesero-gallery__main-head {
-    flex-shrink: 0;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    flex-wrap: wrap;
-    margin-bottom: 8px;
+.mesero-gallery__panel-slot > .mesero-gallery__empty {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
 }
 
 .mesero-gallery__main-head-actions {
@@ -225,6 +240,7 @@
 }
 
 .mesero-gallery__empty {
+    box-sizing: border-box;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -235,6 +251,10 @@
     border-radius: 16px;
     border: 1.5px dashed rgba(26, 43, 92, 0.15);
     background: rgba(255, 255, 255, 0.55);
+}
+
+.mesero-gallery__empty p {
+    margin: 0;
 }
 
 .mesero-gallery__empty-hint {
