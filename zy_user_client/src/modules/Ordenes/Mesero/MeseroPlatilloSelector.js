@@ -1,5 +1,6 @@
 import './MeseroPlatilloSelector.css';
 import React, { useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { toast } from 'react-toastify';
 
 const CATEGORY_ORDER = ['Postres', 'Botanas', 'Comida', 'Bebidas', 'Waffles'];
@@ -53,7 +54,7 @@ const MeseroPlatilloSelector = ({ addPlatilloToOrder, platillos, floating = fals
                 )}
             </button>
 
-            {modalOpen && (
+            {modalOpen && createPortal(
                 <div
                     className="platillo-modal-overlay"
                     onClick={() => setModalOpen(false)}
@@ -101,7 +102,8 @@ const MeseroPlatilloSelector = ({ addPlatilloToOrder, platillos, floating = fals
                             )}
                         </div>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
 
         </div>
