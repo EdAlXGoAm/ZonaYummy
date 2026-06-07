@@ -1,6 +1,6 @@
 import './MeseroComandaSlot.css';
 import React, { useState, useEffect, useRef, useCallback, memo } from 'react';
-import BootstrapSwitchButton from 'bootstrap-switch-button-react';
+import { TwoOptionSwitch } from './two_option_switch/TwoOptionSwitch';
 import MeseroComandaEditor from './MeseroComandaEditor';
 import ResumeComanda from './../MeseroPage/ResumeComandaComponent';
 import MeseroComandaFullscreenModal from './MeseroComandaFullscreenModal';
@@ -8,7 +8,7 @@ import MeseroComandaFullscreenModal from './MeseroComandaFullscreenModal';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTrash, faCashRegister } from '@fortawesome/free-solid-svg-icons';
 import { faAngleUp, faAngleDown } from '@fortawesome/free-solid-svg-icons';
-import { faPaperPlane, faFilePen, faFloppyDisk, faExpand } from '@fortawesome/free-solid-svg-icons';
+import { faFilePen, faFloppyDisk, faExpand } from '@fortawesome/free-solid-svg-icons';
 
 const MeseroComandaSlot = ({
     order,
@@ -25,8 +25,10 @@ const MeseroComandaSlot = ({
 
     const [nota, setNota] = useState('');
     const [liveStatusNota, setLiveStatusNota] = useState('#33d457');
+    const [notaEditing, setNotaEditing] = useState(false);
     const notaDirtyRef = useRef(false);
     const saveTimerRef = useRef(null);
+    const notaInputRef = useRef(null);
     const comandaRef = useRef(Comanda);
     const notaRef = useRef(nota);
     const updateComandaRef = useRef(updateComanda);
@@ -69,22 +71,6 @@ const MeseroComandaSlot = ({
                 updateComanda(updatedComanda);
             }
         }
-    };
-
-    const handleUpdateComandaDeliverMode = () => {
-        const updatedComanda = {
-            ...Comanda,
-            ComandaDeliverMode: Comanda.ComandaDeliverMode === "Delivery" ? "Table-0" : "Delivery"
-        }
-        updateComanda(updatedComanda);
-    };
-
-    const handleUpdateComandaSwitchNota = () => {
-        const updatedComanda = {
-            ...Comanda,
-            ComandaSwitchNota: !Comanda.ComandaSwitchNota
-        }
-        updateComanda(updatedComanda);
     };
 
     const NOTA_AUTOSAVE_MS = 1000;
@@ -136,24 +122,31 @@ const MeseroComandaSlot = ({
     };
 
     const handleBlurNota = () => {
-        if (!modeInterface || !notaDirtyRef.current) return;
+        if (!modeInterface) return;
         if (saveTimerRef.current) {
             clearTimeout(saveTimerRef.current);
             saveTimerRef.current = null;
         }
-        persistNota(notaRef.current);
+        if (notaDirtyRef.current) {
+            persistNota(notaRef.current);
+        }
+        setNotaEditing(false);
     };
 
-    const handleNoteNew = () => {
-        if (saveTimerRef.current) {
-            clearTimeout(saveTimerRef.current);
-            saveTimerRef.current = null;
-        }
-        persistNota(notaRef.current);
+    const enterNotaEdit = () => {
+        setNotaEditing(true);
+        requestAnimationFrame(() => {
+            const el = notaInputRef.current;
+            if (!el) return;
+            el.focus();
+            const len = el.value.length;
+            el.setSelectionRange(len, len);
+        });
     };
 
     useEffect(() => {
         notaDirtyRef.current = false;
+        setNotaEditing(false);
         if (saveTimerRef.current) {
             clearTimeout(saveTimerRef.current);
             saveTimerRef.current = null;
@@ -161,6 +154,12 @@ const MeseroComandaSlot = ({
         setNota(Comanda.Notas ?? '');
         setLiveStatusNota('#33d457');
     }, [Comanda.ComandaId]);
+
+    useEffect(() => {
+        if (!Comanda.ComandaSwitchNota) {
+            setNotaEditing(false);
+        }
+    }, [Comanda.ComandaSwitchNota]);
 
     useEffect(() => {
         if (!notaDirtyRef.current) {
@@ -236,36 +235,59 @@ const MeseroComandaSlot = ({
 
     const notaTextareaId = `NotaTextArea_${Comanda._id}${fullscreenMode ? '_fs' : ''}`;
 
-    const renderNotaTextarea = (rows, fontSize, showSendButton = true) => (
-        <div className='row'>
-            <div className={showSendButton ? 'col-10' : 'col-12'}>
+    const renderNotaTextarea = (rows, fontSize) => (
+        <textarea
+            className="form-control mesero-comanda-slot__nota-input"
+            id={notaTextareaId}
+            rows={rows}
+            placeholder="Agregar notas"
+            onChange={handleChangeNota}
+            onBlur={handleBlurNota}
+            value={nota}
+            style={{
+                backgroundColor: liveStatusNota,
+                color: '#fff',
+                fontWeight: 'bold',
+                fontSize,
+            }}
+        />
+    );
+
+    const renderInlineNotaField = () => {
+        const isEmpty = !nota.trim();
+        const notaStyle = {
+            backgroundColor: liveStatusNota,
+            color: '#fff',
+            fontWeight: 'bold',
+        };
+
+        if (notaEditing) {
+            return (
                 <textarea
-                    className="form-control mesero-comanda-slot__nota-input"
+                    ref={notaInputRef}
+                    className="form-control mesero-comanda-slot__nota-input mesero-comanda-slot__nota-input--inline"
                     id={notaTextareaId}
-                    rows={rows}
-                    placeholder="Agregar notas"
+                    rows={2}
+                    placeholder="Agregar nota"
                     onChange={handleChangeNota}
                     onBlur={handleBlurNota}
                     value={nota}
-                    style={{
-                        backgroundColor: liveStatusNota,
-                        color: '#fff',
-                        fontWeight: 'bold',
-                        fontSize,
-                    }}
+                    style={notaStyle}
                 />
+            );
+        }
+
+        return (
+            <div
+                className={`mesero-comanda-slot__nota-label${isEmpty ? ' mesero-comanda-slot__nota-label--empty' : ''}`}
+                style={notaStyle}
+                onDoubleClick={enterNotaEdit}
+                title="Doble click para editar"
+            >
+                {isEmpty ? 'Doble click para agregar nota' : nota}
             </div>
-            {showSendButton && (
-                <div className='col-2'>
-                    <div className="form-group">
-                        <button type="button" className="btn btn-light" onClick={handleNoteNew}>
-                            <FontAwesomeIcon icon={faPaperPlane} style={{ color: '#7ed65b' }} size="2x" />
-                        </button>
-                    </div>
-                </div>
-            )}
-        </div>
-    );
+        );
+    };
 
     // Manejador para el toggle de la flecha, invoca callback si colapsa una comanda ReadyToServe
     const handleToggleArrow = () => {
@@ -276,6 +298,19 @@ const MeseroComandaSlot = ({
             onBubbleToggle(Comanda.ComandaId);
         }
     };
+
+    const renderStatusAction = (nextStatus, variant, icon, ariaLabel) => (
+        <div className="mesero-comanda-slot__status-actions">
+            <button
+                type="button"
+                className={`btn btn-outline-${variant} btn-lg mesero-comanda-slot__status-btn`}
+                onClick={() => handleUpdateComandaPaidStatus(nextStatus)}
+                aria-label={ariaLabel}
+            >
+                <FontAwesomeIcon icon={icon} style={{ color: '#7ed65b' }} />
+            </button>
+        </div>
+    );
 
     const cardContent = (
         <div className={`card-body mb-1 divStyle ${animOrBg && 'comandaCardAnimation'}`} style={{backgroundColor: animOrBg ? '' : colorStatus}}>
@@ -290,6 +325,19 @@ const MeseroComandaSlot = ({
                         </div>
                         )}
                         <div className="mesero-comanda-slot__top-actions ml-auto">
+                            {modeInterface && (
+                                <TwoOptionSwitch
+                                    value={Comanda.ComandaPrepStatus === "Preparing" ? 'left' : 'right'}
+                                    onChange={() => handleUpdateComandaPrepStatus("")}
+                                    leftLabel="Prep"
+                                    rightLabel="Entr"
+                                    textColor="#000000"
+                                    trackColor="#3d2e10"
+                                    thumbColor="#ff9500"
+                                    className="mesero-comanda-slot__option-switch mesero-comanda-slot__option-switch--prep"
+                                    ariaLabel="Estado preparacion"
+                                />
+                            )}
                             {enableFullscreenFab && (
                                 <button
                                     type="button"
@@ -312,16 +360,21 @@ const MeseroComandaSlot = ({
                         </div>
                     </div>
                     {modeInterface ? (
-                        <div className='row mb-2'>
-                            <div className='col-2'>
-                            <img src={Comanda.Imagen} alt="icon"className="img-fluid" style={{ width: '60px'}}></img>
-                            </div>
-                            <div className="col-8 d-flex align-items-center personalizarTitle">
-                                <h2 className="title comandaTextStyle">{Comanda.Platillo}&nbsp;&nbsp;<span style={{textShadow: "0px 0px 10px red"}}>${Comanda.Precio}</span></h2>
-                            </div>
-                            <div className='col-2'>
-                            <img src={Comanda.Imagen} alt="icon"className="img-fluid" style={{ width: '60px'}}></img>
-                            </div>
+                        <div className="mesero-comanda-slot__platillo-head">
+                            <img
+                                src={Comanda.Imagen}
+                                alt=""
+                                className="mesero-comanda-slot__platillo-img"
+                            />
+                            <h2 className="title comandaTextStyle mesero-comanda-slot__platillo-title">
+                                {Comanda.Platillo}&nbsp;&nbsp;
+                                <span style={{ textShadow: '0px 0px 10px red' }}>${Comanda.Precio}</span>
+                            </h2>
+                            <img
+                                src={Comanda.Imagen}
+                                alt=""
+                                className="mesero-comanda-slot__platillo-img"
+                            />
                         </div>
                     ) : (
                         <div className='row mb-2'>
@@ -338,24 +391,47 @@ const MeseroComandaSlot = ({
                     )}
                     
                     {modeInterface && (
-                    <div className='row'>
-                        <div className="col-3">
-                            <BootstrapSwitchButton checked={Comanda.ComandaDeliverMode === "Delivery" ? false : true}
-                                onlabel='Aqui' offlabel='Llevar' width={100} onChange={handleUpdateComandaDeliverMode} />
-                        </div>
-                        <div className="col-3">
+                    <div className="mesero-comanda-slot__switches">
+                        <div className="mesero-comanda-slot__switch-row">
+                            <TwoOptionSwitch
+                                value={Comanda.ComandaDeliverMode === "Delivery" ? 'left' : 'right'}
+                                onChange={(next) => updateComanda({
+                                    ...Comanda,
+                                    ComandaDeliverMode: next === 'left' ? "Delivery" : "Table-0",
+                                })}
+                                leftLabel="Llevar"
+                                rightLabel="Aqui"
+                                textColor="#000000"
+                                trackColor="#1e3a4a"
+                                thumbColor="#5ce1ff"
+                                className="mesero-comanda-slot__option-switch mesero-comanda-slot__option-switch--delivery"
+                                ariaLabel="Modo entrega"
+                            />
                             <div className="iconDelivery">
-                                <img src="icons/Mesa.png" alt="icon"className="img-fluid" style={{ width: '40px',  display: (Comanda.ComandaDeliverMode === "Delivery" ? false : true) ? 'flex' : 'none'}}></img>
-                                <img src="icons/Llevar.png" alt="icon"className="img-fluid" style={{ width: '40px',  display: !(Comanda.ComandaDeliverMode === "Delivery" ? false : true) ? 'flex' : 'none'}}></img>
+                                <img src="icons/Mesa.png" alt="icon"className="img-fluid" style={{ width: '28px',  display: (Comanda.ComandaDeliverMode === "Delivery" ? false : true) ? 'flex' : 'none'}}></img>
+                                <img src="icons/Llevar.png" alt="icon"className="img-fluid" style={{ width: '28px',  display: !(Comanda.ComandaDeliverMode === "Delivery" ? false : true) ? 'flex' : 'none'}}></img>
                             </div>
                         </div>
-                        <div className="col-3">
-                            <BootstrapSwitchButton checked={Comanda.ComandaPrepStatus === "Preparing" ? false : true}
-                                onlabel='Entregada' offlabel='Preparando' width={100} onChange={() => handleUpdateComandaPrepStatus("")} />
-                        </div>
-                        <div className="col-3">
-                            <BootstrapSwitchButton checked={Comanda.ComandaSwitchNota}
-                                onlabel='Nota' offlabel='Nota' width={100} onChange={handleUpdateComandaSwitchNota} />
+                        <div className="mesero-comanda-slot__switch-row mesero-comanda-slot__switch-row--nota">
+                            <TwoOptionSwitch
+                                value={Comanda.ComandaSwitchNota ? 'right' : 'left'}
+                                onChange={(next) => updateComanda({
+                                    ...Comanda,
+                                    ComandaSwitchNota: next === 'right',
+                                })}
+                                leftLabel="Nota"
+                                rightLabel="Nota"
+                                textColor="#000000"
+                                trackColor="#3d1a35"
+                                thumbColor="#ff69b4"
+                                className="mesero-comanda-slot__option-switch mesero-comanda-slot__option-switch--nota"
+                                ariaLabel="Mostrar nota"
+                            />
+                            {Comanda.ComandaSwitchNota && (
+                                <div className="mesero-comanda-slot__nota-inline">
+                                    {renderInlineNotaField()}
+                                </div>
+                            )}
                         </div>
                     </div>)}
                 </div>
@@ -363,50 +439,15 @@ const MeseroComandaSlot = ({
             {toggleArrowStatus && (
                 modeInterface ? (
                     Comanda.ComandaPaidStatus === "Editing" ? (
-                        <div>
-                            <div className="row">
-                                <div className='col'>
-                                <MeseroComandaEditor Comanda={Comanda} updateComanda={updateComanda} />
-                                </div>
-                            </div>
-                            <div className="row" style={{display: !Comanda.ComandaSwitchNota ? 'none' : 'flex'}}>
-                                <div className='col'>
-                                    {renderNotaTextarea(3, '30px')}
-                                </div>
-                            </div>
-                            <div className="row">
-                                <div className='col-10'>
-                                </div>
-                                <div className='col-2'>
-                                    <button type="button" className="btn btn-outline-success btn-lg" onClick={() => handleUpdateComandaPaidStatus("Pending")}>
-                                        <FontAwesomeIcon icon={faFloppyDisk} style={{color: '#7ed65b'}} size="2x" />
-                                    </button>
-                                </div>
-                            </div>
-
+                        <div className="mesero-comanda-slot__editor">
+                            <MeseroComandaEditor Comanda={Comanda} updateComanda={updateComanda} />
+                            {renderStatusAction('Pending', 'success', faFloppyDisk, 'Guardar comanda')}
                         </div>
                     )
                     : (
-                        <div>
-                                <div className="row">
-                                    <div className='col'>
-                                    <MeseroComandaEditor Comanda={Comanda} updateComanda={updateComanda} />
-                                    </div>
-                                </div>
-                            <div className="row" style={{display: !Comanda.ComandaSwitchNota ? 'none' : 'flex'}}>
-                                <div className='col'>
-                                    {renderNotaTextarea(3, '30px')}
-                                </div>
-                            </div>
-                            <div className="row">
-                                <div className='col-10'>
-                                </div>
-                                <div className='col-2'>
-                                    <button type="button" className="btn btn-outline-warning btn-lg" onClick={() => handleUpdateComandaPaidStatus("Editing")}>
-                                        <FontAwesomeIcon icon={faFilePen} style={{color: '#7ed65b'}} size="2x" />
-                                    </button>
-                                </div>
-                            </div>
+                        <div className="mesero-comanda-slot__editor">
+                            <MeseroComandaEditor Comanda={Comanda} updateComanda={updateComanda} />
+                            {renderStatusAction('Editing', 'warning', faFilePen, 'Editar comanda')}
                         </div>
                     )
                 )
@@ -420,23 +461,11 @@ const MeseroComandaSlot = ({
                     )
                     : (
                         <div>
-                            <div className="row">
-                                <div className='col'>
-                                <ResumeComanda Comanda={Comanda} updateComanda={updateComanda} />
-                                </div>
-                            </div>
-                            <div className="row">
-                                <div className='col-10'>
-                                </div>
-                                <div className='col-2'>
-                                    <button type="button" className="btn btn-outline-success btn-lg" onClick={() => handleUpdateComandaPaidStatus("Editing")}>
-                                        <FontAwesomeIcon icon={faFloppyDisk} style={{color: '#7ed65b'}} size="2x" />
-                                    </button>
-                                </div>
-                            </div>
+                            <ResumeComanda Comanda={Comanda} updateComanda={updateComanda} />
+                            {renderStatusAction('Editing', 'success', faFloppyDisk, 'Editar comanda')}
                             <div className="row" style={{display: !Comanda.ComandaSwitchNota ? 'none' : 'flex'}}>
                                 <div className='col'>
-                                    {renderNotaTextarea(2, '50px', false)}
+                                    {renderNotaTextarea(2, '50px')}
                                 </div>
                             </div>
                         </div>

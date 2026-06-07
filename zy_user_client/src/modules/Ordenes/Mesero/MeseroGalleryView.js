@@ -3,10 +3,12 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import MeseroOrderPanel from './MeseroOrderPanel';
 import MeseroOrderPickModal from './MeseroOrderPickModal';
 import MeseroPlatilloSelector from './MeseroPlatilloSelector';
+import MeseroCustomerField from './MeseroCustomerField';
 import {
     loadGallerySelectedOrderId,
     saveGallerySelectedOrderId,
 } from './meseroViewCache';
+import { bindTouchAxisScroll } from './meseroTouchAxisScroll';
 
 const resolveOrderComandas = (comandasByOrder, orderId) => {
     const key = Number(orderId);
@@ -52,6 +54,7 @@ const MeseroGalleryView = ({
     const [pickerDismissed, setPickerDismissed] = useState(false);
     const selectionHydratedRef = useRef(false);
     const addPlatilloRef = useRef(null);
+    const filmstripScrollRef = useRef(null);
 
     const registerAddPlatillo = useCallback((handler) => {
         addPlatilloRef.current = handler;
@@ -77,6 +80,14 @@ const MeseroGalleryView = ({
         () => [...orders].sort((a, b) => Number(b.OrderID) - Number(a.OrderID)),
         [orders]
     );
+
+    useEffect(() => {
+        const filmstrip = filmstripScrollRef.current;
+        if (!filmstrip) {
+            return undefined;
+        }
+        return bindTouchAxisScroll(filmstrip, { axis: 'x' });
+    }, [sortedOrders.length]);
 
     useEffect(() => {
         if (!orders.length) {
@@ -193,17 +204,11 @@ const MeseroGalleryView = ({
                     <span className="mesero-gallery__orb mesero-gallery__orb--magenta" aria-hidden="true" />
                     <div className="mesero-gallery__main-inner">
                         <div className="mesero-gallery__main-head">
-                            <span className="mesero-gallery__kicker">Orden activa</span>
-                            {selectedOrderId && (
-                                <>
-                                    <h2 className="mesero-gallery__main-title">Pedido #{selectedOrderId}</h2>
-                                    <div className="mesero-gallery__main-head-actions">
-                                        <MeseroPlatilloSelector
-                                            addPlatilloToOrder={addPlatilloViaRef}
-                                            platillos={platillos}
-                                            floating
-                                            inHead
-                                        />
+                            <div className="mesero-gallery__main-head-bar">
+                                <span className="mesero-gallery__kicker">Orden activa</span>
+                                {selectedOrderId && (
+                                    <>
+                                        <h2 className="mesero-gallery__main-title">Pedido #{selectedOrderId}</h2>
                                         <button
                                             type="button"
                                             className="mesero-gallery__close-order"
@@ -213,8 +218,23 @@ const MeseroGalleryView = ({
                                         >
                                             ✕
                                         </button>
-                                    </div>
-                                </>
+                                    </>
+                                )}
+                            </div>
+                            {selectedOrderId && (
+                                <div className="mesero-gallery__main-head-actions">
+                                    <MeseroCustomerField
+                                        order={selectedOrder}
+                                        compact
+                                        onOrderUpdated={onOrderCacheSync}
+                                    />
+                                    <MeseroPlatilloSelector
+                                        addPlatilloToOrder={addPlatilloViaRef}
+                                        platillos={platillos}
+                                        floating
+                                        inHead
+                                    />
+                                </div>
                             )}
                         </div>
                         <div className="mesero-gallery__panel-slot">
@@ -315,7 +335,7 @@ const MeseroGalleryView = ({
                                 </button>
                             </div>
                         </div>
-                        <div className="mesero-gallery__filmstrip-scroll">
+                        <div ref={filmstripScrollRef} className="mesero-gallery__filmstrip-scroll">
                             {sortedOrders.map((order) => {
                                 const isSelected = Number(order.OrderID) === Number(selectedOrderId);
                                 const customer = (order.Customer || '').trim();

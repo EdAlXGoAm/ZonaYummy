@@ -90,7 +90,23 @@ const normalizePlatillo = (value = {}) => ({
     Variants: Array.isArray(value?.Variants) ? value.Variants.map(normalizeVariant) : []
 });
 
-const AddPlatilloForm = ({ 
+const COLLAPSED_CATEGORIES_LS = 'zy_admin_platillo_categoria_collapsed_v1';
+
+const readCollapsedCategories = () => {
+    try {
+        const raw = localStorage.getItem(COLLAPSED_CATEGORIES_LS);
+        const parsed = raw ? JSON.parse(raw) : [];
+        return new Set(Array.isArray(parsed) ? parsed : []);
+    } catch {
+        return new Set();
+    }
+};
+
+const writeCollapsedCategories = (collapsedSet) => {
+    localStorage.setItem(COLLAPSED_CATEGORIES_LS, JSON.stringify([...collapsedSet]));
+};
+
+const AddPlatilloForm = ({
     onClose, 
     mode = "both", // "list" | "form" | "both"
     onEditRequest, // callback cuando se hace clic en editar desde la lista
@@ -100,6 +116,7 @@ const AddPlatilloForm = ({
 }) => {
     const [platillo, setPlatillo] = useState(createEmptyPlatillo());
     const [platillosList, setPlatillosList] = useState([]);
+    const [collapsedCategorias, setCollapsedCategorias] = useState(() => readCollapsedCategories());
     const [buttonAction, setButtonAction] = useState("Agregar")
     const [jsonDraft, setJsonDraft] = useState(JSON.stringify(createEmptyPlatillo(), null, 2));
     const [jsonIsDirty, setJsonIsDirty] = useState(false);
@@ -197,6 +214,16 @@ const AddPlatilloForm = ({
     }, [platillosList]);
 
     const categoriasPlatillos = useMemo(() => Object.keys(platillosAgrupados).sort(), [platillosAgrupados]);
+
+    const toggleCategoriaCollapsed = (categoria) => {
+        setCollapsedCategorias((prev) => {
+            const next = new Set(prev);
+            if (next.has(categoria)) next.delete(categoria);
+            else next.add(categoria);
+            writeCollapsedCategories(next);
+            return next;
+        });
+    };
 
     // Función para generar IDs faltantes entre dos platillos
     const getMissingIds = (startId, endId) => {
@@ -298,6 +325,25 @@ const AddPlatilloForm = ({
         .then(data => {
             fetchPlatillos();
         })
+    };
+
+    const getDisponibilidadClass = (value) => {
+        const disponibilidad = Number(value);
+        if (disponibilidad > 0) return 'disponible';
+        if (disponibilidad === 0) return 'agotado';
+        return 'ilimitado';
+    };
+
+    const handleDisponibilidadDoubleClick = (platilloData) => {
+        const current = Number(platilloData.Disponibilidad);
+        const nextDisponibilidad = current === 0 ? -1 : 0;
+        platillosApi.updatePlatillo({ ...platilloData, Disponibilidad: nextDisponibilidad })
+            .then(() => {
+                fetchPlatillos();
+            })
+            .catch(() => {
+                alert('Error al actualizar disponibilidad');
+            });
     };
 
     const handleInputChange = (e) => {
@@ -1061,13 +1107,23 @@ const AddPlatilloForm = ({
                     </div>
                 )}
                 {categoriasPlatillos.map((categoria) => (
-                    <div key={categoria} className="platillo-categoria-grupo">
-                        <div className="platillo-categoria-header">
+                    <div
+                        key={categoria}
+                        className={`platillo-categoria-grupo${collapsedCategorias.has(categoria) ? ' is-collapsed' : ''}`}
+                    >
+                        <button
+                            type="button"
+                            className="platillo-categoria-header platillo-categoria-header--toggle"
+                            onClick={() => toggleCategoriaCollapsed(categoria)}
+                            aria-expanded={!collapsedCategorias.has(categoria)}
+                        >
                             <h4 className="platillo-categoria-titulo">{categoria}</h4>
                             <span className="platillo-categoria-contador">
                                 {platillosAgrupados[categoria].length} platillo{platillosAgrupados[categoria].length !== 1 ? 's' : ''}
+                                <span className="platillo-categoria-chevron" aria-hidden="true">▾</span>
                             </span>
-                        </div>
+                        </button>
+                        <div className="platillo-categoria-body">
                         <div className="row platillos-grid">
                             {createPlatillosWithButtons(platillosAgrupados[categoria]).map((item, index) => {
                                 if (item.type === 'platillo') {
@@ -1076,8 +1132,12 @@ const AddPlatilloForm = ({
                                             <div className="platillo-card">
                                                 <div className="platillo-card-header">
                                                     <span className="platillo-id">#{item.data.PlatilloId}</span>
-                                                    <span className={`platillo-disponibilidad ${item.data.Disponibilidad > 0 ? 'disponible' : 'no-disponible'}`}>
-                                                        {item.data.Disponibilidad > 0 ? `Stock: ${item.data.Disponibilidad}` : 'Agotado'}
+                                                    <span
+                                                        className={`platillo-disponibilidad platillo-disponibilidad--toggle ${getDisponibilidadClass(item.data.Disponibilidad)}`}
+                                                        title="Doble clic: 0 ↔ -1 (si hay stock, pasa a 0)"
+                                                        onDoubleClick={() => handleDisponibilidadDoubleClick(item.data)}
+                                                    >
+                                                        Disp: {Number(item.data.Disponibilidad)}
                                                     </span>
                                                 </div>
                                                 <div className="platillo-card-body">
@@ -1119,6 +1179,7 @@ const AddPlatilloForm = ({
                                 }
                                 return null;
                             })}
+                        </div>
                         </div>
                     </div>
                 ))}

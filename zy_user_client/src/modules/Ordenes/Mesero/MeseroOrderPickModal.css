@@ -60,6 +60,8 @@
     padding: 12px;
     overflow-y: auto;
     overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-y pinch-zoom;
     flex: 1;
     min-height: 0;
     background: #f8fafc;

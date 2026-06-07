@@ -37,7 +37,50 @@
 }
 
 .mesero-order-panel__body > .bubbles-container {
+    grid-row: 1;
     min-height: 0;
+}
+
+.mesero-order-panel__body > .mesero-order-panel__comandas-track {
+    grid-row: 2;
+    min-height: 0;
+}
+
+.bubbles-container {
+    display: flex;
+    gap: 8px;
+    margin: 8px 0;
+    flex-shrink: 0;
+}
+
+.comanda-bubble {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    overflow: hidden;
+    cursor: pointer;
+    border: 2px solid #00ff5e;
+    flex-shrink: 0;
+}
+
+.comanda-bubble__img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* Phones only — keep tablet bubble size unchanged */
+@media (max-width: 480px) {
+    .bubbles-container {
+        gap: 6px;
+        margin: 6px 0;
+    }
+
+    .comanda-bubble {
+        width: 46px;
+        height: 46px;
+        border-width: 1.5px;
+    }
 }
 
 .mesero-order-panel__comandas-loading {
@@ -80,12 +123,13 @@
     width: 100%;
     min-width: 0;
     min-height: 0;
+    height: 100%;
     max-height: 100%;
     overflow-x: auto;
     overflow-y: hidden;
     overscroll-behavior-x: contain;
     -webkit-overflow-scrolling: touch;
-    touch-action: pan-x pan-y;
+    touch-action: pan-x pinch-zoom;
 }
 
 .mesero-order-panel__comandas-track::-webkit-scrollbar {
@@ -116,20 +160,36 @@
     width: min(420px, 42vw);
     min-width: 300px;
     align-self: stretch;
+    display: flex;
+    flex-direction: column;
     height: 100%;
     min-height: 0;
     max-height: 100%;
     overflow: hidden;
 }
 
+.mesero-order-panel__comanda-group-divider {
+    flex: 0 0 auto;
+    align-self: stretch;
+    width: 3px;
+    margin: 0 4px;
+    border-radius: 999px;
+    background: linear-gradient(180deg, rgba(254, 136, 120, 0.15), rgba(0, 183, 230, 0.85), rgba(254, 136, 120, 0.15));
+}
+
 .mesero-order-panel__comanda-scroll {
+    flex: 1 1 auto;
     width: 100%;
     min-height: 0;
+    max-height: 100%;
     overflow-x: hidden;
     overflow-y: auto;
     overscroll-behavior-y: contain;
     -webkit-overflow-scrolling: touch;
-    touch-action: pan-x pan-y;
+    touch-action: pan-y pinch-zoom;
+    box-sizing: border-box;
+    padding-bottom: max(16px, env(safe-area-inset-bottom, 0px));
+    scroll-padding-bottom: max(16px, env(safe-area-inset-bottom, 0px));
 }
 
 .mesero-order-panel__comanda-scroll::-webkit-scrollbar {

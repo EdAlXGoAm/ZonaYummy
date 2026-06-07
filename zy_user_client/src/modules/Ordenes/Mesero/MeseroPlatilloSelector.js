@@ -1,7 +1,8 @@
 import './MeseroPlatilloSelector.css';
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { toast } from 'react-toastify';
+import { bindTouchAxisScroll } from './meseroTouchAxisScroll';
 
 const CATEGORY_ORDER = ['Postres', 'Botanas', 'Comida', 'Bebidas', 'Waffles'];
 
@@ -10,7 +11,19 @@ const platilloKey = (platillo) => platillo.NombrePlatillo;
 const MeseroPlatilloSelector = ({ addPlatilloToOrder, platillos, floating = false, inHead = false }) => {
     const [modalOpen, setModalOpen] = useState(false);
     const [cart, setCart] = useState({});
+    const modalBodyRef = useRef(null);
     const notify = (message) => toast(message);
+
+    useEffect(() => {
+        if (!modalOpen) {
+            return undefined;
+        }
+        const bodyEl = modalBodyRef.current;
+        if (!bodyEl) {
+            return undefined;
+        }
+        return bindTouchAxisScroll(bodyEl, { axis: 'y' });
+    }, [modalOpen, platillos.length]);
 
     const platillosByCategory = useMemo(() => {
         const known = new Set(CATEGORY_ORDER);
@@ -108,6 +121,7 @@ const MeseroPlatilloSelector = ({ addPlatilloToOrder, platillos, floating = fals
             {modalOpen && createPortal(
                 <div
                     className="platillo-modal-overlay"
+                    data-touch-scroll-exempt
                     onClick={closeModal}
                 >
                     <div
@@ -125,7 +139,11 @@ const MeseroPlatilloSelector = ({ addPlatilloToOrder, platillos, floating = fals
                                 ✕
                             </button>
                         </div>
-                        <div className="platillo-modal__body">
+                        <div
+                            ref={modalBodyRef}
+                            className="platillo-modal__body"
+                            data-mesero-platillo-scroll
+                        >
                             {platillosByCategory.length === 0 ? (
                                 <p className="platillo-modal__empty">No hay platillos disponibles.</p>
                             ) : (

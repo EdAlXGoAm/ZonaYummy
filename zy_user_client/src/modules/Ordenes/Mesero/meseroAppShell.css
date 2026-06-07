@@ -6,7 +6,7 @@ html.mesero-app-document-lock body {
     overflow: hidden;
     overscroll-behavior: none;
     overscroll-behavior-y: none;
-    touch-action: manipulation;
+    touch-action: pan-x pan-y;
 }
 
 html.mesero-app-document-lock #root {
@@ -61,6 +61,7 @@ html.mesero-app-document-lock #root > * {
     overflow: auto;
     overscroll-behavior: contain;
     -webkit-overflow-scrolling: touch;
+    touch-action: pan-y pinch-zoom;
 }
 
 /* Galería: altura fija al viewport (no depende de % que se colapsa) */
@@ -92,8 +93,18 @@ html.mesero-app-document-lock #root > * {
     z-index: 2000;
 }
 
-/* Scroll anidado: vertical en comanda, horizontal en el track de comandas */
-.mesero-order-panel__comandas-track,
+/* Nested scroll: lock axis per container for touch devices */
+.mesero-order-panel__comandas-track {
+    touch-action: pan-x pinch-zoom;
+}
+
 .mesero-order-panel__comanda-scroll {
-    touch-action: pan-x pan-y;
+    touch-action: pan-y pinch-zoom;
+}
+
+[data-mesero-select-menu],
+[data-mesero-platillo-scroll] {
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-y;
+    overflow-y: auto !important;
 }

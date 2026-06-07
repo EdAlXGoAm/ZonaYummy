@@ -86,6 +86,36 @@
     color: white;
 }
 
+.platillo-categoria-header--toggle {
+    width: 100%;
+    border: 0;
+    cursor: pointer;
+    text-align: left;
+    font: inherit;
+}
+
+.platillo-categoria-header--toggle:hover {
+    filter: brightness(1.03);
+}
+
+.platillo-categoria-grupo.is-collapsed .platillo-categoria-header--toggle {
+    margin-bottom: 0;
+}
+
+.platillo-categoria-grupo.is-collapsed .platillo-categoria-body {
+    display: none;
+}
+
+.platillo-categoria-chevron {
+    display: inline-block;
+    margin-left: 8px;
+    transition: transform 0.15s ease;
+}
+
+.platillo-categoria-grupo.is-collapsed .platillo-categoria-chevron {
+    transform: rotate(-90deg);
+}
+
 .platillo-categoria-titulo {
     margin: 0;
     font-weight: 600;
@@ -153,6 +183,21 @@
 .platillo-disponibilidad.disponible {
     background-color: #d4edda;
     color: #155724;
+}
+
+.platillo-disponibilidad.agotado {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+.platillo-disponibilidad.ilimitado {
+    background-color: #d1ecf1;
+    color: #0c5460;
+}
+
+.platillo-disponibilidad--toggle {
+    cursor: pointer;
+    user-select: none;
 }
 
 .platillo-disponibilidad.no-disponible {

@@ -100,10 +100,21 @@
     grid-row: 1;
     min-height: 0;
     display: flex;
-    align-items: center;
-    gap: 12px;
-    flex-wrap: wrap;
+    flex-direction: column;
+    gap: 8px;
     margin-bottom: 8px;
+}
+
+.mesero-gallery__main-head-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+}
+
+.mesero-gallery__main-head-bar .mesero-gallery__close-order {
+    margin-left: auto;
+    flex-shrink: 0;
 }
 
 .mesero-gallery__panel-slot {
@@ -131,10 +142,14 @@
 }
 
 .mesero-gallery__main-head-actions {
-    margin-left: auto;
     display: flex;
     align-items: center;
     gap: 8px;
+    width: 100%;
+    min-width: 0;
+}
+
+.mesero-gallery__main-head-actions .mesero-platillo-selector {
     flex-shrink: 0;
 }
 
@@ -287,6 +302,11 @@
 
 .mesero-gallery__main-title {
     margin: 0;
+    flex: 1 1 0;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
     font-size: 1.2rem;
     font-weight: 800;
     letter-spacing: -0.02em;
@@ -380,6 +400,7 @@
     align-items: stretch;
     padding-bottom: 2px;
     -webkit-overflow-scrolling: touch;
+    touch-action: pan-x pinch-zoom;
 }
 
 .mesero-gallery__filmstrip-scroll::-webkit-scrollbar {
@@ -610,4 +631,52 @@
 .mesero-gallery__tile--done:hover .mesero-gallery__tile-frame {
     opacity: 0.92;
     border-color: rgba(253, 164, 175, 0.35);
+}
+
+@media (max-width: 640px) {
+    .mesero-gallery__main {
+        padding: 6px 8px 6px;
+    }
+
+    .mesero-gallery__main-inner {
+        padding: 8px 10px 8px;
+    }
+
+    .mesero-gallery__main-head {
+        gap: 6px;
+        margin-bottom: 6px;
+    }
+
+    .mesero-gallery__main-head-bar {
+        gap: 8px;
+    }
+
+    .mesero-gallery__main-title {
+        font-size: 1rem;
+    }
+
+    .mesero-gallery__kicker {
+        padding: 4px 10px;
+        font-size: 0.62rem;
+    }
+
+    .mesero-gallery__main-head-actions {
+        gap: 6px;
+    }
+
+    .mesero-gallery__main-head-actions .mesero-add-platillo-btn__label {
+        display: none;
+    }
+
+    .mesero-gallery__main-head-actions .mesero-add-platillo-btn--fab {
+        padding: 8px;
+        min-width: 40px;
+        justify-content: center;
+    }
+
+    .mesero-gallery__close-order {
+        width: 32px;
+        height: 32px;
+        font-size: 0.9rem;
+    }
 }

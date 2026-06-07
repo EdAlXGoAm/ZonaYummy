@@ -1,0 +1,84 @@
+.mesero-customer-field {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    margin-bottom: 8px;
+}
+
+.mesero-customer-field--compact {
+    flex: 1 1 0;
+    min-width: 0;
+    max-width: none;
+    width: auto;
+    margin-bottom: 0;
+}
+
+.mesero-customer-field__input {
+    flex: 1 1 0;
+    min-width: 0;
+    padding-right: 8px;
+    resize: none;
+    touch-action: auto;
+    font-size: 20px;
+}
+
+.mesero-customer-field--compact .mesero-customer-field__input {
+    min-height: 34px;
+    padding: 4px 8px;
+    line-height: 1.2;
+    font-size: 16px;
+}
+
+.mesero-customer-field__actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+}
+
+.mesero-customer-field__whatsapp {
+    width: 32px;
+    height: 32px;
+    cursor: pointer;
+    transition: opacity 0.2s ease;
+}
+
+.mesero-customer-field--compact .mesero-customer-field__whatsapp {
+    width: 28px;
+    height: 28px;
+}
+
+.mesero-customer-field__save {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6px 10px;
+}
+
+.mesero-customer-field__save--compact {
+    padding: 4px 8px;
+}
+
+@media (max-width: 640px) {
+    .mesero-customer-field--compact {
+        gap: 4px;
+    }
+
+    .mesero-customer-field--compact .mesero-customer-field__input {
+        min-height: 32px;
+        padding: 4px 6px;
+        font-size: 14px;
+    }
+
+    .mesero-customer-field--compact .mesero-customer-field__whatsapp {
+        width: 24px;
+        height: 24px;
+    }
+
+    .mesero-customer-field__save--compact {
+        padding: 4px 6px;
+        min-width: 32px;
+        min-height: 32px;
+    }
+}

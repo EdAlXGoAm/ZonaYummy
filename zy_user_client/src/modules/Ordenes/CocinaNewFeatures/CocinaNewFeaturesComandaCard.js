@@ -7,6 +7,8 @@ import { faPenToSquare, faBan} from '@fortawesome/free-solid-svg-icons';
 
 import DropDown from './../x10DropDown';
 import MarqueeText from './../MeseroPage/MarqueeText';
+import { useDebugCardHeight, DebugCardHeightBadge } from './CocinaNewFeaturesDebugCardHeight';
+import { getKitchenDisplayPlatilloName } from './cocinaNewFeaturesComandaUtils';
 
 // Función para extraer timestamp del ObjectId de MongoDB
 const getTimeAgo = (mongoId) => {
@@ -426,8 +428,18 @@ const CocinaNewFeaturesComandaCard = ({Comanda, updateComanda, compact = false, 
         return { text: `SOLO ${selectedNames.join(" y ")}`, color: "#1a1a1a" };
     };
 
+    const { ref: debugCardRef, heightPx: debugCardHeightPx } = useDebugCardHeight(
+        `${Comanda.ComandaId}-${Comanda._id}-${compact ? 'compact' : 'full'}`,
+    );
+    const displayPlatilloName = getKitchenDisplayPlatilloName(Comanda);
+
     return (
-        <div className={`resume-card ${compact ? 'resume-card--compact' : ''} ${isHamburguesa ? 'resume-card--hamburguesa' : ''}`} tabIndex={compact ? 0 : undefined}>
+        <div
+            ref={debugCardRef}
+            className={`resume-card ${compact ? 'resume-card--compact' : ''} ${isHamburguesa ? 'resume-card--hamburguesa' : ''}`}
+            tabIndex={compact ? 0 : undefined}
+        >
+            <DebugCardHeightBadge heightPx={debugCardHeightPx} />
             {/* Indicador de tiempo transcurrido - solo en modo normal, en compact va dentro del col-3 */}
             {!compact && timeAgo && (
                 <div className="comanda-time-badge">
@@ -518,7 +530,7 @@ const CocinaNewFeaturesComandaCard = ({Comanda, updateComanda, compact = false, 
                                 {!compact && comandaNumber && (
                                     <span className="comanda-number-badge">{comandaNumber}</span>
                                 )}
-                                {Comanda.Platillo}&nbsp;&nbsp;<span style={{textShadow: "0px 0px 10px red"}}>${Comanda.Precio}</span>
+                                {displayPlatilloName}&nbsp;&nbsp;<span style={{textShadow: "0px 0px 10px red"}}>${Comanda.Precio}</span>
                             </h2>
                         </div></div>
                         <div className="row"><div className="col">

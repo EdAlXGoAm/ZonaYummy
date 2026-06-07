@@ -7,23 +7,44 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faAngleUp, faAngleDown, faHandHoldingUsd } from '@fortawesome/free-solid-svg-icons';
 import { faTrash, faCashRegister } from '@fortawesome/free-solid-svg-icons';
 import MeseroPlatilloSelector from './MeseroPlatilloSelector';
+import MeseroCustomerField from './MeseroCustomerField';
 import MeseroComandaSlot from './MeseroComandaSlot';
 import MeseroCobroJsonModal from './MeseroCobroJsonModal';
 import comandasApi from './../../../api/comandasApi';
 import borradosApi from './../../../api/borradosApi';
 import ordersApi from './../../../api/ordersApi';
 import io from 'socket.io-client';
-import { faCheck, faFloppyDisk } from '@fortawesome/free-solid-svg-icons';
+import { faCheck } from '@fortawesome/free-solid-svg-icons';
 
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
 // ========== LOGGING DE RENDIMIENTO CENTRALIZADO ==========
 import performanceLogger from '../../../utils/performanceLogger';
+import { bindTouchAxisScroll } from './meseroTouchAxisScroll';
 // Para activar DEBUG temporal: cambiar ENABLE_DEV_MODE a true en ../../../utils/performanceLogger.js
 // ========== FIN LOGGING ==========
 
 const socket = io(`${process.env.REACT_APP_API_URL}`);
+
+const isComandaInEditingMode = (comanda) => comanda.ComandaPaidStatus === 'Editing';
+
+const sortComandasForDisplay = (list) => [...list].sort((a, b) => {
+    const editingRank = (comanda) => (isComandaInEditingMode(comanda) ? 0 : 1);
+    const rankDiff = editingRank(a) - editingRank(b);
+    if (rankDiff !== 0) {
+        return rankDiff;
+    }
+    return Number(a.ComandaId) - Number(b.ComandaId);
+});
+
+const buildOrderCachePatch = (order) => {
+    if (!order?.OrderID) {
+        return null;
+    }
+    const { Customer, Origen, ...rest } = order;
+    return rest;
+};
 
 const MeseroOrderPanel = ({modeInterface, iInterface, OrderID, DeleteOrder, handleOrderCustStatus, platillos, numPlatillos, handleOrderClient, preloadedOrder, preloadedComandas, isOptimized, galleryLayout = false, onRegisterAddPlatillo, onComandasCacheSync, onOrderCacheSync }) => {
     const notify = (message) => toast(message);
@@ -151,8 +172,12 @@ const MeseroOrderPanel = ({modeInterface, iInterface, OrderID, DeleteOrder, hand
             setOrder((prev) => ({
                 ...preloadedOrder,
                 OrderCustStatus: prev.OrderCustStatus ?? preloadedOrder.OrderCustStatus,
-                Customer: prev.Customer ?? preloadedOrder.Customer,
-                Origen: prev.Origen ?? preloadedOrder.Origen,
+                Customer: galleryLayout
+                    ? (preloadedOrder.Customer ?? prev.Customer ?? '')
+                    : (prev.Customer ?? preloadedOrder.Customer ?? ''),
+                Origen: galleryLayout
+                    ? (preloadedOrder.Origen ?? prev.Origen ?? '')
+                    : (prev.Origen ?? preloadedOrder.Origen ?? ''),
             }));
             setComandas(normalizeComandasList(preloadedComandas));
             updateCuentaTotalOrder(preloadedComandas, preloadedOrder);
@@ -278,6 +303,10 @@ const MeseroOrderPanel = ({modeInterface, iInterface, OrderID, DeleteOrder, hand
             pagado: pagadoBase,
             pendiente: newPendiente,
         };
+        if (galleryLayout && preloadedOrder) {
+            newOrder.Customer = preloadedOrder.Customer ?? mergedBase.Customer ?? '';
+            newOrder.Origen = preloadedOrder.Origen ?? mergedBase.Origen ?? '';
+        }
         
         const calcTime = performance.now() - calcStartTime;
         performanceLogger.log(`🧮 Cálculo de totales: ${calcTime.toFixed(2)}ms - Comandas procesadas: ${comandasDB ? comandasDB.length : 0}, Total: $${cuentaTotal}`);
@@ -303,8 +332,12 @@ const MeseroOrderPanel = ({modeInterface, iInterface, OrderID, DeleteOrder, hand
             setOrder((prev) => ({
                 ...newOrder,
                 OrderCustStatus: prev.OrderCustStatus ?? newOrder.OrderCustStatus,
-                Customer: prev.Customer ?? newOrder.Customer,
-                Origen: prev.Origen ?? newOrder.Origen,
+                Customer: galleryLayout
+                    ? (preloadedOrder?.Customer ?? newOrder.Customer ?? prev.Customer ?? '')
+                    : (prev.Customer ?? newOrder.Customer ?? ''),
+                Origen: galleryLayout
+                    ? (preloadedOrder?.Origen ?? newOrder.Origen ?? prev.Origen ?? '')
+                    : (prev.Origen ?? newOrder.Origen ?? ''),
                 pagos: pagosMerged,
                 pagado: pagadoBase,
                 pendiente: newPendiente,
@@ -348,8 +381,32 @@ const MeseroOrderPanel = ({modeInterface, iInterface, OrderID, DeleteOrder, hand
         if (!galleryLayout || !Order?.OrderID || typeof onOrderCacheSync !== 'function') {
             return;
         }
-        onOrderCacheSync(Order);
+        const patch = buildOrderCachePatch(Order);
+        if (patch) {
+            onOrderCacheSync(patch);
+        }
     }, [galleryLayout, Order, onOrderCacheSync]);
+
+    useEffect(() => {
+        if (!galleryLayout || !preloadedOrder?.OrderID) {
+            return;
+        }
+        setOrder((prev) => {
+            if (Number(prev.OrderID) !== Number(preloadedOrder.OrderID)) {
+                return prev;
+            }
+            const nextCustomer = preloadedOrder.Customer ?? prev.Customer ?? '';
+            const nextOrigen = preloadedOrder.Origen ?? prev.Origen ?? '';
+            if (prev.Customer === nextCustomer && prev.Origen === nextOrigen) {
+                return prev;
+            }
+            return {
+                ...prev,
+                Customer: nextCustomer,
+                Origen: nextOrigen,
+            };
+        });
+    }, [galleryLayout, preloadedOrder?.OrderID, preloadedOrder?.Customer, preloadedOrder?.Origen]);
 
     const finishComandasLoad = () => {
         if (initialComandasLoadRef.current) {
@@ -614,7 +671,6 @@ const MeseroOrderPanel = ({modeInterface, iInterface, OrderID, DeleteOrder, hand
     addPlatillosToOrderRef.current = addPlatillosToOrder;
 
     const comandasGridRef = useRef(null);
-    const [comandaScrollMaxPx, setComandaScrollMaxPx] = useState(null);
 
     useEffect(() => {
         if (!galleryLayout || typeof onRegisterAddPlatillo !== 'function') {
@@ -627,36 +683,22 @@ const MeseroOrderPanel = ({modeInterface, iInterface, OrderID, DeleteOrder, hand
 
     useEffect(() => {
         if (!galleryLayout) {
-            setComandaScrollMaxPx(null);
             return undefined;
         }
-        const gridEl = comandasGridRef.current;
-        if (!gridEl) return undefined;
+        const track = comandasGridRef.current;
+        if (!track) {
+            return undefined;
+        }
 
-        const syncScrollHeight = () => {
-            const gridRect = gridEl.getBoundingClientRect();
-            const filmstrip = document.querySelector('.mesero-gallery__filmstrip');
-            const filmstripTop = filmstrip
-                ? filmstrip.getBoundingClientRect().top
-                : window.innerHeight;
-            const available = Math.floor(filmstripTop - gridRect.top - 6);
-            if (available > 120) {
-                setComandaScrollMaxPx(available);
-            }
-        };
+        const cleanups = [bindTouchAxisScroll(track, { axis: 'x' })];
+        track.querySelectorAll('.mesero-order-panel__comanda-scroll').forEach((el) => {
+            cleanups.push(bindTouchAxisScroll(el, { axis: 'y' }));
+        });
 
-        syncScrollHeight();
-        requestAnimationFrame(syncScrollHeight);
-        const ro = new ResizeObserver(() => requestAnimationFrame(syncScrollHeight));
-        ro.observe(gridEl);
-        const panelSlot = gridEl.closest('.mesero-gallery__panel-slot');
-        if (panelSlot) ro.observe(panelSlot);
-        window.addEventListener('resize', syncScrollHeight);
         return () => {
-            ro.disconnect();
-            window.removeEventListener('resize', syncScrollHeight);
+            cleanups.forEach((cleanup) => cleanup());
         };
-    }, [galleryLayout, comandas.length, toggleArrowStatus]);
+    }, [galleryLayout, comandas.length]);
 
     const updateComanda = useCallback((comanda, options = {}) => {
         const { notesOnly = false } = options;
@@ -730,65 +772,6 @@ const MeseroOrderPanel = ({modeInterface, iInterface, OrderID, DeleteOrder, hand
         }
     }
 
-    const [cliente, setCliente] = useState('');
-    // Colores fijos para clientes según OrderID mod 5
-    const customerColors = ['#ff5382', '#39c5ff', '#ec1cff', '#80ff10', '#fbdd31'];
-    const getCustomerBgColor = id => customerColors[id % customerColors.length];
-    const [clientIcon, setClientIcon] = useState(false);
-    
-    // Estado para origen WhatsApp
-    const [origenWhatsapp, setOrigenWhatsapp] = useState(false);
-
-    const handleCliente = (e) => {
-        setCliente(e.target.value);
-        setClientIcon(false);
-    }
-    
-    // Manejar doble click en icono WhatsApp
-    const handleWhatsappDoubleClick = () => {
-        const newOrigen = !origenWhatsapp;
-        setOrigenWhatsapp(newOrigen);
-        
-        // Actualizar la orden con el nuevo origen
-        const newOrder = { ...Order };
-        newOrder.Origen = newOrigen ? 'Whatsapp' : '';
-        setOrder(newOrder);
-        ordersApi.updateOrder(newOrder)
-            .then((res) => {
-                console.log("Origen actualizado:", newOrigen ? 'Whatsapp' : '');
-                socket.emit('OrdenActualizadaDesdeCliente', {msg: Order.OrderID});
-            })
-            .catch((err) => {
-                console.log(err);
-            });
-    };
-
-    useEffect(() => {
-        if (!Order) return; // Verificación de seguridad
-        const savedCliente = Order.Customer || '';
-        console.log("CARGANDO CLIENTE", savedCliente);
-        setCliente(savedCliente);
-        setClientIcon(savedCliente !== '');
-        // Cargar origen WhatsApp
-        setOrigenWhatsapp(Order.Origen === 'Whatsapp');
-    }, [Order?.Customer, Order?.Origen]);
-
-    const updateCliente = () => {
-        const newOrder = { ...Order };
-            newOrder.Customer = document.getElementById(`textAreaClient_${Order.OrderID}`).value;
-            console.log("Adding cliente: ", newOrder.Customer);
-            setOrder(newOrder);
-            ordersApi.updateOrder(newOrder)
-            .then((res) => {
-                console.log(res);
-                setClientIcon(true);
-                socket.emit('OrdenActualizadaDesdeCliente', {msg: Order.OrderID});
-            })
-            .catch((err) => {
-                console.log(err);
-            });
-    }
-
     const handleBubbleToggle = (comandaComandaId) => {
         setExpandedComandas(prev =>
             prev.includes(comandaComandaId)
@@ -838,19 +821,6 @@ const MeseroOrderPanel = ({modeInterface, iInterface, OrderID, DeleteOrder, hand
     }, [Order, scheduleFetchComandas]);
 
     useEffect(() => () => clearCobroLongPress(), [clearCobroLongPress]);
-
-    // Agrego lógica para determinar dinámicamente el ícono y su color según estado
-    const savedCliente = Order?.Customer || '';
-    const isEditing = cliente !== savedCliente;
-    const iconType = clientIcon ? faCheck : faFloppyDisk;
-    let iconColor;
-    if (clientIcon) {
-        iconColor = '#28a745';           // verde cuando ya está guardado
-    } else if (isEditing && cliente !== '') {
-        iconColor = '#007bff';           // azul cuando hay cambios sin guardar
-    } else {
-        iconColor = '#dc3545';           // rojo cuando está vacío y sin guardar
-    }
 
     const confirmarCobroParcial = () => {
         // Bloquear inmediatamente para evitar doble click
@@ -963,91 +933,66 @@ const MeseroOrderPanel = ({modeInterface, iInterface, OrderID, DeleteOrder, hand
       setItemsSeleccionadosPago(new Set(unpaidComandas.map((c) => c.ComandaId)));
     };
 
+    const sortedVisibleComandas = useMemo(() => sortComandasForDisplay(
+        comandas.filter((c) => c.ComandaPrepStatus !== 'ReadyToServe' || expandedComandas.includes(c.ComandaId)),
+    ), [comandas, expandedComandas]);
+
     // Verificación de seguridad: si Order no existe o fue eliminada, no renderizar
     if (!Order || !Order.OrderID) {
       return null;
     }
 
-    const comandaCards = comandas
-        .filter(c => c.ComandaPrepStatus !== 'ReadyToServe' || expandedComandas.includes(c.ComandaId))
-        .map((comanda) => (
-            galleryLayout ? (
-                <div key={comanda.ComandaId} className="mesero-order-panel__comanda-cell">
-                    <div
-                        className="mesero-order-panel__comanda-scroll"
-                        style={comandaScrollMaxPx ? {
-                            height: `${comandaScrollMaxPx}px`,
-                            maxHeight: `${comandaScrollMaxPx}px`,
-                        } : undefined}
-                    >
-                        <MeseroComandaSlot
-                            order={Order}
-                            modeInterface={modeInterface}
-                            Comanda={comanda}
-                            updateComanda={updateComanda}
-                            removeComanda={removeComanda}
-                            onBubbleToggle={handleBubbleToggle}
-                            enableFullscreenFab={galleryLayout}
-                        />
-                    </div>
+    const renderComandaCard = (comanda) => (
+        galleryLayout ? (
+            <div className="mesero-order-panel__comanda-cell">
+                <div className="mesero-order-panel__comanda-scroll">
+                    <MeseroComandaSlot
+                        order={Order}
+                        modeInterface={modeInterface}
+                        Comanda={comanda}
+                        updateComanda={updateComanda}
+                        removeComanda={removeComanda}
+                        onBubbleToggle={handleBubbleToggle}
+                        enableFullscreenFab={galleryLayout}
+                    />
                 </div>
-            ) : (
-                <MeseroComandaSlot
-                    key={comanda.ComandaId}
-                    order={Order}
-                    modeInterface={modeInterface}
-                    Comanda={comanda}
-                    updateComanda={updateComanda}
-                    removeComanda={removeComanda}
-                    onBubbleToggle={handleBubbleToggle}
-                    enableFullscreenFab={galleryLayout}
-                />
-            )
-        ));
+            </div>
+        ) : (
+            <MeseroComandaSlot
+                order={Order}
+                modeInterface={modeInterface}
+                Comanda={comanda}
+                updateComanda={updateComanda}
+                removeComanda={removeComanda}
+                onBubbleToggle={handleBubbleToggle}
+                enableFullscreenFab={galleryLayout}
+            />
+        )
+    );
+
+    const comandaCards = sortedVisibleComandas.map((comanda, index) => {
+        const prev = sortedVisibleComandas[index - 1];
+        const showGroupDivider = galleryLayout
+            && index > 0
+            && isComandaInEditingMode(prev)
+            && !isComandaInEditingMode(comanda);
+
+        return (
+            <React.Fragment key={comanda.ComandaId}>
+                {showGroupDivider && (
+                    <div className="mesero-order-panel__comanda-group-divider" aria-hidden="true" />
+                )}
+                {renderComandaCard(comanda)}
+            </React.Fragment>
+        );
+    });
 
     return (
         <>
         <div className={`card${galleryLayout ? ' mesero-order-panel--gallery' : ''}`} style={{backgroundColor: colorOrder}}>
-        {/* Text box editable backgroudn red and text blanco BOLD */}
-            <div className='row'>
-                <div className='col-10'>
-                    <textarea className="form-control" id={`textAreaClient_${Order.OrderID}`} rows="1" placeholder="Cliente"
-                    onChange={handleCliente}
-                    value={cliente}
-                    style={{
-                        backgroundColor: getCustomerBgColor(Order.OrderID),
-                        color: '#000',
-                        fontWeight: 'bold',
-                        fontSize: '20px',
-                        paddingRight: '40px',
-                        textShadow: '-0.2px -0.2px 0 #000, 0.2px -0.2px 0 #000, -0.2px 0.2px 0 #000, 0.2px 0.2px 0 #000'
-                    }}
-                    ></textarea>
-                </div>
-                <div className='col-2' style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
-                    {/* Icono WhatsApp - doble click para activar/desactivar */}
-                    <img 
-                        src="icons/whatsapp.png" 
-                        alt="WhatsApp"
-                        onDoubleClick={handleWhatsappDoubleClick}
-                        style={{
-                            width: '36px',
-                            height: '36px',
-                            cursor: 'pointer',
-                            opacity: origenWhatsapp ? 1 : 0.3,
-                            transition: 'opacity 0.2s ease',
-                            filter: origenWhatsapp ? 'none' : 'grayscale(50%)'
-                        }}
-                        title={origenWhatsapp ? 'Origen: WhatsApp (doble click para quitar)' : 'Doble click para marcar como WhatsApp'}
-                    />
-                    {/* Botón guardar cliente */}
-                    <div className="form-group">
-                        <button type="button" className="btn btn-primary" style={{backgroundColor: iconColor}} onClick={updateCliente}>
-                            <FontAwesomeIcon icon={iconType} size="2x" style={{ color: '#fff' }} />
-                        </button>
-                    </div>
-                </div>
-            </div>
+            {!galleryLayout && (
+                <MeseroCustomerField order={Order} onOrderUpdated={setOrder} />
+            )}
 
             <div className="row">
                 {!galleryLayout && (
@@ -1125,22 +1070,19 @@ const MeseroOrderPanel = ({modeInterface, iInterface, OrderID, DeleteOrder, hand
                     />
                 )}
                 {/* Burbujas para comandas ReadyToServe no expandidas */}
-                <div className="bubbles-container" style={{display: 'flex', gap: '8px', margin:'8px 0', flexShrink: 0}}>
+                <div className="bubbles-container">
                     {comandas
                         .filter(c => c.ComandaPrepStatus === 'ReadyToServe' && !expandedComandas.includes(c.ComandaId))
                         .map(c => (
                             <div
                                 key={c.ComandaId}
                                 className="comanda-bubble"
-                                style={{
-                                    width: '60px', height: '60px', borderRadius: '50%', overflow: 'hidden', cursor: 'pointer', border: '2px solid #00ff5e'
-                                }}
                                 onClick={() => handleBubbleToggle(c.ComandaId)}
                             >
                                 <img
                                     src={c.Imagen}
                                     alt={c.Platillo}
-                                    style={{width:'100%', height:'100%', objectFit:'cover'}}
+                                    className="comanda-bubble__img"
                                 />
                             </div>
                         ))}

@@ -3,20 +3,26 @@ import ordersApi from './../../../api/ordersApi';
 import comandasApi from './../../../api/comandasApi';
 import borradosApi from './../../../api/borradosApi';
 import CocinaNewFeaturesComandaCard from './CocinaNewFeaturesComandaCard';
+import { DebugCardHeightShell } from './CocinaNewFeaturesDebugCardHeight';
+import {
+    getKitchenDisplayPlatilloName,
+    isTacoDeBirria,
+} from './cocinaNewFeaturesComandaUtils';
 import './CocinaNewFeaturesKitchenBoard.css';
 import './CocinaNewFeaturesComandaCard.css';
 
 import io from 'socket.io-client';
 const socket = io(`${process.env.REACT_APP_API_URL}`);
 
+const sortComandasByComandaId = (comandas) => [...comandas].sort(
+    (a, b) => Number(a.ComandaId) - Number(b.ComandaId),
+);
+
 const CocinaNewFeaturesKitchenBoard = ({modeInterface, Orders}) => {
     const [numOrders, setNumOrders] = useState([]);
     const [activeComandas, setActiveComandas] = useState([]);
     const [arrayBebidas, setArrayBebidas] = useState([]);
     const [arrayWaffles, setArrayWaffles] = useState([]);
-
-    // Estado para controlar si el audio está habilitado
-    const [audioEnabled] = useState(false);
 
     // Estado para el menú contextual (comandas individuales)
     const [contextMenu, setContextMenu] = useState({
@@ -199,20 +205,29 @@ const CocinaNewFeaturesKitchenBoard = ({modeInterface, Orders}) => {
             }
         });
 
-        // Ordenar por OrderID (más antiguo primero = número más bajo)
-        return Array.from(orderMap.values()).sort((a, b) => Number(a.orderId) - Number(b.orderId));
+        return Array.from(orderMap.values())
+            .map((order) => ({
+                ...order,
+                comandas: sortComandasByComandaId(order.comandas),
+            }))
+            .sort((a, b) => Number(a.orderId) - Number(b.orderId));
     }, [activeComandas]);
 
     // Espacio que ocupa cada platillo como fracción de una columna (1.0 = columna llena).
     // Fácil extender: añadir más entradas con su fracción.
     const PLATILLO_COLUMN_SPACE = {
-        Hamburguesa: 1 / 3,
+        Hamburguesa: 1 / 2,
         Tacos: 1 / 6,
         'C Hamburguesa': 1, // 100% de la columna; se expande verticalmente a lo que necesite.
         // Ejemplo futuro: Waffle: 1/4,
     };
     const DEFAULT_COLUMN_SPACE = 1 / 3; // Platillos no listados (comportamiento similar a hamburguesa).
-    const getComandaSpace = (comanda) => PLATILLO_COLUMN_SPACE[comanda.Platillo] ?? DEFAULT_COLUMN_SPACE;
+    const getComandaSpace = (comanda) => {
+        if (isTacoDeBirria(comanda)) {
+            return 1 / 4;
+        }
+        return PLATILLO_COLUMN_SPACE[comanda.Platillo] ?? DEFAULT_COLUMN_SPACE;
+    };
 
     const { mainOrders, extraOrders } = useMemo(() => {
         const columnSlots = []; // Cada slot representa una columna
@@ -301,7 +316,7 @@ const CocinaNewFeaturesKitchenBoard = ({modeInterface, Orders}) => {
                             <div 
                                 key={comanda.ComandaId} 
                                 className="bubble-train-item"
-                                title={comanda.Platillo}
+                                title={getKitchenDisplayPlatilloName(comanda)}
                             >
                                 <img 
                                     src={comanda.Imagen} 
@@ -403,11 +418,15 @@ const CocinaNewFeaturesKitchenBoard = ({modeInterface, Orders}) => {
                                         return { text: `${diffMins} min`, urgency: 'urgent' };
                                     };
                                     const timeAgo = getTimeAgo();
+                                    const displayPlatilloName = getKitchenDisplayPlatilloName(comanda);
+                                    const variantName = comanda.Details?.Variants?.[comanda.Details?.SelectedVariant]?.VariantName;
                                     
                                     return (
-                                    <div 
-                                        key={comanda.ComandaId} 
+                                    <DebugCardHeightShell
+                                        key={comanda.ComandaId}
+                                        trackKey={`extra-${comanda.ComandaId}-${comanda._id}`}
                                         className="bebida-item"
+                                        badgeVariant="bebida"
                                         onContextMenu={(e) => handleContextMenu(e, comanda)}
                                         style={{ cursor: 'context-menu', position: 'relative' }}
                                     >
@@ -438,10 +457,10 @@ const CocinaNewFeaturesKitchenBoard = ({modeInterface, Orders}) => {
                                         </div>
                                         <div className="bebida-meta">
                                             <div className="bebida-name-row">
-                                                <div className="bebida-name">{comanda.Platillo}</div>
+                                                <div className="bebida-name">{displayPlatilloName}</div>
                                             </div>
-                                            {comanda.Details?.Variants?.[comanda.Details?.SelectedVariant]?.VariantName && (
-                                                <div className="bebida-variant-badge">{comanda.Details.Variants[comanda.Details.SelectedVariant].VariantName.toUpperCase()}</div>
+                                            {variantName && (
+                                                <div className="bebida-variant-badge">{variantName.toUpperCase()}</div>
                                             )}
                                             {comanda.Platillo === "Hamburguesa" && getAderezosPreview(comanda) && (
                                                 <div className={`hamburguesa-aderezos-preview ${getAderezosPreview(comanda) === "TODOS" ? 'aderezos-todos' : ''}`}>
@@ -452,7 +471,7 @@ const CocinaNewFeaturesKitchenBoard = ({modeInterface, Orders}) => {
                                         <div className="bebida-right">
                                             <div className="bebida-price">${Number(comanda.Precio || 0).toFixed(0)}</div>
                                         </div>
-                                    </div>
+                                    </DebugCardHeightShell>
                                     );
                                 })}
                             </div>
@@ -484,7 +503,12 @@ const CocinaNewFeaturesKitchenBoard = ({modeInterface, Orders}) => {
             order.total += comanda.Precio || 0;
         });
 
-        const orderedBebidas = Array.from(bebidasByOrder.values()).sort((a, b) => Number(a.orderId) - Number(b.orderId));
+        const orderedBebidas = Array.from(bebidasByOrder.values())
+            .map((order) => ({
+                ...order,
+                comandas: sortComandasByComandaId(order.comandas),
+            }))
+            .sort((a, b) => Number(a.orderId) - Number(b.orderId));
 
         return (
             <>
@@ -521,9 +545,11 @@ const CocinaNewFeaturesKitchenBoard = ({modeInterface, Orders}) => {
                                     const timeAgo = getTimeAgo();
                                     
                                     return (
-                                    <div 
-                                        key={comanda.ComandaId} 
+                                    <DebugCardHeightShell
+                                        key={comanda.ComandaId}
+                                        trackKey={`bebida-${comanda.ComandaId}-${comanda._id}`}
                                         className="bebida-item"
+                                        badgeVariant="bebida"
                                         onContextMenu={(e) => handleContextMenu(e, comanda)}
                                         style={{ cursor: 'context-menu', position: 'relative' }}
                                     >
@@ -559,7 +585,7 @@ const CocinaNewFeaturesKitchenBoard = ({modeInterface, Orders}) => {
                                         <div className="bebida-right">
                                             <div className="bebida-price">${Number(comanda.Precio || 0).toFixed(0)}</div>
                                         </div>
-                                    </div>
+                                    </DebugCardHeightShell>
                                     );
                                 })}
                             </div>
@@ -591,7 +617,12 @@ const CocinaNewFeaturesKitchenBoard = ({modeInterface, Orders}) => {
             order.total += comanda.Precio || 0;
         });
 
-        const orderedWaffles = Array.from(wafflesByOrder.values()).sort((a, b) => Number(a.orderId) - Number(b.orderId));
+        const orderedWaffles = Array.from(wafflesByOrder.values())
+            .map((order) => ({
+                ...order,
+                comandas: sortComandasByComandaId(order.comandas),
+            }))
+            .sort((a, b) => Number(a.orderId) - Number(b.orderId));
 
         return (
             <>
@@ -628,9 +659,11 @@ const CocinaNewFeaturesKitchenBoard = ({modeInterface, Orders}) => {
                                     const timeAgo = getTimeAgo();
                                     
                                     return (
-                                    <div 
-                                        key={comanda.ComandaId} 
+                                    <DebugCardHeightShell
+                                        key={comanda.ComandaId}
+                                        trackKey={`waffle-${comanda.ComandaId}-${comanda._id}`}
                                         className="bebida-item"
+                                        badgeVariant="bebida"
                                         onContextMenu={(e) => handleContextMenu(e, comanda)}
                                         style={{ cursor: 'context-menu', position: 'relative' }}
                                     >
@@ -666,7 +699,7 @@ const CocinaNewFeaturesKitchenBoard = ({modeInterface, Orders}) => {
                                         <div className="bebida-right">
                                             <div className="bebida-price">${Number(comanda.Precio || 0).toFixed(0)}</div>
                                         </div>
-                                    </div>
+                                    </DebugCardHeightShell>
                                     );
                                 })}
                             </div>
@@ -677,35 +710,9 @@ const CocinaNewFeaturesKitchenBoard = ({modeInterface, Orders}) => {
         );
     };
 
-    // Audio helper
-    const playAudioIfEnabled = (audioPath) => {
-        if (audioEnabled && !modeInterface) {
-            const audio = new Audio(audioPath);
-            audio.play().catch(err => {
-                console.error("Error al reproducir audio:", err);
-            });
-        }
-    };
-
     // Socket listeners
     useEffect(() => {
-        socket.on('NuevaComandaDesdeServidor', (data) => {
-            if (!modeInterface) {
-                const audioMsg = `${data.msg.split('-')[0]}-${data.msg.split('-')[2]}`;
-                const audioMap = {
-                    "Add-Hamburguesa": "ComandaAudios/Solicitan-Hamburguesa.wav",
-                    "Add-Vaso de Postre": "ComandaAudios/Solicitan-VasoDePostre.wav",
-                    "Add-Pay de Limón": "ComandaAudios/Solicitan-Pay-de-Limon.wav",
-                    "Add-Cheese Cake": "ComandaAudios/Solicitan-Cheese-Cake.wav",
-                    "Add-Bubble Waffle": "ComandaAudios/Solicitan-Waffle.wav",
-                    "Add-Café": "ComandaAudios/Solicitan-Cafe.wav",
-                    "Add-Frappé": "ComandaAudios/Solicitan-Frappe.wav",
-                    "Add-Malteada": "ComandaAudios/Solicitan-Malteada.wav",
-                };
-                if (audioMap[audioMsg]) {
-                    playAudioIfEnabled(audioMap[audioMsg]);
-                }
-            }
+        socket.on('NuevaComandaDesdeServidor', () => {
             fetchComandasFromOrders();
         });
         return () => socket.off('NuevaComandaDesdeServidor');
