@@ -298,44 +298,36 @@ const MeseroComandaEditor = ({Comanda, updateComanda}) => {
         };
     }, [componentsIsExpanded]);
 
-    const isPending = Comanda.ComandaPaidStatus === "Pending";
+    // Two render modes only: Editing -> interactive controls, otherwise -> summary labels.
+    const isEditing = Comanda.ComandaPaidStatus === "Editing";
 
     return (
         <div>
-            {isPending ? (
-                <div style={{fontFamily: 'Arial, sans-serif'}}>
-                    <span>{Comanda.Details.Variants[Comanda.Details.SelectedVariant].VariantName}</span>
-                </div>
-            ) : (
+            {isEditing ? (
                 <DropDown
                     opciones_in={Comanda.Details.Variants.map((variant) => variant.VariantName)}
                     selectedValue={Comanda.Details.Variants[Comanda.Details.SelectedVariant].VariantName}
                     onDropdownChange={(e) => handleVariantDropdownChange(Comanda.Details.Variants.map((variant) => variant.VariantName), e)}
                     prefix={Comanda.Details.Variants.map((variant) => variant.Precio)}/>
+            ) : (
+                <div style={{fontFamily: 'Arial, sans-serif'}}>
+                    <span>{Comanda.Details.Variants[Comanda.Details.SelectedVariant].VariantName}</span>
+                </div>
             )}
             {Comanda.Details.Variants[Comanda.Details.SelectedVariant].Componentes.length > 0 && (
-                <div>
-                    <div className="row d-flex align-items-center personalizarTitle">
-                        {!isPending && (
-                            <>
-                                <div className="faButton" onClick={toggleComponentsIsExpanded} style={{ cursor: 'pointer' }}>
-                                    { componentsIsExpanded ? <FontAwesomeIcon icon={faBan} size="sm" /> : <FontAwesomeIcon icon={faPenToSquare} size="sm" /> }
-                                </div>
-                                <h2 className="titleOption" onClick={toggleComponentsIsExpanded} style={{ cursor: 'pointer' }}>Personalizar</h2>
-                            </>
-                        )}
-                    </div>
-                    {componentsIsExpanded && !isPending && (
-                        <div>
-                            <div className="row" ref={containerRef}>
-                                {Comanda.Details.Variants[Comanda.Details.SelectedVariant].Componentes.map((componente, indexComponente) => (
-                                    <div key={indexComponente} className={`col-${12/numCheckBoxPerRow}`}>
-                                        {isPending ? (
-                                            <div style={{fontFamily: 'Arial, sans-serif'}}>
-                                                <span>{componente.Name}</span>
-                                                {componente.Precio !== 0 && (<strong> ${componente.Precio}</strong>)}
-                                            </div>
-                                        ) : (
+                isEditing ? (
+                    <div>
+                        <div className="row d-flex align-items-center personalizarTitle">
+                            <div className="faButton" onClick={toggleComponentsIsExpanded} style={{ cursor: 'pointer' }}>
+                                { componentsIsExpanded ? <FontAwesomeIcon icon={faBan} size="sm" /> : <FontAwesomeIcon icon={faPenToSquare} size="sm" /> }
+                            </div>
+                            <h2 className="titleOption" onClick={toggleComponentsIsExpanded} style={{ cursor: 'pointer' }}>Personalizar</h2>
+                        </div>
+                        {componentsIsExpanded && (
+                            <div>
+                                <div className="row" ref={containerRef}>
+                                    {Comanda.Details.Variants[Comanda.Details.SelectedVariant].Componentes.map((componente, indexComponente) => (
+                                        <div key={indexComponente} className={`col-${12/numCheckBoxPerRow}`}>
                                             <label className="container">
                                                 <div>
                                                     {componente.Name || "Nombre Componente"}
@@ -344,29 +336,52 @@ const MeseroComandaEditor = ({Comanda, updateComanda}) => {
                                                 <input type="checkbox" id="Checked" checked={componente.Checked} onChange={(e) => handleVariantComponente(indexComponente, e)}/>
                                                 <span className="checkmark"></span>
                                             </label>
-                                        )}
-                                    </div>
-                                ))}
+                                        </div>
+                                    ))}
+                                </div>
                             </div>
+                        )}
+                        <hr/>
+                    </div>
+                ) : (
+                    Comanda.Details.Variants[Comanda.Details.SelectedVariant].Componentes.some((componente) => !componente.Checked) && (
+                        <div>
+                            <ul style={{listStyleType: 'disc', paddingLeft: '20px', textAlign: 'left', fontFamily: 'Arial, sans-serif'}}>
+                                {Comanda.Details.Variants[Comanda.Details.SelectedVariant].Componentes
+                                    .filter((componente) => !componente.Checked)
+                                    .map((componente, index) => (
+                                        <li key={index} style={{color: 'red'}}>
+                                            Sin {componente.Name}
+                                            {componente.Precio !== 0 && (<strong> ${componente.Precio}</strong>)}
+                                        </li>
+                                    ))}
+                            </ul>
+                            <hr/>
                         </div>
-                    )}
-                    <hr/>
-                </div>
+                    )
+                )
             )}
             {Comanda.Details.Variants[Comanda.Details.SelectedVariant].Opciones.map((opcion, indexOpcion) => (
                 <div key={indexOpcion}>
-                <h2 className="titleComponents">{opcion.Name.toUpperCase()}</h2>
-                {isPending ? (
-                    <div style={{fontFamily: 'Arial, sans-serif'}}>
-                        <span>{opcion.Items[opcion.SelectedItem].Name}</span>
-                        {opcion.Items[opcion.SelectedItem].Precio !== 0 && (<strong> ${opcion.Items[opcion.SelectedItem].Precio}</strong>)}
-                    </div>
+                {isEditing ? (
+                    <>
+                        <h2 className="titleComponents">{opcion.Name.toUpperCase()}</h2>
+                        <DropDown
+                            opciones_in={opcion.Items.map((item) => item.Name)}
+                            selectedValue={opcion.Items[opcion.SelectedItem].Name}
+                            onDropdownChange={(e) => handleOpcionDropdownChange(opcion.Items.map((item) => item.Name), indexOpcion, e)}
+                            prefix={opcion.Items.map((item) => item.Precio)}/>
+                    </>
                 ) : (
-                    <DropDown
-                        opciones_in={opcion.Items.map((item) => item.Name)}
-                        selectedValue={opcion.Items[opcion.SelectedItem].Name}
-                        onDropdownChange={(e) => handleOpcionDropdownChange(opcion.Items.map((item) => item.Name), indexOpcion, e)}
-                        prefix={opcion.Items.map((item) => item.Precio)}/>
+                    opcion.Items[opcion.SelectedItem].Name !== "No aplica" && (
+                        <>
+                            <h2 className="titleComponents">{opcion.Name.toUpperCase()}</h2>
+                            <div style={{fontFamily: 'Arial, sans-serif'}}>
+                                <span>{opcion.Items[opcion.SelectedItem].Name}</span>
+                                {opcion.Items[opcion.SelectedItem].Precio !== 0 && (<strong> ${opcion.Items[opcion.SelectedItem].Precio}</strong>)}
+                            </div>
+                        </>
+                    )
                 )}
                 </div>
             ))}
@@ -379,7 +394,7 @@ const MeseroComandaEditor = ({Comanda, updateComanda}) => {
                     {Comanda.Details.Variants[Comanda.Details.SelectedVariant].Ingredientes.map((ingrediente, indexIngrediente) => (
                         <div key={indexIngrediente} style={{marginBottom: '1rem'}}>
                             <h3 className="titleOption">{ingrediente.Name}</h3>
-                            {isPending ? (
+                            {!isEditing ? (
                                 <ul style={{listStyleType: 'disc', paddingLeft: '20px', textAlign: 'left', fontFamily: 'Arial, sans-serif'}}>
                                     {ingrediente.Items.map((item, indexItem) => {
                                         const text = item.Checked ? item.Name : `Sin ${item.Name}`;
@@ -415,68 +430,104 @@ const MeseroComandaEditor = ({Comanda, updateComanda}) => {
                 </div>
             )}
             {Comanda.Details.Variants[Comanda.Details.SelectedVariant].Extras.length > 0 && (
-                <div>
-                    <div className="row d-flex align-items-center personalizarTitle">
-                        <div className="faButton" onClick={toggleExtrasIsExpanded} style={{ cursor: 'pointer' }}>
-                        { extrasIsExpanded ? <FontAwesomeIcon icon={faBan} size="sm" /> : <FontAwesomeIcon icon={faPenToSquare} size="sm" /> }
-                        </div>
-                        <h2 className="titleOption" onClick={toggleExtrasIsExpanded} style={{ cursor: 'pointer' }}>Ingrediente Extra</h2>
-                    </div>
-                    {extrasIsExpanded && (
+                isEditing ? (
                     <div>
-                        <div className="row" ref={containerRef}>
-                            {Comanda.Details.Variants[Comanda.Details.SelectedVariant].Extras.map((extra, indexExtra) => (
-                                <div key={indexExtra} className={`col-${12/numCheckBoxPerRow}`}>
-                                    <label className="container">
-                                        <div> 
-                                            {extra.Extra ? extra.Extra : "Nombre Ing Extra"}
-                                            <span style={{color: "red"}}>{extra.Precio !== 0 ? (<strong> ${extra.Precio}</strong>) : ''}</span>
-                                        </div>
-                                        <input type="checkbox" id="Checked" checked={extra.Checked} onChange={(e) => handleVariantExtra(indexExtra, e)}/>
-                                        <span className="checkmark"></span>
-                                    </label>
-                                </div>
-                            ))}
+                        <div className="row d-flex align-items-center personalizarTitle">
+                            <div className="faButton" onClick={toggleExtrasIsExpanded} style={{ cursor: 'pointer' }}>
+                            { extrasIsExpanded ? <FontAwesomeIcon icon={faBan} size="sm" /> : <FontAwesomeIcon icon={faPenToSquare} size="sm" /> }
+                            </div>
+                            <h2 className="titleOption" onClick={toggleExtrasIsExpanded} style={{ cursor: 'pointer' }}>Ingrediente Extra</h2>
                         </div>
+                        {extrasIsExpanded && (
+                        <div>
+                            <div className="row" ref={containerRef}>
+                                {Comanda.Details.Variants[Comanda.Details.SelectedVariant].Extras.map((extra, indexExtra) => (
+                                    <div key={indexExtra} className={`col-${12/numCheckBoxPerRow}`}>
+                                        <label className="container">
+                                            <div> 
+                                                {extra.Extra ? extra.Extra : "Nombre Ing Extra"}
+                                                <span style={{color: "red"}}>{extra.Precio !== 0 ? (<strong> ${extra.Precio}</strong>) : ''}</span>
+                                            </div>
+                                            <input type="checkbox" id="Checked" checked={extra.Checked} onChange={(e) => handleVariantExtra(indexExtra, e)}/>
+                                            <span className="checkmark"></span>
+                                        </label>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                        )}
+                        {Comanda.Details.Variants[Comanda.Details.SelectedVariant].Adicionales.length > 0 && (<hr/>)}
                     </div>
-                    )}
-                    {Comanda.Details.Variants[Comanda.Details.SelectedVariant].Adicionales.length > 0 && (<hr/>)}
-                </div>
+                ) : (
+                    Comanda.Details.Variants[Comanda.Details.SelectedVariant].Extras.some((extra) => extra.Checked) && (
+                        <div>
+                            <h2 className="titleOption">Ingrediente Extra</h2>
+                            {Comanda.Details.Variants[Comanda.Details.SelectedVariant].Extras
+                                .filter((extra) => extra.Checked)
+                                .map((extra, index) => (
+                                    <div key={index} style={{fontFamily: 'Arial, sans-serif'}}>
+                                        <span>{extra.Extra ? extra.Extra : "Nombre Ing Extra"}</span>
+                                        {extra.Precio !== 0 && (<strong> ${extra.Precio}</strong>)}
+                                    </div>
+                                ))}
+                            {Comanda.Details.Variants[Comanda.Details.SelectedVariant].Adicionales.length > 0 && (<hr/>)}
+                        </div>
+                    )
+                )
             )}
             {Comanda.Details.Variants[Comanda.Details.SelectedVariant].Adicionales.length > 0 && (
-                <div>
-                    <div className="row d-flex align-items-center personalizarTitle">
-                        <div className="faButton" onClick={toggleAdicionalesIsExpanded} style={{ cursor: 'pointer' }}>
-                        { adicionalesIsExpanded ? <FontAwesomeIcon icon={faBan} size="sm" /> : <FontAwesomeIcon icon={faPenToSquare} size="sm" /> }
-                        </div>
-                        <h2 className="titleOption" onClick={toggleAdicionalesIsExpanded} style={{ cursor: 'pointer' }}>Adicional</h2>
-                    </div>
-                    {adicionalesIsExpanded && (
+                isEditing ? (
                     <div>
-                        <div className="row" ref={containerRef}>
-                            {Comanda.Details.Variants[Comanda.Details.SelectedVariant].Adicionales.map((adicional, indexAdicional) => (
-                                <div key={indexAdicional} className={`col-${12/numCheckBoxPerRow}`}>
-                                    <label className="container">
-                                        <div>
-                                            {adicional.Adicional ? adicional.Adicional : "Nombre Adicional"}
-                                            <span style={{color: "red"}}>{adicional.Precio !== 0 ? (<strong> ${adicional.Precio}</strong>) : ''}</span>
-                                        </div>
-                                        <input type="checkbox" id="Checked" checked={adicional.Checked} onChange={(e) => handleVariantAdicional(indexAdicional, e)}/>
-                                        <span className="checkmark"></span>
-                                    </label>
-                                    {adicional.Checked && (
-                                        <DropDown
-                                            opciones_in={adicional.Opciones.map((opcion, indexOpcion) => (opcion))}
-                                            selectedValue={adicional.Opciones[adicional.SelectedOpcion]} 
-                                            onDropdownChange={(e) => handleVariantAdicionalOpcionDropdownChange(adicional.Opciones.map((opcion, indexOpcion) => (opcion)), indexAdicional, e)}
-                                            prefix={adicional.Opciones.map((opcion, indexOpcion) => (0))}/>
-                                    )}
-                                </div>
-                            ))}
+                        <div className="row d-flex align-items-center personalizarTitle">
+                            <div className="faButton" onClick={toggleAdicionalesIsExpanded} style={{ cursor: 'pointer' }}>
+                            { adicionalesIsExpanded ? <FontAwesomeIcon icon={faBan} size="sm" /> : <FontAwesomeIcon icon={faPenToSquare} size="sm" /> }
+                            </div>
+                            <h2 className="titleOption" onClick={toggleAdicionalesIsExpanded} style={{ cursor: 'pointer' }}>Adicional</h2>
                         </div>
+                        {adicionalesIsExpanded && (
+                        <div>
+                            <div className="row" ref={containerRef}>
+                                {Comanda.Details.Variants[Comanda.Details.SelectedVariant].Adicionales.map((adicional, indexAdicional) => (
+                                    <div key={indexAdicional} className={`col-${12/numCheckBoxPerRow}`}>
+                                        <label className="container">
+                                            <div>
+                                                {adicional.Adicional ? adicional.Adicional : "Nombre Adicional"}
+                                                <span style={{color: "red"}}>{adicional.Precio !== 0 ? (<strong> ${adicional.Precio}</strong>) : ''}</span>
+                                            </div>
+                                            <input type="checkbox" id="Checked" checked={adicional.Checked} onChange={(e) => handleVariantAdicional(indexAdicional, e)}/>
+                                            <span className="checkmark"></span>
+                                        </label>
+                                        {adicional.Checked && (
+                                            <DropDown
+                                                opciones_in={adicional.Opciones.map((opcion, indexOpcion) => (opcion))}
+                                                selectedValue={adicional.Opciones[adicional.SelectedOpcion]} 
+                                                onDropdownChange={(e) => handleVariantAdicionalOpcionDropdownChange(adicional.Opciones.map((opcion, indexOpcion) => (opcion)), indexAdicional, e)}
+                                                prefix={adicional.Opciones.map((opcion, indexOpcion) => (0))}/>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                        )}
                     </div>
-                    )}
-                </div>
+                ) : (
+                    Comanda.Details.Variants[Comanda.Details.SelectedVariant].Adicionales.some((adicional) => adicional.Checked) && (
+                        <div>
+                            <h2 className="titleOption">Adicional</h2>
+                            {Comanda.Details.Variants[Comanda.Details.SelectedVariant].Adicionales
+                                .filter((adicional) => adicional.Checked)
+                                .map((adicional, index) => (
+                                    <div key={index} style={{fontFamily: 'Arial, sans-serif'}}>
+                                        <span>{adicional.Adicional ? adicional.Adicional : "Nombre Adicional"}</span>
+                                        {adicional.Precio !== 0 && (<strong> ${adicional.Precio}</strong>)}
+                                        {adicional.Opciones?.length > 0 && (
+                                            <span> — {adicional.Opciones[adicional.SelectedOpcion ?? 0]}</span>
+                                        )}
+                                    </div>
+                                ))}
+                        </div>
+                    )
+                )
             )}
         </div>
     )

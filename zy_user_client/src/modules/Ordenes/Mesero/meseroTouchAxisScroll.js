@@ -29,10 +29,17 @@ const INTERACTIVE_EXEMPT_SELECTOR = [
     '.mesero-dropdown-wrap',
 ].join(', ');
 
-function allowsVerticalScrollFromInteractive(target, container, axis) {
-    return axis === 'y'
-        && target instanceof Element
-        && container.contains(target);
+// Known scroll roots per axis; used to decide if an exempt-ish element
+// actually belongs to the container being scrolled.
+const SCROLL_ROOT_SELECTOR_BY_AXIS = {
+    x: '.mesero-order-panel__comandas-track, .mesero-gallery__filmstrip-scroll',
+    y: '[data-mesero-select-menu], [data-mesero-platillo-scroll], .mesero-order-panel__comanda-scroll',
+};
+
+function allowsScrollFromInteractive(target, container) {
+    // Axis locking plus the tap threshold keep clicks working, so gestures
+    // starting on interactive children may still scroll their own container.
+    return target instanceof Element && container.contains(target);
 }
 
 function isTouchScrollExempt(target, container, axis = 'x', extraExemptSelector = '') {
@@ -45,7 +52,7 @@ function isTouchScrollExempt(target, container, axis = 'x', extraExemptSelector 
         : STATIC_EXEMPT_SELECTOR;
 
     if (target.closest(INTERACTIVE_EXEMPT_SELECTOR)) {
-        if (!allowsVerticalScrollFromInteractive(target, container, axis)) {
+        if (!allowsScrollFromInteractive(target, container)) {
             return true;
         }
     }
@@ -53,7 +60,7 @@ function isTouchScrollExempt(target, container, axis = 'x', extraExemptSelector 
     if (target.closest(selectors)) {
         if (container.contains(target)) {
             const scrollRoot = target.closest(
-                '[data-mesero-select-menu], [data-mesero-platillo-scroll], .mesero-order-panel__comanda-scroll',
+                SCROLL_ROOT_SELECTOR_BY_AXIS[axis] ?? SCROLL_ROOT_SELECTOR_BY_AXIS.y,
             );
             if (scrollRoot === container) {
                 return false;
