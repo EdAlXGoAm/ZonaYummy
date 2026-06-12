@@ -1,12 +1,18 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import ordersApi from './../../../api/ordersApi';
 import comandasApi from './../../../api/comandasApi';
 import borradosApi from './../../../api/borradosApi';
 import ResumeComanda from './ResumeComandaComponent';
+import {
+    filterOutRecentlyDelivered,
+    isSameComanda,
+} from '../kitchenComandaSyncUtils';
 import './OrdenesCocina.css';
 
 import io from 'socket.io-client';
 const socket = io(`${process.env.REACT_APP_API_URL}`);
+
+const FETCH_COMANDAS_DEBOUNCE_MS = 150;
 
 const OrdenesCocina = ({modeInterface, Orders}) => {
     const [numOrders, setNumOrders] = useState([]);
@@ -17,6 +23,9 @@ const OrdenesCocina = ({modeInterface, Orders}) => {
     const [arrayBotanas, setArrayBotanas] = useState([]);
     const [arrayComidas, setArrayComidas] = useState([]);
     const [arrayWaffles, setArrayWaffles] = useState([]);
+    const fetchSeqRef = useRef(0);
+    const fetchComandasTimerRef = useRef(null);
+    const recentlyDeliveredRef = useRef(new Map());
 
     // Estado para controlar si el audio está habilitado
     const [audioEnabled] = useState(false);
@@ -79,6 +88,13 @@ const OrdenesCocina = ({modeInterface, Orders}) => {
         }
     };
 
+    const markComandaDeliveredLocally = (comanda) => {
+        if (comanda?._id) {
+            recentlyDeliveredRef.current.set(comanda._id, Date.now());
+        }
+        setActiveComandas((prev) => prev.filter((c) => !isSameComanda(c, comanda)));
+    };
+
     // Marcar comanda como entregada
     const handleMarkAsDelivered = async () => {
         if (!contextMenu.comanda) return;
@@ -97,8 +113,7 @@ const OrdenesCocina = ({modeInterface, Orders}) => {
             socket.emit('UpdateComandaDesdeCliente', { msg: `Update-${comanda.OrderID}-${comanda.Platillo}` });
             socket.emit('OrdenActualizadaDesdeCliente', { msg: comanda.OrderID });
             
-            // Actualizar estado local inmediatamente (remover de la vista de cocina)
-            setActiveComandas(prev => prev.filter(c => c.ComandaId !== comanda.ComandaId));
+            markComandaDeliveredLocally(comanda);
             closeContextMenu();
         } catch (error) {
             console.error("Error al marcar como entregado:", error);
@@ -196,10 +211,10 @@ const OrdenesCocina = ({modeInterface, Orders}) => {
     }, [orderContextMenu.visible]);
 
     const fetchComandasFromOrders = () => {
+        const fetchId = ++fetchSeqRef.current;
         console.log("fetchComandasFromOrders using the next Orders:", Orders)
         setNumOrders(Orders.length); // Just fill the const
         let localOrders = Orders;
-        let localActiveComandas = [];// Transforma cada 'Order' en una promesa que resuelve sus 'comandas'
 
         let comandasPromises = localOrders.map(order => {
             return comandasApi.getComandasByOrderId(order.OrderID)
@@ -220,24 +235,44 @@ const OrdenesCocina = ({modeInterface, Orders}) => {
         
         // Espera a que todas las promesas se resuelvan
         Promise.all(comandasPromises).then(comandasResults => {
-            // Concatena todas las respuestas en 'localActiveComandas'
-            localActiveComandas = comandasResults.flat(); // 'flat()' es útil si cada 'response' es un array
+            if (fetchId !== fetchSeqRef.current) {
+                return;
+            }
+            const localActiveComandas = filterOutRecentlyDelivered(
+                comandasResults.flat(),
+                recentlyDeliveredRef,
+            );
             // NO filtrar ReadyToServe aquí - las necesitamos para el banner con transparencia
             // El filtro se hace en fetchCategorias para las tarjetas
             console.log("Todas las comandas activas (incluyendo ReadyToServe): ", localActiveComandas);
-            setActiveComandas(prevActiveComandas => {
-                console.log("Comandas to setActiveComandas: ", localActiveComandas);
-                return (localActiveComandas);
-            });
+            setActiveComandas(localActiveComandas);
             
         }).catch(e => {
+            if (fetchId !== fetchSeqRef.current) {
+                return;
+            }
             console.log("Error al recuperar comandas: ", e);
         });
 
     };
 
+    const scheduleFetchComandas = () => {
+        if (fetchComandasTimerRef.current) {
+            clearTimeout(fetchComandasTimerRef.current);
+        }
+        fetchComandasTimerRef.current = setTimeout(() => {
+            fetchComandasTimerRef.current = null;
+            fetchComandasFromOrders();
+        }, FETCH_COMANDAS_DEBOUNCE_MS);
+    };
+
     useEffect(() => {
-        fetchComandasFromOrders();
+            fetchComandasFromOrders();
+        return () => {
+            if (fetchComandasTimerRef.current) {
+                clearTimeout(fetchComandasTimerRef.current);
+            }
+        };
     }, [Orders]);
 
     const fetchCategorias = () => {
@@ -627,7 +662,7 @@ const OrdenesCocina = ({modeInterface, Orders}) => {
                 }
             }
             // ✅ CORREGIDO: Actualizar comandas inmediatamente cuando llega una nueva
-            fetchComandasFromOrders();
+            scheduleFetchComandas();
         });
         return () => {
             socket.off('NuevaComandaDesdeServidor');
@@ -638,7 +673,7 @@ const OrdenesCocina = ({modeInterface, Orders}) => {
     useEffect(() => {
         socket.on('UpdateComandaDesdeServidor', (data) => {
             console.log("UpdateComandaDesdeServidor: ", data.msg);
-            fetchComandasFromOrders();
+            scheduleFetchComandas();
         });
         return () => {
             socket.off('UpdateComandaDesdeServidor');
@@ -649,7 +684,7 @@ const OrdenesCocina = ({modeInterface, Orders}) => {
     useEffect(() => {
         socket.on('DeleteComandaDesdeServidor', (data) => {
             console.log("DeleteComandaDesdeServidor: ", data.msg);
-            fetchComandasFromOrders();
+            scheduleFetchComandas();
         });
         return () => {
             socket.off('DeleteComandaDesdeServidor');

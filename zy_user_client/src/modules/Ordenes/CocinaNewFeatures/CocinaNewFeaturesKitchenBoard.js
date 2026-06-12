@@ -8,6 +8,11 @@ import {
     getKitchenDisplayPlatilloName,
     isTacoDeBirria,
 } from './cocinaNewFeaturesComandaUtils';
+import {
+    filterOutRecentlyDelivered,
+    getOrderSlotKey,
+    isSameComanda,
+} from '../kitchenComandaSyncUtils';
 import './CocinaNewFeaturesKitchenBoard.css';
 import './CocinaNewFeaturesComandaCard.css';
 
@@ -18,17 +23,7 @@ const sortComandasByComandaId = (comandas) => [...comandas].sort(
     (a, b) => Number(a.ComandaId) - Number(b.ComandaId),
 );
 
-const RECENTLY_DELIVERED_TTL_MS = 10000;
-
-const isSameComanda = (a, b) => {
-    if (a?._id && b?._id) {
-        return a._id === b._id;
-    }
-    return Number(a?.OrderID) === Number(b?.OrderID)
-        && Number(a?.ComandaId) === Number(b?.ComandaId);
-};
-
-const getOrderSlotKey = (order) => `${order.orderId}-p${order.partNumber ?? 1}`;
+const FETCH_COMANDAS_DEBOUNCE_MS = 150;
 
 const CocinaNewFeaturesKitchenBoard = ({modeInterface, Orders}) => {
     const [numOrders, setNumOrders] = useState([]);
@@ -36,6 +31,7 @@ const CocinaNewFeaturesKitchenBoard = ({modeInterface, Orders}) => {
     const [arrayBebidas, setArrayBebidas] = useState([]);
     const [arrayWaffles, setArrayWaffles] = useState([]);
     const fetchSeqRef = useRef(0);
+    const fetchComandasTimerRef = useRef(null);
     const recentlyDeliveredRef = useRef(new Map());
 
     // Estado para el menú contextual (comandas individuales)
@@ -86,26 +82,6 @@ const CocinaNewFeaturesKitchenBoard = ({modeInterface, Orders}) => {
             const msg = error.response?.data?.error || 'Error al solicitar el borrado de la comanda';
             alert(msg);
         }
-    };
-
-    const pruneRecentlyDelivered = () => {
-        const now = Date.now();
-        recentlyDeliveredRef.current.forEach((timestamp, comandaId) => {
-            if (now - timestamp > RECENTLY_DELIVERED_TTL_MS) {
-                recentlyDeliveredRef.current.delete(comandaId);
-            }
-        });
-    };
-
-    const filterOutRecentlyDelivered = (comandas) => {
-        pruneRecentlyDelivered();
-        if (recentlyDeliveredRef.current.size === 0) {
-            return comandas;
-        }
-        return comandas.filter((comanda) => {
-            const comandaId = comanda?._id;
-            return !comandaId || !recentlyDeliveredRef.current.has(comandaId);
-        });
     };
 
     const markComandaDeliveredLocally = (comanda) => {
@@ -189,7 +165,10 @@ const CocinaNewFeaturesKitchenBoard = ({modeInterface, Orders}) => {
             if (fetchId !== fetchSeqRef.current) {
                 return;
             }
-            const localActiveComandas = filterOutRecentlyDelivered(comandasResults.flat());
+            const localActiveComandas = filterOutRecentlyDelivered(
+                comandasResults.flat(),
+                recentlyDeliveredRef,
+            );
             console.log("Todas las comandas activas: ", localActiveComandas);
             setActiveComandas(localActiveComandas);
         }).catch(e => {
@@ -200,8 +179,23 @@ const CocinaNewFeaturesKitchenBoard = ({modeInterface, Orders}) => {
         });
     };
 
+    const scheduleFetchComandas = () => {
+        if (fetchComandasTimerRef.current) {
+            clearTimeout(fetchComandasTimerRef.current);
+        }
+        fetchComandasTimerRef.current = setTimeout(() => {
+            fetchComandasTimerRef.current = null;
+            fetchComandasFromOrders();
+        }, FETCH_COMANDAS_DEBOUNCE_MS);
+    };
+
     useEffect(() => {
-        fetchComandasFromOrders();
+        scheduleFetchComandas();
+        return () => {
+            if (fetchComandasTimerRef.current) {
+                clearTimeout(fetchComandasTimerRef.current);
+            }
+        };
     }, [Orders]);
 
     // Separar bebidas y waffles del resto
@@ -760,18 +754,18 @@ const CocinaNewFeaturesKitchenBoard = ({modeInterface, Orders}) => {
     // Socket listeners
     useEffect(() => {
         socket.on('NuevaComandaDesdeServidor', () => {
-            fetchComandasFromOrders();
+            scheduleFetchComandas();
         });
         return () => socket.off('NuevaComandaDesdeServidor');
     }, [Orders]);
 
     useEffect(() => {
-        socket.on('UpdateComandaDesdeServidor', () => fetchComandasFromOrders());
+        socket.on('UpdateComandaDesdeServidor', () => scheduleFetchComandas());
         return () => socket.off('UpdateComandaDesdeServidor');
     }, [Orders]);
 
     useEffect(() => {
-        socket.on('DeleteComandaDesdeServidor', () => fetchComandasFromOrders());
+        socket.on('DeleteComandaDesdeServidor', () => scheduleFetchComandas());
         return () => socket.off('DeleteComandaDesdeServidor');
     }, [Orders]);
 
