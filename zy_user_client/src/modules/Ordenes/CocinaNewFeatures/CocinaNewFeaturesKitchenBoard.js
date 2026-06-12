@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import ordersApi from './../../../api/ordersApi';
 import comandasApi from './../../../api/comandasApi';
 import borradosApi from './../../../api/borradosApi';
@@ -18,11 +18,25 @@ const sortComandasByComandaId = (comandas) => [...comandas].sort(
     (a, b) => Number(a.ComandaId) - Number(b.ComandaId),
 );
 
+const RECENTLY_DELIVERED_TTL_MS = 10000;
+
+const isSameComanda = (a, b) => {
+    if (a?._id && b?._id) {
+        return a._id === b._id;
+    }
+    return Number(a?.OrderID) === Number(b?.OrderID)
+        && Number(a?.ComandaId) === Number(b?.ComandaId);
+};
+
+const getOrderSlotKey = (order) => `${order.orderId}-p${order.partNumber ?? 1}`;
+
 const CocinaNewFeaturesKitchenBoard = ({modeInterface, Orders}) => {
     const [numOrders, setNumOrders] = useState([]);
     const [activeComandas, setActiveComandas] = useState([]);
     const [arrayBebidas, setArrayBebidas] = useState([]);
     const [arrayWaffles, setArrayWaffles] = useState([]);
+    const fetchSeqRef = useRef(0);
+    const recentlyDeliveredRef = useRef(new Map());
 
     // Estado para el menú contextual (comandas individuales)
     const [contextMenu, setContextMenu] = useState({
@@ -74,6 +88,33 @@ const CocinaNewFeaturesKitchenBoard = ({modeInterface, Orders}) => {
         }
     };
 
+    const pruneRecentlyDelivered = () => {
+        const now = Date.now();
+        recentlyDeliveredRef.current.forEach((timestamp, comandaId) => {
+            if (now - timestamp > RECENTLY_DELIVERED_TTL_MS) {
+                recentlyDeliveredRef.current.delete(comandaId);
+            }
+        });
+    };
+
+    const filterOutRecentlyDelivered = (comandas) => {
+        pruneRecentlyDelivered();
+        if (recentlyDeliveredRef.current.size === 0) {
+            return comandas;
+        }
+        return comandas.filter((comanda) => {
+            const comandaId = comanda?._id;
+            return !comandaId || !recentlyDeliveredRef.current.has(comandaId);
+        });
+    };
+
+    const markComandaDeliveredLocally = (comanda) => {
+        if (comanda?._id) {
+            recentlyDeliveredRef.current.set(comanda._id, Date.now());
+        }
+        setActiveComandas((prev) => prev.filter((c) => !isSameComanda(c, comanda)));
+    };
+
     // Marcar comanda como entregada
     const handleMarkAsDelivered = async () => {
         if (!contextMenu.comanda) return;
@@ -90,7 +131,7 @@ const CocinaNewFeaturesKitchenBoard = ({modeInterface, Orders}) => {
             socket.emit('UpdateComandaDesdeCliente', { msg: `Update-${comanda.OrderID}-${comanda.Platillo}` });
             socket.emit('OrdenActualizadaDesdeCliente', { msg: comanda.OrderID });
             
-            setActiveComandas(prev => prev.filter(c => c.ComandaId !== comanda.ComandaId));
+            markComandaDeliveredLocally(comanda);
             closeContextMenu();
         } catch (error) {
             console.error("Error al marcar como entregado:", error);
@@ -121,10 +162,10 @@ const CocinaNewFeaturesKitchenBoard = ({modeInterface, Orders}) => {
     }, [contextMenu.visible]);
 
     const fetchComandasFromOrders = () => {
+        const fetchId = ++fetchSeqRef.current;
         console.log("fetchComandasFromOrders using the next Orders:", Orders);
         setNumOrders(Orders.length);
         let localOrders = Orders;
-        let localActiveComandas = [];
 
         let comandasPromises = localOrders.map(order => {
             return comandasApi.getComandasByOrderId(order.OrderID)
@@ -145,10 +186,16 @@ const CocinaNewFeaturesKitchenBoard = ({modeInterface, Orders}) => {
         });
         
         Promise.all(comandasPromises).then(comandasResults => {
-            localActiveComandas = comandasResults.flat();
+            if (fetchId !== fetchSeqRef.current) {
+                return;
+            }
+            const localActiveComandas = filterOutRecentlyDelivered(comandasResults.flat());
             console.log("Todas las comandas activas: ", localActiveComandas);
             setActiveComandas(localActiveComandas);
         }).catch(e => {
+            if (fetchId !== fetchSeqRef.current) {
+                return;
+            }
             console.log("Error al recuperar comandas: ", e);
         });
     };
@@ -341,7 +388,7 @@ const CocinaNewFeaturesKitchenBoard = ({modeInterface, Orders}) => {
         const expandHeight = isExpandHeightColumn(order);
         return (
             <div
-                key={order.orderId}
+                key={getOrderSlotKey(order)}
                 className={`order-column${expandHeight ? ' order-column--expand-height' : ''}`}
             >
                 <BubbleTrainHeader order={order} />
@@ -392,7 +439,7 @@ const CocinaNewFeaturesKitchenBoard = ({modeInterface, Orders}) => {
                 </div>
                 <div className="bebidas-list">
                     {extraOrders.map(order => (
-                        <div key={order.orderId} className="bebidas-order-card">
+                        <div key={getOrderSlotKey(order)} className="bebidas-order-card">
                             <div className="bebidas-order-header">
                                 <div className="bebidas-order-title">
                                     <div className="bebidas-order-number">#{order.orderId}</div>
