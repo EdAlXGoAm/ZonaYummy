@@ -84,36 +84,42 @@ exports.getLastOrderId = (req, res) => {
 }
 
 exports.getByOrderCustStatus = (req, res) => {
+    const dateParam = req.query.date;
+    const offsetParam = parseInt(req.query.offset, 10);
 
-    const nowUtc = new Date();
-    let now_startOfDay = new Date(Date.UTC(
-        nowUtc.getUTCFullYear(),
-        nowUtc.getUTCMonth(),
-        nowUtc.getUTCDate(),
-        22, 0, 0, 0
-    ));
-    if (nowUtc.getTime() < now_startOfDay.getTime()) {
-        now_startOfDay = new Date(now_startOfDay.getTime() - 24 * 60 * 60 * 1000);
+    let startOfDay;
+    let endOfDay;
+
+    if (dateParam && !isNaN(offsetParam)) {
+        const partes = dateParam.split('-');
+        if (partes.length !== 3) {
+            return res.status(400).json({ error: "Formato de fecha inválido, use YYYY-MM-DD" });
+        }
+        const [year, month, day] = partes.map(n => parseInt(n, 10));
+        if ([year, month, day].some(isNaN)) {
+            return res.status(400).json({ error: "Fecha inválida" });
+        }
+        startOfDay = new Date(Date.UTC(year, month - 1, day, 0 - offsetParam, 0, 0, 0));
+        endOfDay = new Date(Date.UTC(year, month - 1, day, 23 - offsetParam, 59, 59, 999));
+    } else {
+        const nowUtc = new Date();
+        startOfDay = new Date(Date.UTC(
+            nowUtc.getUTCFullYear(),
+            nowUtc.getUTCMonth(),
+            nowUtc.getUTCDate(),
+            22, 0, 0, 0
+        ));
+        if (nowUtc.getTime() < startOfDay.getTime()) {
+            startOfDay = new Date(startOfDay.getTime() - 24 * 60 * 60 * 1000);
+        }
+        endOfDay = new Date(startOfDay.getTime() + 24 * 60 * 60 * 1000);
     }
-    const now_endOfDay = new Date(now_startOfDay.getTime() + 24 * 60 * 60 * 1000);
-
-    // Crear fecha de inicio y fin del día actual en la hora de Ciudad de México
-    const startOfDay = new Date("2025-04-09T00:00:00.000Z");
-    //startOfDay.setHours(0,0,0,0); // Inicio del día en UTC
-    const endOfDay = new Date("2025-04-14T00:00:00.000Z");
-
-    //console.log(`VS TIME`);
-    console.log(`Old StartOfDay: ${startOfDay}`);
-    console.log(`Old EndOfDay: ${endOfDay}`);
-    //endOfDay.setHours(23,59,59,999); // Final del día en UTC
-    //console.log(`New StartOfDay: ${now_startOfDay}`);
-    //console.log(`New EndOfDay: ${now_endOfDay}`);
 
     Order.find({
             OrderCustStatus: req.params.OrderCustStatus,
             OrderDate: {
-                $gte: now_startOfDay,
-                $lte: now_endOfDay
+                $gte: startOfDay,
+                $lte: endOfDay
             }
         })
         .then((orders) => {

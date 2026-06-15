@@ -32,7 +32,7 @@ const INTERACTIVE_EXEMPT_SELECTOR = [
 // Known scroll roots per axis; used to decide if an exempt-ish element
 // actually belongs to the container being scrolled.
 const SCROLL_ROOT_SELECTOR_BY_AXIS = {
-    x: '.mesero-order-panel__comandas-track, .mesero-gallery__filmstrip-scroll',
+    x: '.mesero-order-panel__comandas-track, .mesero-gallery__filmstrip-scroll, .bubbles-container',
     y: '[data-mesero-select-menu], [data-mesero-platillo-scroll], .mesero-order-panel__comanda-scroll',
 };
 

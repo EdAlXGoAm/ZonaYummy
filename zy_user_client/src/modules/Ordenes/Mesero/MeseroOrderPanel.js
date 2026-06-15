@@ -671,6 +671,7 @@ const MeseroOrderPanel = ({modeInterface, iInterface, OrderID, DeleteOrder, hand
     addPlatillosToOrderRef.current = addPlatillosToOrder;
 
     const comandasGridRef = useRef(null);
+    const bubblesContainerRef = useRef(null);
 
     useEffect(() => {
         if (!galleryLayout || typeof onRegisterAddPlatillo !== 'function') {
@@ -682,23 +683,26 @@ const MeseroOrderPanel = ({modeInterface, iInterface, OrderID, DeleteOrder, hand
     }, [galleryLayout, onRegisterAddPlatillo]);
 
     useEffect(() => {
-        if (!galleryLayout) {
-            return undefined;
-        }
-        const track = comandasGridRef.current;
-        if (!track) {
-            return undefined;
+        const cleanups = [];
+        const bubbles = bubblesContainerRef.current;
+        if (bubbles) {
+            cleanups.push(bindTouchAxisScroll(bubbles, { axis: 'x' }));
         }
 
-        const cleanups = [bindTouchAxisScroll(track, { axis: 'x' })];
-        track.querySelectorAll('.mesero-order-panel__comanda-scroll').forEach((el) => {
-            cleanups.push(bindTouchAxisScroll(el, { axis: 'y' }));
-        });
+        if (galleryLayout) {
+            const track = comandasGridRef.current;
+            if (track) {
+                cleanups.push(bindTouchAxisScroll(track, { axis: 'x' }));
+                track.querySelectorAll('.mesero-order-panel__comanda-scroll').forEach((el) => {
+                    cleanups.push(bindTouchAxisScroll(el, { axis: 'y' }));
+                });
+            }
+        }
 
         return () => {
             cleanups.forEach((cleanup) => cleanup());
         };
-    }, [galleryLayout, comandas.length]);
+    }, [galleryLayout, comandas.length, expandedComandas.length, toggleArrowStatus]);
 
     const updateComanda = useCallback((comanda, options = {}) => {
         const { notesOnly = false } = options;
@@ -1070,7 +1074,7 @@ const MeseroOrderPanel = ({modeInterface, iInterface, OrderID, DeleteOrder, hand
                     />
                 )}
                 {/* Burbujas para comandas ReadyToServe no expandidas */}
-                <div className="bubbles-container">
+                <div ref={bubblesContainerRef} className="bubbles-container">
                     {comandas
                         .filter(c => c.ComandaPrepStatus === 'ReadyToServe' && !expandedComandas.includes(c.ComandaId))
                         .map(c => (
@@ -1353,6 +1357,7 @@ const MeseroOrderPanel = ({modeInterface, iInterface, OrderID, DeleteOrder, hand
             <MeseroCobroJsonModal
                 orderId={Order.OrderID}
                 liveTotal={liveTotal}
+                comandas={comandas}
                 onClose={() => setModalCobroJsonVisible(false)}
                 onSaved={handleCobroJsonSaved}
                 notify={notify}

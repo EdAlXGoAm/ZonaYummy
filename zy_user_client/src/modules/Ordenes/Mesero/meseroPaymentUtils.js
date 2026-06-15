@@ -75,3 +75,76 @@ export const getPaymentSummary = (comandas = [], pagos = []) => {
         paidItemIds,
     };
 };
+
+export const buildPlatillosPagoSnapshot = (comandas = [], pagos = []) => {
+    const { unpaidComandas, paidItemIds } = getUnpaidComandas(comandas, pagos);
+    const unpaidIds = new Set(unpaidComandas.map((c) => Number(c.ComandaId)));
+
+    return [...comandas]
+        .sort((a, b) => Number(a.ComandaId) - Number(b.ComandaId))
+        .map((comanda) => {
+            const comandaId = Number(comanda.ComandaId);
+            const isPending = unpaidIds.has(comandaId);
+            return {
+                comandaId,
+                platillo: comanda.Platillo,
+                precio: Number(comanda.Precio) || 0,
+                ComandaPaidStatus: comanda.ComandaPaidStatus || 'Pending',
+                estadoCobro: isPending ? 'Pendiente' : 'Pagado',
+                marcadoEnPagosPorItems: paidItemIds.has(comandaId),
+            };
+        });
+};
+
+const resolveComandaPaidStatusFromEntry = (entry = {}) => {
+    if (entry.ComandaPaidStatus) return entry.ComandaPaidStatus;
+    if (entry.estadoCobro === 'Pagado') return 'Paid';
+    if (entry.estadoCobro === 'Pendiente') return 'Pending';
+    return null;
+};
+
+export const parsePlatillosPagoDraft = (raw) => {
+    let parsed;
+    try {
+        parsed = JSON.parse(raw);
+    } catch (err) {
+        throw new Error(`JSON de platillos inválido: ${err.message}`);
+    }
+    if (!Array.isArray(parsed)) {
+        throw new Error('El JSON de platillos debe ser un array.');
+    }
+    return parsed;
+};
+
+export const getPlatillosPagoUpdates = (comandas = [], entries = []) => {
+    const byId = new Map(comandas.map((c) => [Number(c.ComandaId), c]));
+    const updates = [];
+
+    entries.forEach((entry) => {
+        const comandaId = Number(entry?.comandaId);
+        if (!Number.isFinite(comandaId)) {
+            throw new Error(`comandaId inválido: ${entry?.comandaId}`);
+        }
+
+        const comanda = byId.get(comandaId);
+        if (!comanda) {
+            throw new Error(`Comanda ${comandaId} no encontrada en la orden`);
+        }
+
+        const nextStatus = resolveComandaPaidStatusFromEntry(entry);
+        if (!nextStatus) {
+            throw new Error(`Comanda ${comandaId}: falta ComandaPaidStatus o estadoCobro`);
+        }
+
+        if (nextStatus === comanda.ComandaPaidStatus) return;
+
+        const comandaIdStr = String(comanda._id || '');
+        if (!comanda._id || comandaIdStr.startsWith('pending-')) {
+            throw new Error(`Comanda ${comandaId} aún no está guardada en el servidor`);
+        }
+
+        updates.push({ ...comanda, ComandaPaidStatus: nextStatus });
+    });
+
+    return updates;
+};

@@ -1,6 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import ordersApi from '../../../api/ordersApi';
+import comandasApi from '../../../api/comandasApi';
+import {
+    buildPlatillosPagoSnapshot,
+    parsePlatillosPagoDraft,
+    getPlatillosPagoUpdates,
+} from './meseroPaymentUtils';
 import './MeseroCobroJsonModal.css';
 
 const buildCobroSnapshot = (orderV2, liveTotal) => ({
@@ -14,11 +20,13 @@ const buildCobroSnapshot = (orderV2, liveTotal) => ({
 const MeseroCobroJsonModal = ({
     orderId,
     liveTotal,
+    comandas = [],
     onClose,
     onSaved,
     notify,
 }) => {
     const [jsonDraft, setJsonDraft] = useState('');
+    const [platillosDraft, setPlatillosDraft] = useState('');
     const [jsonError, setJsonError] = useState('');
     const [saving, setSaving] = useState(false);
     const [loading, setLoading] = useState(true);
@@ -31,7 +39,9 @@ const MeseroCobroJsonModal = ({
         ordersApi.getOrderV2(orderId)
             .then((data) => {
                 if (cancelled) return;
+                const pagos = data?.pagos ?? [];
                 setJsonDraft(JSON.stringify(buildCobroSnapshot(data, liveTotal), null, 2));
+                setPlatillosDraft(JSON.stringify(buildPlatillosPagoSnapshot(comandas, pagos), null, 2));
             })
             .catch((err) => {
                 if (!cancelled) {
@@ -43,19 +53,28 @@ const MeseroCobroJsonModal = ({
             });
 
         return () => { cancelled = true; };
-    }, [orderId, liveTotal]);
+    }, [orderId, liveTotal, comandas]);
 
     const handleSave = async () => {
-        let parsed;
+        let parsedCobro;
+        let parsedPlatillos;
+
         try {
-            parsed = JSON.parse(jsonDraft);
+            parsedCobro = JSON.parse(jsonDraft);
         } catch (err) {
-            setJsonError(`JSON inválido: ${err.message}`);
+            setJsonError(`JSON de cobro inválido: ${err.message}`);
             return;
         }
 
-        if (!Array.isArray(parsed.pagos)) {
-            setJsonError('El JSON debe incluir un array "pagos".');
+        if (!Array.isArray(parsedCobro.pagos)) {
+            setJsonError('El JSON de cobro debe incluir un array "pagos".');
+            return;
+        }
+
+        try {
+            parsedPlatillos = parsePlatillosPagoDraft(platillosDraft);
+        } catch (err) {
+            setJsonError(err.message || String(err));
             return;
         }
 
@@ -63,8 +82,11 @@ const MeseroCobroJsonModal = ({
         setJsonError('');
 
         try {
-            const updated = await ordersApi.replaceOrderCobro(orderId, parsed);
-            notify?.('Cobro actualizado desde JSON');
+            const updated = await ordersApi.replaceOrderCobro(orderId, parsedCobro);
+            const comandaUpdates = getPlatillosPagoUpdates(comandas, parsedPlatillos);
+            await Promise.all(comandaUpdates.map((comanda) => comandasApi.updateComanda(comanda)));
+
+            notify?.('Cobro y platillos actualizados desde JSON');
             onSaved?.(updated);
             onClose();
         } catch (err) {
@@ -102,21 +124,45 @@ const MeseroCobroJsonModal = ({
                 </div>
 
                 <p className="mesero-cobro-json-hint">
-                    Edita <code>CuentaTotal</code>, <code>pagado</code>, <code>pendiente</code> y el array <code>pagos</code>.
+                    Edita el schema de cobro o el estado por platillo.
+                    En platillos usa <code>ComandaPaidStatus</code> o <code>estadoCobro</code> (Pagado/Pendiente).
                 </p>
 
                 {loading ? (
                     <div className="mesero-cobro-json-loading">Cargando…</div>
                 ) : (
-                    <textarea
-                        className="mesero-cobro-json-textarea"
-                        value={jsonDraft}
-                        onChange={(e) => {
-                            setJsonDraft(e.target.value);
-                            setJsonError('');
-                        }}
-                        spellCheck={false}
-                    />
+                    <div className="mesero-cobro-json-panels">
+                        <div className="mesero-cobro-json-panel">
+                            <label className="mesero-cobro-json-panel__label" htmlFor="mesero-cobro-json-editor">
+                                Schema de cobro (pagos)
+                            </label>
+                            <textarea
+                                id="mesero-cobro-json-editor"
+                                className="mesero-cobro-json-textarea"
+                                value={jsonDraft}
+                                onChange={(e) => {
+                                    setJsonDraft(e.target.value);
+                                    setJsonError('');
+                                }}
+                                spellCheck={false}
+                            />
+                        </div>
+                        <div className="mesero-cobro-json-panel">
+                            <label className="mesero-cobro-json-panel__label" htmlFor="mesero-cobro-platillos-editor">
+                                Estado de pago por platillo
+                            </label>
+                            <textarea
+                                id="mesero-cobro-platillos-editor"
+                                className="mesero-cobro-json-textarea"
+                                value={platillosDraft}
+                                onChange={(e) => {
+                                    setPlatillosDraft(e.target.value);
+                                    setJsonError('');
+                                }}
+                                spellCheck={false}
+                            />
+                        </div>
+                    </div>
                 )}
 
                 {jsonError && (

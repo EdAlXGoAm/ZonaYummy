@@ -21,9 +21,16 @@ const ordersApi = {
         }
     },
 
-    getOrdersByOrderCustStatus : async (OrderCustStatus) => {
+    getOrdersByOrderCustStatus : async (OrderCustStatus, date, offset) => {
         try {
-            const response = await Axios.get(`${baseURL}/getByOrderCustStatus/${OrderCustStatus}`);
+            const config = {};
+            if (date) {
+                config.params = { date, offset };
+            }
+            const response = await Axios.get(
+                `${baseURL}/getByOrderCustStatus/${OrderCustStatus}`,
+                config
+            );
             return response.data;
         } catch (error) {
             console.error("ordersAPI error: ", error);

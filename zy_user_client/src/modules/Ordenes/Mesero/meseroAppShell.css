@@ -94,7 +94,8 @@ html.mesero-app-document-lock #root > * {
 }
 
 /* Nested scroll: lock axis per container for touch devices */
-.mesero-order-panel__comandas-track {
+.mesero-order-panel__comandas-track,
+.bubbles-container {
     touch-action: pan-x pinch-zoom;
 }
 

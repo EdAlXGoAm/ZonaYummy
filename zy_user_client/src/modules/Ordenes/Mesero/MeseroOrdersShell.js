@@ -20,7 +20,7 @@ import Calendar from 'react-calendar/dist/esm/Calendar.js';
 import 'react-calendar/dist/Calendar.css';
 
 import io from 'socket.io-client';
-import { loadGalleryViewPreference, saveGalleryViewPreference } from './meseroViewCache';
+import { loadGalleryViewPreference, saveGalleryViewPreference, loadOrdersViewDate, saveOrdersViewDate, clearOrdersViewDate } from './meseroViewCache';
 
 const socket = io(`${process.env.REACT_APP_API_URL}`);
 
@@ -40,6 +40,28 @@ const MeseroOrdersShell = ({ modeInterface }) => {
     const [galleryView, setGalleryView] = useState(() => (
         modeInterface ? loadGalleryViewPreference() : false
     ));
+    const [ordersViewDate, setOrdersViewDate] = useState(() => (
+        modeInterface ? (loadOrdersViewDate() || new Date()) : new Date()
+    ));
+    const [showOrdersDayPicker, setShowOrdersDayPicker] = useState(false);
+    // Debug panel for orders GET — disabled, keep for future troubleshooting
+    // const [showOrdersFetchDebug, setShowOrdersFetchDebug] = useState(true);
+    // const [ordersFetchDebug, setOrdersFetchDebug] = useState({
+    //     status: 'idle',
+    //     trigger: null,
+    //     selectorDate: null,
+    //     queryDate: null,
+    //     queryOffset: null,
+    //     galleryView: false,
+    //     requests: [],
+    //     mergedCount: 0,
+    //     mergedOrderIds: [],
+    //     error: null,
+    //     executedAt: null,
+    // });
+    const galleryViewRef = useRef(galleryView);
+    const ordersViewDateRef = useRef(ordersViewDate);
+    const ordersFetchInitializedRef = useRef(false);
 
     const setGalleryViewPersisted = (isGallery) => {
         setGalleryView(isGallery);
@@ -51,6 +73,14 @@ const MeseroOrdersShell = ({ modeInterface }) => {
     useEffect(() => {
         ordersRef.current = orders;
     }, [orders]);
+
+    useEffect(() => {
+        galleryViewRef.current = galleryView;
+    }, [galleryView]);
+
+    useEffect(() => {
+        ordersViewDateRef.current = ordersViewDate;
+    }, [ordersViewDate]);
 
     const syncComandasCache = async (orderList) => {
         try {
@@ -136,45 +166,93 @@ const MeseroOrdersShell = ({ modeInterface }) => {
         }, 150);
     };
 
-    const fetchOrders = () => {
-        if (modeInterface) {
-            Promise.all([
-                ordersApi.getOrdersByOrderCustStatus('Done'),
-                ordersApi.getOrdersByOrderCustStatus('InPlace'),
-            ])
-                .then(([doneOrders, inPlaceOrders]) => {
-                    const mergedOrders = [...doneOrders, ...inPlaceOrders];
-                    setOrders(mergedOrders);
-                    setNumOrders(mergedOrders.length);
-                    syncComandasCache(mergedOrders);
-                })
-                .catch((err) => {
-                    console.log(err);
-                    notify(`Error al cargar las comandas: ${err}`);
-                });
+    const toLocalYMD = (dt) => {
+        const d = dt instanceof Date ? dt : new Date(dt);
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${y}-${m}-${day}`;
+    };
+
+    const isOrdersViewToday = (date = ordersViewDateRef.current) => (
+        toLocalYMD(date) === toLocalYMD(new Date())
+    );
+
+    const getOrdersDateQuery = () => {
+        if (!modeInterface || galleryViewRef.current) {
+            return null;
         }
-        else {
-            ordersApi.getOrdersByOrderCustStatus("InPlace")
-            .then(data => {
-                if (data.length <= 3) {
-                    setComandasPerScreen(3);
-                }
-                else if (data.length === 4) {
-                    setComandasPerScreen(4);
-                }
-                else if (data.length > 4) {
-                    setComandasPerScreen(6);
-                }
-                setOrders(prevOrders => {return (data);});
-                setNumOrders(prevNumOrders => {return data.length;});
-            })
-            .catch(err => {
+        return {
+            date: toLocalYMD(ordersViewDateRef.current),
+            offset: -new Date().getTimezoneOffset() / 60,
+        };
+    };
+
+    // const buildOrdersFetchDebugRequest = (status, dateQuery) => {
+    //     const base = `${process.env.REACT_APP_API_URL}/api/orders/getByOrderCustStatus/${status}`;
+    //     if (!dateQuery) {
+    //         return { status, mode: 'default-today', url: base };
+    //     }
+    //     return {
+    //         status,
+    //         mode: 'by-date',
+    //         url: `${base}?date=${dateQuery.date}&offset=${dateQuery.offset}`,
+    //         date: dateQuery.date,
+    //         offset: dateQuery.offset,
+    //     };
+    // };
+
+    const fetchOrdersByStatus = (status) => {
+        const dateQuery = getOrdersDateQuery();
+        if (dateQuery) {
+            return ordersApi.getOrdersByOrderCustStatus(status, dateQuery.date, dateQuery.offset);
+        }
+        return ordersApi.getOrdersByOrderCustStatus(status);
+    };
+
+    const fetchOrders = async () => {
+        if (modeInterface) {
+            try {
+                const [doneOrders, inPlaceOrders] = await Promise.all([
+                    fetchOrdersByStatus('Done'),
+                    fetchOrdersByStatus('InPlace'),
+                ]);
+                const mergedOrders = [...doneOrders, ...inPlaceOrders];
+                setOrders(mergedOrders);
+                setNumOrders(mergedOrders.length);
+                syncComandasCache(mergedOrders);
+            } catch (err) {
                 console.log(err);
                 notify(`Error al cargar las comandas: ${err}`);
-                // alert("Error al cargar las comandas");
-            });
+            }
+            return;
+        }
+
+        try {
+            const data = await ordersApi.getOrdersByOrderCustStatus('InPlace');
+            if (data.length <= 3) {
+                setComandasPerScreen(3);
+            } else if (data.length === 4) {
+                setComandasPerScreen(4);
+            } else if (data.length > 4) {
+                setComandasPerScreen(6);
+            }
+            setOrders(data);
+            setNumOrders(data.length);
+        } catch (err) {
+            console.log(err);
+            notify(`Error al cargar las comandas: ${err}`);
         }
     };
+
+    /* Debug fetchOrders with panel state — re-enable with SHOW_ORDERS_FETCH_DEBUG UI block
+    const fetchOrders = async (trigger = 'initial') => {
+        const dateQuery = getOrdersDateQuery();
+        const debugBase = { trigger, selectorDate: toLocalYMD(ordersViewDateRef.current), ... };
+        setOrdersFetchDebug((prev) => ({ ...prev, status: 'loading', ...debugBase }));
+        ...
+    };
+    */
 
     const scheduleFetchOrders = () => {
         if (fetchOrdersTimerRef.current) {
@@ -225,6 +303,39 @@ const MeseroOrdersShell = ({ modeInterface }) => {
         fetchOrders();
         fetchPlatillos();
     }, []);
+
+    useEffect(() => {
+        if (!modeInterface) return;
+        if (!ordersFetchInitializedRef.current) {
+            ordersFetchInitializedRef.current = true;
+            return;
+        }
+        fetchOrders();
+        setSlide(1);
+    }, [galleryView, modeInterface]);
+
+    const handleOrdersViewDateChange = (nextDate) => {
+        setOrdersViewDate(nextDate);
+        ordersViewDateRef.current = nextDate;
+        if (isOrdersViewToday(nextDate)) {
+            clearOrdersViewDate();
+        } else {
+            saveOrdersViewDate(nextDate);
+        }
+        setShowOrdersDayPicker(false);
+        fetchOrders();
+        setSlide(1);
+    };
+
+    const resetOrdersViewDateToToday = () => {
+        const today = new Date();
+        setOrdersViewDate(today);
+        ordersViewDateRef.current = today;
+        clearOrdersViewDate();
+        setShowOrdersDayPicker(false);
+        fetchOrders();
+        setSlide(1);
+    };
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
     useEffect(() => {
@@ -530,14 +641,18 @@ const MeseroOrdersShell = ({ modeInterface }) => {
         return `${d}-${months[m - 1]}`;
     };
 
-    // Evita problemas de UTC (toISOString) que pueden mover el día (ej. "mañana")
-    const toLocalYMD = (dt) => {
-        const d = dt instanceof Date ? dt : new Date(dt);
-        const y = d.getFullYear();
-        const m = String(d.getMonth() + 1).padStart(2, '0');
-        const day = String(d.getDate()).padStart(2, '0');
-        return `${y}-${m}-${day}`;
-    };
+    // const formatDebugClock = (iso) => {
+    //     if (!iso) return '—';
+    //     const d = new Date(iso);
+    //     return d.toLocaleString('es-MX', {
+    //         year: 'numeric',
+    //         month: '2-digit',
+    //         day: '2-digit',
+    //         hour: '2-digit',
+    //         minute: '2-digit',
+    //         second: '2-digit',
+    //     });
+    // };
 
     const groupedItemCounts = (() => {
         const map = new Map(); // platillo -> { platillo, totalQty, variants: Map(variante -> qty) }
@@ -864,19 +979,68 @@ const MeseroOrdersShell = ({ modeInterface }) => {
             </div>
             <hr style={{backgroundColor:"white"}}/>
             <div>
-                <div className="row">
+                <div className="row align-items-center mesero-orders-toolbar">
                     <div className="col-2">
                         <Button variant="success" size="lg" onClick={() => handleSlideChange(slide - 1)} disabled={isMobile}>←</Button>
                     </div>
-                    <div className="col-8">
+                    <div className="col-4">
                         <Button variant="success" size="lg" onClick={handleNewOrderClick}>Nueva Orden</Button>
+                    </div>
+                    <div className="col-4 mesero-orders-toolbar__date">
+                        <button
+                            type="button"
+                            className="zy-date-btn mesero-orders-date-btn"
+                            onClick={() => setShowOrdersDayPicker(true)}
+                            title="Seleccionar fecha de órdenes"
+                        >
+                            {formatShortDateEs(toLocalYMD(ordersViewDate))} ▾
+                        </button>
+                        {!isOrdersViewToday(ordersViewDate) && (
+                            <button
+                                type="button"
+                                className="mesero-orders-date-btn__today"
+                                onClick={resetOrdersViewDateToToday}
+                                title="Volver al día de hoy"
+                            >
+                                Hoy
+                            </button>
+                        )}
                     </div>
                     <div className="col-2">
                         <Button variant="success" size="lg" onClick={() => handleSlideChange(slide + 1)} disabled={isMobile}>→</Button>
                     </div>
                 </div>
             </div>
+            {/* Debug GET orders panel — disabled, keep for future troubleshooting
+            <div className="mesero-orders-fetch-debug">
+                ...
+            </div>
+            */}
                 </>
+            )}
+            {modeInterface && !galleryView && showOrdersDayPicker && (
+                <div className="zy-modal-overlay">
+                    <div className="zy-modal zy-date-modal">
+                        <div className="zy-modal__header">
+                            <div>
+                                <div className="zy-modal__title">Fecha de órdenes</div>
+                                <div className="zy-modal__subtitle">
+                                    {toLocalYMD(ordersViewDate)}
+                                </div>
+                            </div>
+                            <button className="zy-modal__close" onClick={() => setShowOrdersDayPicker(false)} title="Cerrar">✕</button>
+                        </div>
+                        <div className="zy-modal__body">
+                            <Calendar
+                                onChange={handleOrdersViewDateChange}
+                                value={ordersViewDate}
+                            />
+                        </div>
+                        <div className="zy-modal__footer">
+                            <button className="zy-btn zy-btn--secondary" onClick={() => setShowOrdersDayPicker(false)}>Cancelar</button>
+                        </div>
+                    </div>
+                </div>
             )}
             {modeInterface && !galleryView && (
                 <button
