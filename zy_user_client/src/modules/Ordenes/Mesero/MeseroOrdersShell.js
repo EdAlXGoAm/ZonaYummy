@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import MeseroOrderPanel from './MeseroOrderPanel';
 import MeseroGalleryView from './MeseroGalleryView';
 import Button from 'react-bootstrap/Button';
@@ -115,22 +115,43 @@ const MeseroOrdersShell = ({ modeInterface }) => {
         }, 400);
     };
 
-    const syncComandasCacheEntry = (orderId, comandas) => {
+    const syncComandasCacheEntry = useCallback((orderId, comandas) => {
         const key = Number(orderId);
         if (!Number.isFinite(key)) return;
-        setComandasByOrder((prev) => ({
-            ...prev,
-            [key]: Array.isArray(comandas) ? comandas : [],
-        }));
-    };
+        const nextComandas = Array.isArray(comandas) ? comandas : [];
+        setComandasByOrder((prev) => {
+            if (prev[key] === nextComandas) {
+                return prev;
+            }
+            return {
+                ...prev,
+                [key]: nextComandas,
+            };
+        });
+    }, []);
 
-    const syncOrderCacheEntry = (orderPatch) => {
+    const syncOrderCacheEntry = useCallback((orderPatch) => {
         const key = Number(orderPatch?.OrderID);
         if (!Number.isFinite(key)) return;
-        setOrders((prev) => prev.map((order) => (
-            Number(order.OrderID) === key ? { ...order, ...orderPatch } : order
-        )));
-    };
+        setOrders((prev) => {
+            let changed = false;
+            const next = prev.map((order) => {
+                if (Number(order.OrderID) !== key) {
+                    return order;
+                }
+                const patchKeys = Object.keys(orderPatch);
+                const isUnchanged = patchKeys.every(
+                    (field) => JSON.stringify(order[field]) === JSON.stringify(orderPatch[field]),
+                );
+                if (isUnchanged) {
+                    return order;
+                }
+                changed = true;
+                return { ...order, ...orderPatch };
+            });
+            return changed ? next : prev;
+        });
+    }, []);
 
     const syncOrderFromServerTimerRef = useRef({});
 

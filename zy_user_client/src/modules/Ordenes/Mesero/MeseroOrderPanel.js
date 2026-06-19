@@ -51,6 +51,12 @@ const MeseroOrderPanel = ({modeInterface, iInterface, OrderID, DeleteOrder, hand
     const [Order, setOrder] = useState({});
     const orderRef = useRef(Order);
     orderRef.current = Order;
+    const preloadedOrderRef = useRef(preloadedOrder);
+    preloadedOrderRef.current = preloadedOrder;
+    const preloadedComandasRef = useRef(preloadedComandas);
+    preloadedComandasRef.current = preloadedComandas;
+    const isOptimizedRef = useRef(isOptimized);
+    isOptimizedRef.current = isOptimized;
     const [comandas, setComandas] = useState([])
     const [toggleArrowStatus, setToggleArrowStatus] = useState(true); // false: plegado, true: desplegado
     const [colorOrder, setColorOrder] = useState("#ffffff")
@@ -103,6 +109,42 @@ const MeseroOrderPanel = ({modeInterface, iInterface, OrderID, DeleteOrder, hand
     const hasMontoEnSesion = (montoEspecifico || 0) > 0;
     const hasItemsEnSesion = itemsSeleccionadosPago.size > 0;
     const isEmptyOrder = (comandas?.length || 0) === 0;
+
+    const resolveGalleryCustomerFields = (mergedBase = {}) => {
+        const latest = orderRef.current;
+        const cached = preloadedOrderRef.current;
+        return {
+            Customer: (latest.Customer || cached?.Customer || mergedBase.Customer || ''),
+            Origen: (latest.Origen || cached?.Origen || mergedBase.Origen || ''),
+        };
+    };
+
+    const applyLocalOrderTotals = (newOrder, pagadoBase, newPendiente) => {
+        const pagosMerged = newOrder.pagos?.length ? newOrder.pagos : (orderRef.current.pagos ?? []);
+        const { Customer, Origen } = galleryLayout
+            ? resolveGalleryCustomerFields(newOrder)
+            : {
+                Customer: newOrder.Customer ?? orderRef.current.Customer ?? '',
+                Origen: newOrder.Origen ?? orderRef.current.Origen ?? '',
+            };
+
+        setOrder((prev) => ({
+            ...newOrder,
+            OrderCustStatus: prev.OrderCustStatus ?? newOrder.OrderCustStatus,
+            Customer,
+            Origen,
+            pagos: pagosMerged,
+            pagado: pagadoBase,
+            pendiente: newPendiente,
+        }));
+        setOrderV2((prev) => ({
+            ...prev,
+            ...newOrder,
+            pagos: pagosMerged,
+            pagado: pagadoBase,
+            pendiente: newPendiente,
+        }));
+    };
 
     const getMetodoPagoEmoji = (m) => {
       if (m === 'card') return '💳';
@@ -163,24 +205,30 @@ const MeseroOrderPanel = ({modeInterface, iInterface, OrderID, DeleteOrder, hand
         performanceLogger.time(fetchOrderId);
         
         // Verificar si tenemos datos pre-cargados (OPTIMIZACIÓN)
-        if (isOptimized && preloadedOrder && preloadedComandas) {
-            performanceLogger.critical(`⚡ USANDO DATOS PRE-CARGADOS para OrderID: ${OrderID} (${preloadedComandas.length} comandas)`);
+        const cachedOrder = preloadedOrderRef.current;
+        const cachedComandas = preloadedComandasRef.current;
+        if (isOptimizedRef.current && cachedOrder && cachedComandas !== undefined) {
+            performanceLogger.critical(`⚡ USANDO DATOS PRE-CARGADOS para OrderID: ${OrderID} (${cachedComandas.length} comandas)`);
             
             comandasHydratedRef.current = true;
             initialComandasLoadRef.current = false;
             setComandasLoading(false);
-            setOrder((prev) => ({
-                ...preloadedOrder,
-                OrderCustStatus: prev.OrderCustStatus ?? preloadedOrder.OrderCustStatus,
-                Customer: galleryLayout
-                    ? (preloadedOrder.Customer ?? prev.Customer ?? '')
-                    : (prev.Customer ?? preloadedOrder.Customer ?? ''),
-                Origen: galleryLayout
-                    ? (preloadedOrder.Origen ?? prev.Origen ?? '')
-                    : (prev.Origen ?? preloadedOrder.Origen ?? ''),
-            }));
-            setComandas(normalizeComandasList(preloadedComandas));
-            updateCuentaTotalOrder(preloadedComandas, preloadedOrder);
+            setOrder((prev) => {
+                const { Customer, Origen } = galleryLayout
+                    ? resolveGalleryCustomerFields({ ...cachedOrder, ...prev })
+                    : {
+                        Customer: prev.Customer || cachedOrder.Customer || '',
+                        Origen: prev.Origen || cachedOrder.Origen || '',
+                    };
+                return {
+                    ...cachedOrder,
+                    OrderCustStatus: prev.OrderCustStatus ?? cachedOrder.OrderCustStatus,
+                    Customer,
+                    Origen,
+                };
+            });
+            setComandas(normalizeComandasList(cachedComandas));
+            updateCuentaTotalOrder(cachedComandas, cachedOrder);
             ordersApi.getOrderV2(OrderID)
                 .then((data) => {
                     setOrderV2(data);
@@ -303,13 +351,28 @@ const MeseroOrderPanel = ({modeInterface, iInterface, OrderID, DeleteOrder, hand
             pagado: pagadoBase,
             pendiente: newPendiente,
         };
-        if (galleryLayout && preloadedOrder) {
-            newOrder.Customer = preloadedOrder.Customer ?? mergedBase.Customer ?? '';
-            newOrder.Origen = preloadedOrder.Origen ?? mergedBase.Origen ?? '';
-        }
+        const { Customer, Origen } = galleryLayout
+            ? resolveGalleryCustomerFields(mergedBase)
+            : {
+                Customer: mergedBase.Customer ?? '',
+                Origen: mergedBase.Origen ?? '',
+            };
+        newOrder.Customer = Customer;
+        newOrder.Origen = Origen;
+
+        const totalsUnchanged = galleryLayout
+            && Number(mergedBase.CuentaTotal || 0) === Number(cuentaTotal)
+            && Number(pagadoBase) === Number(mergedBase.pagado || 0);
         
         const calcTime = performance.now() - calcStartTime;
         performanceLogger.log(`🧮 Cálculo de totales: ${calcTime.toFixed(2)}ms - Comandas procesadas: ${comandasDB ? comandasDB.length : 0}, Total: $${cuentaTotal}`);
+
+        if (totalsUnchanged) {
+            performanceLogger.timeEnd(updateId);
+            performanceLogger.log(`⏭️ updateCuentaTotalOrder omitido (totales sin cambio) para OrderID: ${OrderID}`);
+            applyLocalOrderTotals(newOrder, pagadoBase, newPendiente);
+            return;
+        }
         
         // Medición de la actualización en BD
         const dbUpdateStartTime = performance.now();
@@ -329,15 +392,17 @@ const MeseroOrderPanel = ({modeInterface, iInterface, OrderID, DeleteOrder, hand
             performanceLogger.log(`📊 Desglose Update - Cálculo: ${calcTime.toFixed(2)}ms (${(calcTime/totalUpdateTime*100).toFixed(1)}%) | BD: ${dbUpdateTime.toFixed(2)}ms (${(dbUpdateTime/totalUpdateTime*100).toFixed(1)}%)`);
             
             const pagosMerged = newOrder.pagos?.length ? newOrder.pagos : (orderRef.current.pagos ?? []);
+            const resolvedFields = galleryLayout
+                ? resolveGalleryCustomerFields(newOrder)
+                : {
+                    Customer: newOrder.Customer ?? orderRef.current.Customer ?? '',
+                    Origen: newOrder.Origen ?? orderRef.current.Origen ?? '',
+                };
             setOrder((prev) => ({
                 ...newOrder,
                 OrderCustStatus: prev.OrderCustStatus ?? newOrder.OrderCustStatus,
-                Customer: galleryLayout
-                    ? (preloadedOrder?.Customer ?? newOrder.Customer ?? prev.Customer ?? '')
-                    : (prev.Customer ?? newOrder.Customer ?? ''),
-                Origen: galleryLayout
-                    ? (preloadedOrder?.Origen ?? newOrder.Origen ?? prev.Origen ?? '')
-                    : (prev.Origen ?? newOrder.Origen ?? ''),
+                Customer: resolvedFields.Customer,
+                Origen: resolvedFields.Origen,
                 pagos: pagosMerged,
                 pagado: pagadoBase,
                 pendiente: newPendiente,
@@ -363,6 +428,8 @@ const MeseroOrderPanel = ({modeInterface, iInterface, OrderID, DeleteOrder, hand
 
     useEffect(() => {
         comandasHydratedRef.current = false;
+        lastOrderCacheSyncRef.current = '';
+        lastComandasCacheSyncRef.current = '';
     }, [OrderID]);
 
     useEffect(() => {
@@ -374,6 +441,11 @@ const MeseroOrderPanel = ({modeInterface, iInterface, OrderID, DeleteOrder, hand
         ) {
             return;
         }
+        const syncKey = `${Order.OrderID}:${comandas.length}:${comandas.map((c) => c._id ?? c.ComandaId).join(',')}`;
+        if (syncKey === lastComandasCacheSyncRef.current) {
+            return;
+        }
+        lastComandasCacheSyncRef.current = syncKey;
         onComandasCacheSync(Order.OrderID, comandas);
     }, [galleryLayout, Order?.OrderID, comandas, onComandasCacheSync]);
 
@@ -382,9 +454,15 @@ const MeseroOrderPanel = ({modeInterface, iInterface, OrderID, DeleteOrder, hand
             return;
         }
         const patch = buildOrderCachePatch(Order);
-        if (patch) {
-            onOrderCacheSync(patch);
+        if (!patch) {
+            return;
         }
+        const patchSignature = JSON.stringify(patch);
+        if (patchSignature === lastOrderCacheSyncRef.current) {
+            return;
+        }
+        lastOrderCacheSyncRef.current = patchSignature;
+        onOrderCacheSync(patch);
     }, [galleryLayout, Order, onOrderCacheSync]);
 
     useEffect(() => {
@@ -672,6 +750,8 @@ const MeseroOrderPanel = ({modeInterface, iInterface, OrderID, DeleteOrder, hand
 
     const comandasGridRef = useRef(null);
     const bubblesContainerRef = useRef(null);
+    const lastOrderCacheSyncRef = useRef('');
+    const lastComandasCacheSyncRef = useRef('');
 
     useEffect(() => {
         if (!galleryLayout || typeof onRegisterAddPlatillo !== 'function') {

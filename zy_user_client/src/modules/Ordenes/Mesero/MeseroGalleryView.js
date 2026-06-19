@@ -9,6 +9,7 @@ import {
     saveGallerySelectedOrderId,
 } from './meseroViewCache';
 import { bindTouchAxisScroll } from './meseroTouchAxisScroll';
+import { sortMeseroOrdersActiveFirst } from './meseroOrdersSort';
 
 const resolveOrderComandas = (comandasByOrder, orderId) => {
     const key = Number(orderId);
@@ -76,8 +77,19 @@ const MeseroGalleryView = ({
         setPickerDismissed(false);
     }, []);
 
+    const handleCustomerUpdated = useCallback((updatedOrder) => {
+        if (!updatedOrder?.OrderID || typeof onOrderCacheSync !== 'function') {
+            return;
+        }
+        onOrderCacheSync({
+            OrderID: updatedOrder.OrderID,
+            Customer: updatedOrder.Customer ?? '',
+            Origen: updatedOrder.Origen ?? '',
+        });
+    }, [onOrderCacheSync]);
+
     const sortedOrders = useMemo(
-        () => [...orders].sort((a, b) => Number(b.OrderID) - Number(a.OrderID)),
+        () => sortMeseroOrdersActiveFirst(orders),
         [orders]
     );
 
@@ -226,7 +238,7 @@ const MeseroGalleryView = ({
                                     <MeseroCustomerField
                                         order={selectedOrder}
                                         compact
-                                        onOrderUpdated={onOrderCacheSync}
+                                        onOrderUpdated={handleCustomerUpdated}
                                     />
                                     <MeseroPlatilloSelector
                                         addPlatilloToOrder={addPlatilloViaRef}

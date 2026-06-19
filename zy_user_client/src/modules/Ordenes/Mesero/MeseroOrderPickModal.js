@@ -2,6 +2,7 @@ import './MeseroOrderPickModal.css';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { fetchComandasGroupedByOrder } from './meseroComandasCache';
+import { sortMeseroOrdersActiveFirst } from './meseroOrdersSort';
 
 const MAX_BUBBLES = 7;
 
@@ -9,22 +10,6 @@ const isComandaDelivered = (comanda) => (
     comanda.ComandaPrepStatus === 'ReadyToServe'
     || comanda.ComandaPrepStatus === 'Served'
 );
-
-const sortOrdersForPicker = (orders) => {
-    const active = [];
-    const closed = [];
-
-    orders.forEach((order) => {
-        if (order.OrderCustStatus === 'Done') {
-            closed.push(order);
-        } else {
-            active.push(order);
-        }
-    });
-
-    const byNewest = (a, b) => Number(b.OrderID) - Number(a.OrderID);
-    return [...active.sort(byNewest), ...closed.sort(byNewest)];
-};
 
 const hasCacheEntry = (cache, orderId) => (
     Object.prototype.hasOwnProperty.call(cache, Number(orderId))
@@ -36,7 +21,7 @@ const resolveComandas = (cache, orderId) => {
 };
 
 const MeseroOrderPickModal = ({ orders, comandasByOrder = {}, onSelectOrder, onClose }) => {
-    const sortedOrders = useMemo(() => sortOrdersForPicker(orders), [orders]);
+    const sortedOrders = useMemo(() => sortMeseroOrdersActiveFirst(orders), [orders]);
     const [localComandasByOrder, setLocalComandasByOrder] = useState(comandasByOrder);
     const fetchedOrderIdsRef = useRef(new Set());
 
