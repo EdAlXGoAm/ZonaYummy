@@ -1,4 +1,4 @@
-import './CocinaNewFeaturesComandaCard.css';
+import './CocinadosComandaCard.css';
 import './../Global/checkbox.css'; //La ruta de este archivo es: src/css/checkbox.css
 import React, { useState, useEffect, useRef } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -7,8 +7,8 @@ import { faPenToSquare, faBan} from '@fortawesome/free-solid-svg-icons';
 
 import DropDown from './../x10DropDown';
 import MarqueeText from './../MeseroPage/MarqueeText';
-import { useDebugCardHeight, DebugCardHeightBadge } from './CocinaNewFeaturesDebugCardHeight';
-import { getKitchenDisplayPlatilloName } from './cocinaNewFeaturesComandaUtils';
+import { useDebugCardHeight, DebugCardHeightBadge } from './CocinadosDebugCardHeight';
+import { getKitchenDisplayPlatilloName } from './cocinadosComandaUtils';
 
 // Función para extraer timestamp del ObjectId de MongoDB
 const getTimeAgo = (mongoId) => {
@@ -41,7 +41,7 @@ const getTimeAgo = (mongoId) => {
     }
 };
 
-const CocinaNewFeaturesComandaCard = ({Comanda, updateComanda, compact = false, comandaNumber = null}) => {
+const CocinadosComandaCard = ({Comanda, updateComanda, compact = false, comandaNumber = null}) => {
 
     // Estado para el tiempo transcurrido (se actualiza cada minuto)
     const [timeAgo, setTimeAgo] = useState(() => getTimeAgo(Comanda._id));
@@ -782,5 +782,5 @@ const CocinaNewFeaturesComandaCard = ({Comanda, updateComanda, compact = false, 
     )
 }
 
-export default CocinaNewFeaturesComandaCard;
+export default CocinadosComandaCard;
 
