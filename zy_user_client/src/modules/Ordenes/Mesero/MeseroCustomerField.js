@@ -1,9 +1,11 @@
 import './MeseroCustomerField.css';
 import React, { useEffect, useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faCheck, faFloppyDisk } from '@fortawesome/free-solid-svg-icons';
+import { faCheck, faFloppyDisk, faGear } from '@fortawesome/free-solid-svg-icons';
 import ordersApi from './../../../api/ordersApi';
 import io from 'socket.io-client';
+import MeseroOrigenModal from './MeseroOrigenModal';
+import { getOrigenSummary } from './meseroOrigenUtils';
 
 const socket = io(`${process.env.REACT_APP_API_URL}`);
 
@@ -13,14 +15,14 @@ const getCustomerBgColor = (id) => CUSTOMER_COLORS[id % CUSTOMER_COLORS.length];
 const MeseroCustomerField = ({ order, onOrderUpdated, compact = false }) => {
     const [cliente, setCliente] = useState('');
     const [clientIcon, setClientIcon] = useState(false);
-    const [origenWhatsapp, setOrigenWhatsapp] = useState(false);
+    const [origenModalOpen, setOrigenModalOpen] = useState(false);
+    const [origenSaving, setOrigenSaving] = useState(false);
 
     useEffect(() => {
         if (!order?.OrderID) return;
         const savedCliente = order.Customer || '';
         setCliente(savedCliente);
         setClientIcon(savedCliente !== '');
-        setOrigenWhatsapp(order.Origen === 'Whatsapp');
     }, [order?.OrderID, order?.Customer, order?.Origen]);
 
     if (!order?.OrderID) {
@@ -59,58 +61,73 @@ const MeseroCustomerField = ({ order, onOrderUpdated, compact = false }) => {
             });
     };
 
-    const handleWhatsappDoubleClick = () => {
-        const newOrigen = !origenWhatsapp;
-        setOrigenWhatsapp(newOrigen);
-        const newOrder = { ...order, Origen: newOrigen ? 'Whatsapp' : '' };
+    const handleOrigenSave = (nextOrigen) => {
+        setOrigenSaving(true);
+        const newOrder = { ...order, Origen: nextOrigen };
         ordersApi.updateOrder(newOrder)
             .then(() => {
                 onOrderUpdated?.(newOrder);
                 socket.emit('OrdenActualizadaDesdeCliente', { msg: order.OrderID });
+                setOrigenModalOpen(false);
             })
             .catch((err) => {
                 console.log(err);
+            })
+            .finally(() => {
+                setOrigenSaving(false);
             });
     };
 
     return (
-        <div className={`mesero-customer-field${compact ? ' mesero-customer-field--compact' : ''}`}>
-            <textarea
-                className="form-control mesero-customer-field__input"
-                id={`textAreaClient_${order.OrderID}`}
-                rows="1"
-                placeholder="Cliente"
-                onChange={handleCliente}
-                value={cliente}
-                style={{
-                    backgroundColor: getCustomerBgColor(order.OrderID),
-                    color: '#000',
-                    fontWeight: 'bold',
-                    textShadow: '-0.2px -0.2px 0 #000, 0.2px -0.2px 0 #000, -0.2px 0.2px 0 #000, 0.2px 0.2px 0 #000',
-                }}
-            />
-            <div className="mesero-customer-field__actions">
-                <img
-                    src="icons/whatsapp.png"
-                    alt="WhatsApp"
-                    className="mesero-customer-field__whatsapp"
-                    onDoubleClick={handleWhatsappDoubleClick}
+        <>
+            <div className={`mesero-customer-field${compact ? ' mesero-customer-field--compact' : ''}`}>
+                <textarea
+                    className="form-control mesero-customer-field__input"
+                    id={`textAreaClient_${order.OrderID}`}
+                    rows="1"
+                    placeholder="Cliente"
+                    onChange={handleCliente}
+                    value={cliente}
                     style={{
-                        opacity: origenWhatsapp ? 1 : 0.3,
-                        filter: origenWhatsapp ? 'none' : 'grayscale(50%)',
+                        backgroundColor: getCustomerBgColor(order.OrderID),
+                        color: '#000',
+                        fontWeight: 'bold',
+                        textShadow: '-0.2px -0.2px 0 #000, 0.2px -0.2px 0 #000, -0.2px 0.2px 0 #000, 0.2px 0.2px 0 #000',
                     }}
-                    title={origenWhatsapp ? 'Origen: WhatsApp (doble click para quitar)' : 'Doble click para marcar como WhatsApp'}
                 />
-                <button
-                    type="button"
-                    className={`btn btn-primary mesero-customer-field__save${compact ? ' mesero-customer-field__save--compact' : ''}`}
-                    style={{ backgroundColor: iconColor }}
-                    onClick={updateCliente}
-                >
-                    <FontAwesomeIcon icon={iconType} style={{ color: '#fff' }} size={compact ? 'lg' : '2x'} />
-                </button>
+                <div className="mesero-customer-field__actions">
+                    <button
+                        type="button"
+                        className="mesero-customer-field__settings-btn"
+                        onClick={() => setOrigenModalOpen(true)}
+                        title={`Origen: ${getOrigenSummary(order.Origen)} (clic para editar)`}
+                        aria-label="Ajustes de origen del pedido"
+                    >
+                        <FontAwesomeIcon
+                            icon={faGear}
+                            className="mesero-customer-field__settings-icon"
+                            size={compact ? 'lg' : 'xl'}
+                        />
+                    </button>
+                    <button
+                        type="button"
+                        className={`btn btn-primary mesero-customer-field__save${compact ? ' mesero-customer-field__save--compact' : ''}`}
+                        style={{ backgroundColor: iconColor }}
+                        onClick={updateCliente}
+                    >
+                        <FontAwesomeIcon icon={iconType} style={{ color: '#fff' }} size={compact ? 'lg' : '2x'} />
+                    </button>
+                </div>
             </div>
-        </div>
+            {origenModalOpen && (
+                <MeseroOrigenModal
+                    order={order}
+                    onClose={() => setOrigenModalOpen(false)}
+                    onSave={handleOrigenSave}
+                    saving={origenSaving}
+                />
+            )}
+        </>
     );
 };
 

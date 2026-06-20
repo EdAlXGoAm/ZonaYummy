@@ -37,14 +37,28 @@
     flex-shrink: 0;
 }
 
-.mesero-customer-field__whatsapp {
-    width: 32px;
-    height: 32px;
+.mesero-customer-field__settings-btn {
+    border: none;
+    padding: 0;
+    background: transparent;
     cursor: pointer;
-    transition: opacity 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #64748b;
 }
 
-.mesero-customer-field--compact .mesero-customer-field__whatsapp {
+.mesero-customer-field__settings-btn:hover {
+    color: #334155;
+}
+
+.mesero-customer-field__settings-icon {
+    width: 32px;
+    height: 32px;
+    transition: color 0.2s ease;
+}
+
+.mesero-customer-field--compact .mesero-customer-field__settings-icon {
     width: 28px;
     height: 28px;
 }
@@ -71,7 +85,7 @@
         font-size: 14px;
     }
 
-    .mesero-customer-field--compact .mesero-customer-field__whatsapp {
+    .mesero-customer-field--compact .mesero-customer-field__settings-icon {
         width: 24px;
         height: 24px;
     }

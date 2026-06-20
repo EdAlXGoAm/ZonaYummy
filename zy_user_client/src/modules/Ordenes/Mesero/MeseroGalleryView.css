@@ -633,6 +633,115 @@
     border-color: rgba(253, 164, 175, 0.35);
 }
 
+/* WhatsApp — naranja en curso y cerrada */
+.mesero-gallery__tile--whatsapp.mesero-gallery__tile--active .mesero-gallery__tile-frame {
+    border-color: rgba(251, 146, 60, 0.55);
+    background: rgba(234, 88, 12, 0.16);
+    box-shadow: inset 0 0 0 1px rgba(253, 186, 116, 0.18);
+}
+
+.mesero-gallery__tile--whatsapp.mesero-gallery__tile--active .mesero-gallery__tile-screen {
+    background: linear-gradient(180deg, #1a2b5c 0%, #3b2f1f 55%, #7c2d12 100%);
+}
+
+.mesero-gallery__tile--whatsapp.mesero-gallery__tile--active .mesero-gallery__tile-screen-icon {
+    border-color: rgba(253, 186, 116, 0.75);
+}
+
+.mesero-gallery__tile--whatsapp.mesero-gallery__tile--active .mesero-gallery__tile-screen-icon::after {
+    background: repeating-linear-gradient(
+        0deg,
+        rgba(251, 146, 60, 0.95) 0,
+        rgba(251, 146, 60, 0.95) 3px,
+        transparent 3px,
+        transparent 6px
+    );
+}
+
+.mesero-gallery__tile--whatsapp.mesero-gallery__tile--active .mesero-gallery__tile-screen-total {
+    color: #fdba74;
+}
+
+.mesero-gallery__tile--whatsapp.mesero-gallery__tile--active .mesero-gallery__tile-meta {
+    color: #7c2d12;
+    background: linear-gradient(180deg, #fdba74, #fb923c);
+}
+
+.mesero-gallery__tile--whatsapp.mesero-gallery__tile--active.mesero-gallery__tile--selected .mesero-gallery__tile-frame {
+    border-color: rgba(253, 186, 116, 0.85);
+    background: rgba(234, 88, 12, 0.24);
+}
+
+.mesero-gallery__tile--whatsapp.mesero-gallery__tile--done .mesero-gallery__tile-frame {
+    border-color: rgba(251, 146, 60, 0.28);
+    background: rgba(124, 45, 18, 0.35);
+    opacity: 0.88;
+}
+
+.mesero-gallery__tile--whatsapp.mesero-gallery__tile--done .mesero-gallery__tile-screen {
+    background: linear-gradient(180deg, #431407 0%, #7c2d12 100%);
+}
+
+.mesero-gallery__tile--whatsapp.mesero-gallery__tile--done .mesero-gallery__tile-screen-icon {
+    border-color: rgba(253, 186, 116, 0.35);
+    opacity: 0.8;
+}
+
+.mesero-gallery__tile--whatsapp.mesero-gallery__tile--done .mesero-gallery__tile-screen-icon::after {
+    background: repeating-linear-gradient(
+        0deg,
+        rgba(251, 146, 60, 0.65) 0,
+        rgba(251, 146, 60, 0.65) 3px,
+        transparent 3px,
+        transparent 6px
+    );
+}
+
+.mesero-gallery__tile--whatsapp.mesero-gallery__tile--done .mesero-gallery__tile-meta,
+.mesero-gallery__tile--whatsapp .mesero-gallery__tile-meta--done {
+    color: #7c2d12;
+    background: linear-gradient(180deg, #fdba74, #f97316);
+}
+
+.mesero-gallery__tile--whatsapp.mesero-gallery__tile--done.mesero-gallery__tile--selected .mesero-gallery__tile-frame {
+    opacity: 1;
+    border-color: rgba(253, 186, 116, 0.65);
+    background: rgba(124, 45, 18, 0.42);
+    box-shadow: 0 0 0 2px rgba(251, 146, 60, 0.28);
+}
+
+.mesero-gallery__tile--whatsapp.mesero-gallery__tile--done:hover .mesero-gallery__tile-frame {
+    opacity: 0.95;
+    border-color: rgba(251, 146, 60, 0.42);
+}
+
+.mesero-gallery__tile-screen-icon--delivery {
+    width: auto;
+    height: auto;
+    border: none;
+    color: #fdba74;
+}
+
+.mesero-gallery__tile-screen-icon--delivery::after {
+    content: none;
+}
+
+.mesero-gallery__tile--whatsapp .mesero-gallery__tile-screen-icon--delivery {
+    color: #fdba74;
+}
+
+.mesero-gallery__tile--active .mesero-gallery__tile-screen-icon--delivery {
+    color: #86efac;
+}
+
+.mesero-gallery__tile--whatsapp.mesero-gallery__tile--active .mesero-gallery__tile-screen-icon--delivery {
+    color: #fdba74;
+}
+
+.mesero-gallery__tile--done .mesero-gallery__tile-screen-icon--delivery {
+    color: rgba(253, 186, 116, 0.75);
+}
+
 @media (max-width: 640px) {
     .mesero-gallery__main {
         padding: 6px 8px 6px;

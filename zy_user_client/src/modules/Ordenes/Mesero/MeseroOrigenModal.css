@@ -1,0 +1,163 @@
+.mesero-origen-modal-fondo {
+    position: fixed;
+    inset: 0;
+    z-index: 10002;
+    background: rgba(15, 23, 42, 0.55);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+}
+
+.mesero-origen-modal {
+    width: min(96vw, 420px);
+    background: #fff;
+    border-radius: 14px;
+    box-shadow: 0 20px 40px rgba(15, 23, 42, 0.24);
+    overflow: hidden;
+}
+
+.mesero-origen-modal__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 14px 16px;
+    background: #1e3a5f;
+    color: #fff;
+}
+
+.mesero-origen-modal__header h3 {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 700;
+}
+
+.mesero-origen-modal__close {
+    border: none;
+    background: rgba(255, 255, 255, 0.15);
+    color: #fff;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 1rem;
+    line-height: 1;
+}
+
+.mesero-origen-modal__close:hover {
+    background: rgba(255, 255, 255, 0.28);
+}
+
+.mesero-origen-modal__body {
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.mesero-origen-modal__section {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.mesero-origen-modal__label {
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #64748b;
+}
+
+.mesero-origen-modal__switch.two-option-switch {
+    width: 100%;
+    justify-content: space-between;
+}
+
+.mesero-origen-modal__switch .two-option-switch__label {
+    flex: 1 1 0;
+    text-align: center;
+    font-size: 0.78rem;
+    line-height: 1.2;
+    padding: 7px 8px;
+    border-radius: 999px;
+    color: #94a3b8;
+    font-weight: 600;
+    transition: background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.mesero-origen-modal__switch[data-value='left'] .two-option-switch__label:first-child,
+.mesero-origen-modal__switch[data-value='right'] .two-option-switch__label:last-child {
+    color: #1e3a8a;
+    background: #dbeafe;
+    box-shadow: inset 0 0 0 1.5px #60a5fa;
+    font-weight: 800;
+}
+
+.mesero-origen-modal__switch[data-value='left'] .two-option-switch__label:last-child,
+.mesero-origen-modal__switch[data-value='right'] .two-option-switch__label:first-child {
+    color: #94a3b8;
+    background: transparent;
+    box-shadow: none;
+    font-weight: 600;
+}
+
+.mesero-origen-modal__summary {
+    margin: 0;
+    font-size: 0.92rem;
+    font-weight: 700;
+    color: #1e293b;
+}
+
+.mesero-origen-modal__code {
+    margin: 0;
+    font-size: 0.78rem;
+    color: #64748b;
+}
+
+.mesero-origen-modal__code code {
+    background: #f1f5f9;
+    padding: 1px 5px;
+    border-radius: 4px;
+    font-size: 0.76rem;
+}
+
+.mesero-origen-modal__actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding: 0 16px 16px;
+}
+
+.mesero-origen-modal__btn {
+    border: none;
+    border-radius: 8px;
+    padding: 8px 16px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+}
+
+.mesero-origen-modal__btn:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+.mesero-origen-modal__btn--ghost {
+    background: #f1f5f9;
+    color: #334155;
+}
+
+.mesero-origen-modal__btn--ghost:hover:not(:disabled) {
+    background: #e2e8f0;
+}
+
+.mesero-origen-modal__btn--primary {
+    background: #2563eb;
+    color: #fff;
+}
+
+.mesero-origen-modal__btn--primary:hover:not(:disabled) {
+    background: #1d4ed8;
+}

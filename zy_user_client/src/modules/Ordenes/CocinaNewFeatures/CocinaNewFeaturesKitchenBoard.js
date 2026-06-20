@@ -13,6 +13,7 @@ import {
     getOrderSlotKey,
     isSameComanda,
 } from '../kitchenComandaSyncUtils';
+import { isOrigenWhatsapp } from '../Mesero/meseroOrigenUtils';
 import './CocinaNewFeaturesKitchenBoard.css';
 import './CocinaNewFeaturesComandaCard.css';
 
@@ -339,7 +340,7 @@ const CocinaNewFeaturesKitchenBoard = ({modeInterface, Orders}) => {
                         {order.isPartial && <span className="order-part-badge">({order.partNumber}/{order.totalParts})</span>}
                     </span>
                     <span className={`column-customer colorTextClienteCocina${order.orderId % 10}`}>
-                        {order.origen === 'Whatsapp' && (
+                        {isOrigenWhatsapp(order.origen) && (
                             <img 
                                 src="icons/whatsapp.png" 
                                 alt="WhatsApp" 

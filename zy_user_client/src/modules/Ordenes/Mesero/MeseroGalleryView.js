@@ -2,6 +2,7 @@ import './MeseroGalleryView.css';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import MeseroOrderPanel from './MeseroOrderPanel';
 import MeseroOrderPickModal from './MeseroOrderPickModal';
+import MeseroOrderJsonModal from './MeseroOrderJsonModal';
 import MeseroPlatilloSelector from './MeseroPlatilloSelector';
 import MeseroCustomerField from './MeseroCustomerField';
 import {
@@ -10,6 +11,7 @@ import {
 } from './meseroViewCache';
 import { bindTouchAxisScroll } from './meseroTouchAxisScroll';
 import { sortMeseroOrdersActiveFirst } from './meseroOrdersSort';
+import { isOrigenDomicilio, isOrigenWhatsapp } from './meseroOrigenUtils';
 
 const resolveOrderComandas = (comandasByOrder, orderId) => {
     const key = Number(orderId);
@@ -56,6 +58,10 @@ const MeseroGalleryView = ({
     const selectionHydratedRef = useRef(false);
     const addPlatilloRef = useRef(null);
     const filmstripScrollRef = useRef(null);
+    const tileLongPressTimerRef = useRef(null);
+    const tileLongPressTriggeredRef = useRef(false);
+    const [jsonModalOrderId, setJsonModalOrderId] = useState(null);
+    const TILE_LONG_PRESS_MS = 550;
 
     const registerAddPlatillo = useCallback((handler) => {
         addPlatilloRef.current = handler;
@@ -178,6 +184,53 @@ const MeseroGalleryView = ({
         }
     };
 
+    const clearTileLongPress = useCallback(() => {
+        if (tileLongPressTimerRef.current) {
+            clearTimeout(tileLongPressTimerRef.current);
+            tileLongPressTimerRef.current = null;
+        }
+    }, []);
+
+    const handleTilePressStart = useCallback((orderId) => {
+        tileLongPressTriggeredRef.current = false;
+        clearTileLongPress();
+        tileLongPressTimerRef.current = setTimeout(() => {
+            tileLongPressTriggeredRef.current = true;
+            setJsonModalOrderId(orderId);
+        }, TILE_LONG_PRESS_MS);
+    }, [clearTileLongPress]);
+
+    const handleTilePressEnd = useCallback(() => {
+        clearTileLongPress();
+    }, [clearTileLongPress]);
+
+    const handleTileClick = useCallback((orderId) => {
+        if (tileLongPressTriggeredRef.current) {
+            tileLongPressTriggeredRef.current = false;
+            return;
+        }
+        selectOrder(orderId);
+    }, [selectOrder]);
+
+    const handleOrderJsonSaved = useCallback((updatedOrder) => {
+        if (!updatedOrder?.OrderID || typeof onOrderCacheSync !== 'function') {
+            return;
+        }
+        onOrderCacheSync(updatedOrder);
+    }, [onOrderCacheSync]);
+
+    useEffect(() => () => clearTileLongPress(), [clearTileLongPress]);
+
+    const jsonModalOrder = useMemo(
+        () => sortedOrders.find((o) => Number(o.OrderID) === Number(jsonModalOrderId)) ?? null,
+        [sortedOrders, jsonModalOrderId]
+    );
+
+    const jsonModalComandas = useMemo(() => {
+        if (jsonModalOrderId == null) return undefined;
+        return resolveOrderComandas(comandasByOrder, jsonModalOrderId);
+    }, [jsonModalOrderId, comandasByOrder]);
+
     const showClassicViewFab = (
         selectionReady
         && selectedOrderId == null
@@ -208,6 +261,15 @@ const MeseroGalleryView = ({
                     comandasByOrder={comandasByOrder}
                     onSelectOrder={selectOrder}
                     onClose={() => setPickerDismissed(true)}
+                />
+            )}
+            {jsonModalOrderId != null && (
+                <MeseroOrderJsonModal
+                    orderId={jsonModalOrderId}
+                    cachedOrder={jsonModalOrder}
+                    comandas={jsonModalComandas}
+                    onClose={() => setJsonModalOrderId(null)}
+                    onSaved={handleOrderJsonSaved}
                 />
             )}
             <div className="mesero-gallery__main">
@@ -353,12 +415,20 @@ const MeseroGalleryView = ({
                                 const customer = (order.Customer || '').trim();
                                 const isDone = order.OrderCustStatus === 'Done';
                                 const isEmpty = isOrderWithoutComandas(order, comandasByOrder);
+                                const isWhatsapp = isOrigenWhatsapp(order.Origen);
+                                const isDomicilio = isOrigenDomicilio(order.Origen);
                                 return (
                                     <button
                                         key={order.OrderID}
                                         type="button"
-                                        className={`mesero-gallery__tile${isSelected ? ' mesero-gallery__tile--selected' : ''}${isDone ? ' mesero-gallery__tile--done' : ' mesero-gallery__tile--active'}${isEmpty ? ' mesero-gallery__tile--empty' : ''}`}
-                                        onClick={() => selectOrder(order.OrderID)}
+                                        className={`mesero-gallery__tile${isSelected ? ' mesero-gallery__tile--selected' : ''}${isDone ? ' mesero-gallery__tile--done' : ' mesero-gallery__tile--active'}${isEmpty ? ' mesero-gallery__tile--empty' : ''}${isWhatsapp ? ' mesero-gallery__tile--whatsapp' : ''}`}
+                                        onPointerDown={() => handleTilePressStart(order.OrderID)}
+                                        onPointerUp={handleTilePressEnd}
+                                        onPointerLeave={handleTilePressEnd}
+                                        onPointerCancel={handleTilePressEnd}
+                                        onClick={() => handleTileClick(order.OrderID)}
+                                        onContextMenu={(e) => e.preventDefault()}
+                                        title="Clic para seleccionar · Mantener presionado para ver JSON"
                                     >
                                         <div className="mesero-gallery__tile-frame">
                                             <span className="mesero-gallery__tile-badge">
@@ -371,7 +441,22 @@ const MeseroGalleryView = ({
                                                     </span>
                                                 ) : (
                                                     <>
-                                                        <span className="mesero-gallery__tile-screen-icon" />
+                                                        {isDomicilio ? (
+                                                            <span
+                                                                className="mesero-gallery__tile-screen-icon mesero-gallery__tile-screen-icon--delivery"
+                                                                aria-hidden="true"
+                                                            >
+                                                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                                    <path d="M10 17h4" />
+                                                                    <path d="M3 7h11v8H3z" />
+                                                                    <path d="M14 9h4l2 3v3h-6V9z" />
+                                                                    <circle cx="7.5" cy="17.5" r="1.5" />
+                                                                    <circle cx="17.5" cy="17.5" r="1.5" />
+                                                                </svg>
+                                                            </span>
+                                                        ) : (
+                                                            <span className="mesero-gallery__tile-screen-icon" />
+                                                        )}
                                                         <span className="mesero-gallery__tile-screen-label">
                                                             {customer || 'Sin cliente'}
                                                         </span>
