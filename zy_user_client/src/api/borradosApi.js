@@ -12,11 +12,16 @@ const wrapBorradosError = (err) => {
     throw err;
 };
 
+const isPlaceholderComandaId = (id) => String(id ?? '').startsWith('pending-');
+
 const borradosApi = {
     solicitarBorrado: async (comanda) => {
         try {
             if (!comanda?._id) {
                 throw new Error('La comanda no tiene _id (debe existir en la base de datos).');
+            }
+            if (isPlaceholderComandaId(comanda._id)) {
+                throw new Error('La comanda aún no está guardada. Espera un momento e intenta de nuevo.');
             }
             const response = await Axios.post(`${baseURL}/solicitar`, {
                 comandaMongoId: comanda._id,

@@ -135,7 +135,8 @@ const MeseroOrderJsonModal = ({
                 </div>
 
                 <p className="mesero-order-json-hint">
-                    Usa ▾ para colapsar objetos y listas. Origen usa formato{' '}
+                    Usa ▾ para colapsar objetos y listas. Usa ✕ para eliminar un campo o elemento.
+                    Origen usa formato{' '}
                     <code>WhatsApp-domicilio</code>, <code>mostrador-mostrador</code>, etc.
                 </p>
 

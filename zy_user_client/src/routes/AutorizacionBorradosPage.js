@@ -52,11 +52,14 @@ const AutorizacionBorradosPage = () => {
 
         setProcesandoId(solicitud._id);
         try {
-            await borradosApi.procederBorrado(solicitud._id);
+            const result = await borradosApi.procederBorrado(solicitud._id);
             const deleteMsg = `Delete-${solicitud.OrderID}-${solicitud.Platillo || ''}`;
             socket.emit('DeleteComandaDesdeCliente', { msg: deleteMsg });
             socket.emit('OrdenActualizadaDesdeCliente', { msg: solicitud.OrderID });
             setSolicitudes((prev) => prev.filter((s) => s._id !== solicitud._id));
+            if (result?.alreadyDeleted) {
+                alert('La comanda ya no existía en la base de datos. Solicitud cerrada.');
+            }
         } catch (err) {
             console.error(err);
             const msg = err.response?.data?.error || 'Error al proceder con el borrado.';

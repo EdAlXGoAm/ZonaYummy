@@ -129,3 +129,23 @@
     border-color: #2563eb;
     box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.12);
 }
+
+.mesero-order-json-tree__delete {
+    flex: 0 0 auto;
+    margin-left: auto;
+    width: 22px;
+    height: 22px;
+    border: 1px solid #fecaca;
+    border-radius: 4px;
+    background: #fff;
+    color: #dc2626;
+    font-size: 0.75rem;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0;
+}
+
+.mesero-order-json-tree__delete:hover {
+    background: #fef2f2;
+    border-color: #f87171;
+}

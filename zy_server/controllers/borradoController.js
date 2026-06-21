@@ -1,11 +1,34 @@
+const mongoose = require('mongoose');
 const BorradoSolicitud = require('../models/borradoSolicitudModel');
 const Comanda = require('../models/comandaModel');
+
+const isPlaceholderComandaId = (id) => {
+    const value = String(id ?? '');
+    return !value || value.startsWith('pending-') || !mongoose.Types.ObjectId.isValid(value);
+};
+
+const buildComandaDeleteFilter = (solicitud) => {
+    if (!isPlaceholderComandaId(solicitud.comandaMongoId)) {
+        return { _id: solicitud.comandaMongoId };
+    }
+
+    const filter = { OrderID: solicitud.OrderID };
+    if (solicitud.ComandaId != null) {
+        filter.ComandaId = solicitud.ComandaId;
+    }
+    return filter;
+};
 
 exports.solicitarBorrado = async (req, res) => {
     try {
         const { comandaMongoId } = req.body;
         if (!comandaMongoId) {
             return res.status(400).json({ error: 'comandaMongoId es requerido' });
+        }
+        if (isPlaceholderComandaId(comandaMongoId)) {
+            return res.status(400).json({
+                error: 'La comanda aún no está guardada en la base de datos. Espera a que se sincronice e intenta de nuevo.',
+            });
         }
 
         const existente = await BorradoSolicitud.findOne({
@@ -53,13 +76,17 @@ exports.procederBorrado = async (req, res) => {
             return res.status(400).json({ error: 'La solicitud ya fue procesada' });
         }
 
-        await Comanda.findOneAndDelete({ _id: solicitud.comandaMongoId });
+        const deleted = await Comanda.findOneAndDelete(buildComandaDeleteFilter(solicitud));
 
         solicitud.status = 'approved';
         solicitud.processedAt = new Date();
         await solicitud.save();
 
-        res.json({ success: true, solicitud });
+        res.json({
+            success: true,
+            solicitud,
+            alreadyDeleted: !deleted,
+        });
     } catch (err) {
         res.status(400).json({ error: err.message });
     }

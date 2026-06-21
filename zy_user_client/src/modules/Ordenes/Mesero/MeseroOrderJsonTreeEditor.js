@@ -13,6 +13,24 @@ const cloneAtPath = (root, path, nextValue) => {
     return clone;
 };
 
+const deleteAtPath = (root, path) => {
+    if (path.length === 0) {
+        return root;
+    }
+    const clone = JSON.parse(JSON.stringify(root));
+    let parent = clone;
+    for (let i = 0; i < path.length - 1; i += 1) {
+        parent = parent[path[i]];
+    }
+    const lastKey = path[path.length - 1];
+    if (Array.isArray(parent)) {
+        parent.splice(Number(lastKey), 1);
+    } else {
+        delete parent[lastKey];
+    }
+    return clone;
+};
+
 const collectCollapsiblePaths = (value, path = [], acc = new Set()) => {
     if (Array.isArray(value)) {
         if (path.length > 0) acc.add(pathKey(path));
@@ -111,6 +129,7 @@ const JsonNode = ({
     collapsedPaths,
     onToggleCollapse,
     onValueChange,
+    onDelete,
 }) => {
     const isArray = Array.isArray(value);
     const isObject = value !== null && typeof value === 'object' && !isArray;
@@ -118,6 +137,28 @@ const JsonNode = ({
     const currentPathKey = pathKey(path);
     const isCollapsed = isCollapsible && collapsedPaths.has(currentPathKey);
     const label = name === null ? '(root)' : (isArray ? `[${name}]` : `"${name}"`);
+    const canDelete = path.length > 0;
+
+    const handleDelete = () => {
+        const targetLabel = name === null ? 'este nodo' : String(label);
+        const confirmDelete = window.confirm(`¿Eliminar ${targetLabel} del JSON?`);
+        if (!confirmDelete) {
+            return;
+        }
+        onDelete(path);
+    };
+
+    const deleteButton = canDelete ? (
+        <button
+            type="button"
+            className="mesero-order-json-tree__delete"
+            onClick={handleDelete}
+            aria-label={`Eliminar ${label}`}
+            title="Eliminar"
+        >
+            ✕
+        </button>
+    ) : null;
 
     if (!isCollapsible) {
         return (
@@ -128,6 +169,7 @@ const JsonNode = ({
                     value={value}
                     onChange={(next) => onValueChange(path, next)}
                 />
+                {deleteButton}
             </div>
         );
     }
@@ -158,6 +200,7 @@ const JsonNode = ({
                 ) : (
                     <span className="mesero-order-json-tree__open">{isArray ? '[' : '{'}</span>
                 )}
+                {deleteButton}
             </div>
 
             {!isCollapsed && (
@@ -172,6 +215,7 @@ const JsonNode = ({
                             collapsedPaths={collapsedPaths}
                             onToggleCollapse={onToggleCollapse}
                             onValueChange={onValueChange}
+                            onDelete={onDelete}
                         />
                     ))}
                     <div
@@ -217,6 +261,10 @@ const MeseroOrderJsonTreeEditor = ({ value, onChange }) => {
         onChange(cloneAtPath(value, path, nextValue));
     }, [onChange, value]);
 
+    const handleDelete = useCallback((path) => {
+        onChange(deleteAtPath(value, path));
+    }, [onChange, value]);
+
     return (
         <div className="mesero-order-json-tree">
             <div className="mesero-order-json-tree__toolbar">
@@ -239,6 +287,7 @@ const MeseroOrderJsonTreeEditor = ({ value, onChange }) => {
                     collapsedPaths={collapsedPaths}
                     onToggleCollapse={handleToggleCollapse}
                     onValueChange={handleValueChange}
+                    onDelete={handleDelete}
                 />
             </div>
         </div>

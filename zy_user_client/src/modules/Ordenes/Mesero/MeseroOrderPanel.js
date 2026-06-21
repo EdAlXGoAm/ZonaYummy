@@ -813,8 +813,8 @@ const MeseroOrderPanel = ({modeInterface, iInterface, OrderID, DeleteOrder, hand
             '¿Solicitar eliminación de este platillo? Un supervisor debe autorizarla en /eliminar.',
         );
         if (!confirmDel) return;
-        if (!comanda._id) {
-            notify('No se puede solicitar borrado: comanda sin ID.');
+        if (!comanda._id || String(comanda._id).startsWith('pending-')) {
+            notify('No se puede solicitar borrado: la comanda aún no está guardada.');
             return;
         }
         borradosApi.solicitarBorrado(comanda)
