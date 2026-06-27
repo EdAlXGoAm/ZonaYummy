@@ -64,27 +64,22 @@ const CocinaNewFeaturesComandaCard = ({Comanda, updateComanda, compact = false, 
         let Precio = variante.Precio;
         for (let componente of variante.Componentes) {
             !componente.Checked && (Precio += componente.Precio);
-            console.log(`Componente: ${componente.Precio}`);
         }
         for (let opcioon of variante.Opciones) {
             const indexItem = opcioon.SelectedItem;
             Precio += opcioon.Items[indexItem].Precio;
-            console.log(`Opcion.Item: ${opcioon.Items[indexItem].Precio}`);
         }
         for (let extra of variante.Extras) {
             extra.Checked && (Precio += extra.Precio);
-            console.log(`Componente: ${extra.Precio}`);
         }
         for (let adicional of variante.Adicionales) {
             adicional.Checked && (Precio += adicional.Precio);
-            console.log(`Componente: ${adicional.Precio}`);
         }
         const newComanda = {...comanda, Precio: Precio};
         return newComanda;
     }
 
     const handleVariantDropdownChange = (variantList, event) => {
-        console.log(`Variant e: `, event)
         // Search the index of e.target.value
         const newIndex = variantList.indexOf(event.value);
         // Update the SelectedVariant
@@ -95,7 +90,6 @@ const CocinaNewFeaturesComandaCard = ({Comanda, updateComanda, compact = false, 
     };
 
     const handleOpcionDropdownChange = (itemsList, indexOpcion, event) => {
-        console.log(`Opcion e: `, event)
         // Search the index of e.target.value
         const newIndex = itemsList.indexOf(event.value);
         // Update the SelectedVariant
@@ -107,7 +101,6 @@ const CocinaNewFeaturesComandaCard = ({Comanda, updateComanda, compact = false, 
     };
     
     const handleVariantComponente = (indexComponente, event) => {
-        console.log(`Component e: `, event)
         // Update the SelectedVariant
         const newComanda = Comanda;
         const indexVariant = Comanda.Details.SelectedVariant;
@@ -128,7 +121,6 @@ const CocinaNewFeaturesComandaCard = ({Comanda, updateComanda, compact = false, 
     };
 
     const handleVariantIngredienteItem = (indexIngrediente, indexItem, event) => {
-        console.log(`Component e: `, event)
         // Update the SelectedVariant
         const newComanda = Comanda;
         const indexVariant = Comanda.Details.SelectedVariant;
@@ -137,7 +129,6 @@ const CocinaNewFeaturesComandaCard = ({Comanda, updateComanda, compact = false, 
     };
 
     const handleVariantExtra = (indexExtra, event) => {
-        console.log(`Component e: `, event)
         // Update the SelectedVariant
         const newComanda = Comanda;
         const indexVariant = Comanda.Details.SelectedVariant;
@@ -158,7 +149,6 @@ const CocinaNewFeaturesComandaCard = ({Comanda, updateComanda, compact = false, 
     };
 
     const handleVariantAdicional = (indexAdicional, event) => {
-        console.log(`Component e: `, event)
         // Update the SelectedVariant
         const newComanda = Comanda;
         const indexVariant = Comanda.Details.SelectedVariant;
@@ -168,7 +158,6 @@ const CocinaNewFeaturesComandaCard = ({Comanda, updateComanda, compact = false, 
     };
 
     const handleVariantAdicionalOpcionDropdownChange = (optionList, indexAdicional, event) => {
-        console.log(`Opcion e: `, event)
         // Search the index of e.target.value
         const newIndex = optionList.indexOf(event.value);
         // Update the SelectedVariant
@@ -356,7 +345,6 @@ const CocinaNewFeaturesComandaCard = ({Comanda, updateComanda, compact = false, 
             componente.Checked === false && (allChecked = false)
             ));
         setAllComponentsChecked(allChecked);
-        console.log(`allComponentsChecked: ${allChecked}`);
     }, [Comanda]);
     
     // const [allIngredientesChecked, setAllIngredientezChecked] = useState(false);
@@ -366,7 +354,6 @@ const CocinaNewFeaturesComandaCard = ({Comanda, updateComanda, compact = false, 
     //         ingrediente.Checked === false && (allChecked = false)
     //         ));
     //     setAllIngredientezChecked(allChecked);
-    //     console.log(`allComponentsChecked: ${allChecked}`);
     // }, [Comanda]);
 
 
@@ -433,6 +420,9 @@ const CocinaNewFeaturesComandaCard = ({Comanda, updateComanda, compact = false, 
         `${Comanda.ComandaId}-${Comanda._id}-${compact ? 'compact' : 'full'}`,
     );
     const displayPlatilloName = getKitchenDisplayPlatilloName(Comanda);
+    const titlePlatilloName = displayPlatilloName
+        .replace(/Maruchan/gi, 'Maruc')
+        .replace(/\bcon\s+/gi, 'c/');
 
     return (
         <div
@@ -458,12 +448,12 @@ const CocinaNewFeaturesComandaCard = ({Comanda, updateComanda, compact = false, 
                             width={compact ? "18" : "24"} 
                             height={compact ? "18" : "24"} 
                             viewBox="0 0 24 24" 
-                            fill="#ff4444" 
-                            stroke="#ffffff" 
+                            fill="#ffc7c7" 
+                            stroke="#111827" 
                             strokeWidth="1.5"
                         >
                             <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                            <polyline points="14 2 14 8 20 8" stroke="#ffffff" fill="none"></polyline>
+                            <polyline points="14 2 14 8 20 8" stroke="#111827" fill="none"></polyline>
                         </svg>
                         <span className="nota-flotante-texto" style={{fontSize: compact ? '13px' : '16px'}}>
                             {Comanda.Notas}
@@ -524,14 +514,15 @@ const CocinaNewFeaturesComandaCard = ({Comanda, updateComanda, compact = false, 
                             </>
                         )}
                     </div>
-                    <div className='col-9'>
+                    <div className={`col-9 ${compact ? 'compact-title-column' : ''}`}>
                         <div className="row"><div className="col">
                             <h2 className="title comandaTextStyleCocina" style={{fontSize: headerFontSize}}>
                                 {/* En modo compact el número ya está en col-3 */}
                                 {!compact && comandaNumber && (
                                     <span className="comanda-number-badge">{comandaNumber}</span>
                                 )}
-                                {displayPlatilloName}&nbsp;&nbsp;<span style={{textShadow: "0px 0px 10px red"}}>${Comanda.Precio}</span>
+                                <span className="comanda-title-name">{titlePlatilloName}</span>
+                                <span className="comanda-title-price" style={{textShadow: "0px 0px 10px red"}}>${Comanda.Precio}</span>
                             </h2>
                         </div></div>
                         <div className="row"><div className="col">

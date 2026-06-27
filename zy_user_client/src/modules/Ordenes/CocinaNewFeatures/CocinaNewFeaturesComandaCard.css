@@ -39,10 +39,11 @@
     background-color: rgb(167, 152, 255);
 }
 .textNotaCocina{
-    color: white;
+    color: #111827;
     font-weight: bold;
     font-size: 35px;
-    animation: cambio-color 3s infinite linear;
+    background-color: #ffb4b4;
+    animation: none !important;
     text-align: left;
     padding: 0px 5px 0px 5px;
     border: 1px solid black;
@@ -64,7 +65,55 @@
     100% { background-color: red; 
         color: #fff}
   }
+
+.nota-flotante-wrapper {
+    position: absolute;
+    top: -19px;
+    right: 8px;
+    z-index: 9999;
+    pointer-events: none;
+}
+
+.nota-flotante-fixed {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    background: linear-gradient(135deg, #ffc7c7 0%, #ff9f9f 100%);
+    color: #111827;
+    padding: 8px 14px;
+    border: 2px solid #7f1d1d;
+    border-radius: 12px;
+    box-shadow: 0 2px 6px rgba(17, 24, 39, 0.18);
+    animation: none !important;
+    max-width: 270px;
+}
+
+.nota-flotante-fixed .nota-flotante-icon {
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
+.nota-flotante-fixed .nota-flotante-texto {
+    font-family: "Arial Black", Arial, Helvetica, sans-serif;
+    font-weight: 900;
+    letter-spacing: 0;
+    line-height: 1.25;
+    text-shadow: none !important;
+    -webkit-text-stroke: 0;
+    text-transform: uppercase;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    white-space: normal;
+    word-break: break-word;
+}
 .comandaTextStyleCocina{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
     background-color: #2d2d2d;
     color: #ffffff;
     border-radius: 40px;
@@ -73,6 +122,32 @@
     font-size: 35px;
     font-family: 'Salsa', cursive;
     font-weight: bold;
+    width: min(360px, 100%);
+    box-sizing: border-box;
+    margin-left: auto;
+    overflow: hidden;
+}
+
+.comanda-title-name {
+    display: inline-block;
+    min-width: 0;
+    flex: 1 1 auto;
+    overflow: hidden;
+    text-overflow: clip;
+    white-space: nowrap;
+}
+
+.comanda-title-price {
+    flex: 0 0 auto;
+}
+
+.compact-title-column {
+    padding-left: 28px !important;
+    overflow: hidden;
+}
+
+.compact-title-column .comandaTextStyleCocina {
+    max-width: 100%;
 }
 .titleVariantCocina {
     display: inline-block;
@@ -428,7 +503,7 @@ hr {
     display: flex;
     align-items: center;
     justify-content: flex-start;
-    gap: 8px;
+    gap: 4px;
     width: 100%;
 }
 
@@ -455,9 +530,9 @@ hr {
 }
 
 .compact-time-badge {
-    padding: 3px 8px;
+    padding: 2px 5px;
     border-radius: 6px;
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 700;
     text-align: center;
     margin-left: auto;

@@ -9,6 +9,7 @@ import CocinaBebidasPage from './routes/CocinaBebidasPage';
 import CocinaNewFeaturesPage from './routes/CocinaNewFeaturesPage';
 import CocinadoPage from './routes/CocinadoPage';
 import AutorizacionBorradosPage from './routes/AutorizacionBorradosPage';
+import ImagenesClipboardPage from './routes/ImagenesClipboardPage';
 import Menu from './routes/Menu';
 
 const LoadingScreen = () => {
@@ -71,6 +72,7 @@ const App = () => {
         <Route path="/cocina_new_features" element={<CocinaNewFeaturesPage />} />
         <Route path="/cocinado" element={<CocinadoPage />} />
         <Route path="/eliminar" element={<AutorizacionBorradosPage />} />
+        <Route path="/imagenes_clipboard" element={<ImagenesClipboardPage />} />
       </Routes>
     </BrowserRouter>
   )

@@ -1,0 +1,184 @@
+.imagenes-clipboard-page {
+  min-height: 100vh;
+  background: #f3f4f6;
+  color: #111827;
+  padding: 20px 20px 40px;
+  box-sizing: border-box;
+}
+
+.imagenes-clipboard-header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: flex-end;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+
+.imagenes-clipboard-header h1 {
+  margin: 0 0 6px;
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.imagenes-clipboard-header p {
+  margin: 0;
+  color: #6b7280;
+  font-size: 0.9rem;
+}
+
+.imagenes-clipboard-search {
+  min-width: min(320px, 100%);
+  padding: 10px 14px;
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  background: #fff;
+}
+
+.imagenes-clipboard-search:focus {
+  outline: 2px solid #6366f1;
+  border-color: #6366f1;
+}
+
+.imagenes-clipboard-section {
+  margin-bottom: 28px;
+}
+
+.imagenes-clipboard-section-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.imagenes-clipboard-section-head h2 {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+.imagenes-clipboard-section-head span {
+  font-size: 0.8rem;
+  color: #6b7280;
+  background: #e5e7eb;
+  border-radius: 999px;
+  padding: 2px 8px;
+}
+
+.imagenes-clipboard-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 12px;
+}
+
+.imagenes-clipboard-card {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.imagenes-clipboard-card:hover {
+  border-color: #c7d2fe;
+  box-shadow: 0 4px 14px rgba(99, 102, 241, 0.12);
+}
+
+.imagenes-clipboard-card--copied {
+  border-color: #22c55e;
+  box-shadow: 0 0 0 1px #22c55e;
+}
+
+.imagenes-clipboard-thumb-wrap {
+  width: 100%;
+  height: 88px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f9fafb;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.imagenes-clipboard-thumb-wrap img {
+  max-width: 100%;
+  max-height: 88px;
+  object-fit: contain;
+}
+
+.imagenes-clipboard-path {
+  font-size: 0.68rem;
+  line-height: 1.25;
+  color: #374151;
+  word-break: break-all;
+  min-height: 2.5em;
+}
+
+.imagenes-clipboard-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.imagenes-clipboard-btn--full {
+  width: 100%;
+}
+
+.imagenes-clipboard-btn {
+  flex: 1;
+  border: 1px solid #d1d5db;
+  background: #fff;
+  color: #374151;
+  border-radius: 8px;
+  padding: 6px 4px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.imagenes-clipboard-btn:hover {
+  background: #f3f4f6;
+}
+
+.imagenes-clipboard-btn--primary {
+  background: #eef2ff;
+  border-color: #c7d2fe;
+  color: #4338ca;
+}
+
+.imagenes-clipboard-btn--primary:hover {
+  background: #e0e7ff;
+}
+
+.imagenes-clipboard-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.imagenes-clipboard-empty {
+  text-align: center;
+  color: #6b7280;
+  padding: 40px 12px;
+}
+
+@media (max-width: 640px) {
+  .imagenes-clipboard-page {
+    padding: 14px 12px 28px;
+  }
+
+  .imagenes-clipboard-grid {
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 10px;
+  }
+
+  .imagenes-clipboard-thumb-wrap {
+    height: 72px;
+  }
+
+  .imagenes-clipboard-thumb-wrap img {
+    max-height: 72px;
+  }
+}

@@ -14,6 +14,14 @@ import {
     isSameComanda,
 } from '../kitchenComandaSyncUtils';
 import { isOrigenWhatsapp } from '../Mesero/meseroOrigenUtils';
+import {
+    loadActiveComandasCache,
+    loadCompactColumnsPreference,
+    loadKitchenSpaceConfig,
+    saveActiveComandasCache,
+    saveCompactColumnsPreference,
+    saveKitchenSpaceConfig,
+} from './cocinaNewFeaturesViewCache';
 import './CocinaNewFeaturesKitchenBoard.css';
 import './CocinaNewFeaturesComandaCard.css';
 
@@ -25,15 +33,625 @@ const sortComandasByComandaId = (comandas) => [...comandas].sort(
 );
 
 const FETCH_COMANDAS_DEBOUNCE_MS = 150;
+const MAX_MAIN_COLUMNS = 4;
+const COLUMN_CAPACITY = 1.0;
+const MODEL_FIT_TOLERANCE = 0.005;
+const DEFAULT_ADDITIONAL_ORDER_OVERHEAD_SPACE = 0.24;
+const PERF_LOG_PREFIX = '[CocinaNewFeatures perf]';
 
-const CocinaNewFeaturesKitchenBoard = ({modeInterface, Orders}) => {
+const DEFAULT_SPACE_CONFIG = {
+    platillos: {
+        Hamburguesa: 1 / 2,
+        'Hamburguesa con papas': 0.65,
+        Tacos: 1 / 6,
+        'Alitas a la BBQ': 0.35,
+        'Alitas a la BBQ con papas': 0.5,
+        'Alitas a la BBQ sin papas': 0.35,
+        'C Hamburguesa': 1,
+    },
+    tacoDeBirria: 1 / 4,
+    defaultComanda: 1 / 3,
+    additionalOrderHeader: DEFAULT_ADDITIONAL_ORDER_OVERHEAD_SPACE,
+};
+
+const SPACE_CONFIG_FIELDS = [
+    { type: 'object', key: 'additionalOrderHeader', label: 'Header extra' },
+    { type: 'object', key: 'defaultComanda', label: 'Otros / default' },
+    { type: 'object', key: 'tacoDeBirria', label: 'Taco de Birria' },
+    { type: 'platillo', key: 'Tacos', label: 'Tacos' },
+    { type: 'platillo', key: 'Hamburguesa', label: 'Hamburguesa' },
+    { type: 'platillo', key: 'Hamburguesa con papas', label: 'Hamburguesa con papas' },
+    { type: 'platillo', key: 'Alitas a la BBQ', label: 'Alitas a la BBQ' },
+    { type: 'platillo', key: 'Alitas a la BBQ con papas', label: 'Alitas a la BBQ con papas' },
+    { type: 'platillo', key: 'Alitas a la BBQ sin papas', label: 'Alitas a la BBQ sin papas' },
+    { type: 'platillo', key: 'C Hamburguesa', label: 'C Hamburguesa' },
+];
+
+const getSpaceConfigFieldId = (field) => `${field.type}-${field.key}`;
+
+const normalizeText = (value) => String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
+
+const getSelectedVariantName = (comanda) => (
+    comanda?.Details?.Variants?.[comanda?.Details?.SelectedVariant]?.VariantName || ''
+);
+
+const isHamburguesaConPapas = (comanda) => (
+    comanda?.Platillo === 'Hamburguesa'
+    && normalizeText(getSelectedVariantName(comanda)).includes('papas')
+);
+
+const isAlitasALaBBQ = (comanda) => {
+    const platilloName = normalizeText(getKitchenDisplayPlatilloName(comanda));
+    return platilloName.includes('alitas') && platilloName.includes('bbq');
+};
+
+const isAlitasALaBBQConPapas = (comanda) => (
+    isAlitasALaBBQ(comanda)
+    && normalizeText(getSelectedVariantName(comanda)).includes('con papas')
+);
+
+const isAlitasALaBBQSinPapas = (comanda) => (
+    isAlitasALaBBQ(comanda)
+    && normalizeText(getSelectedVariantName(comanda)).includes('sin papas')
+);
+
+const getComandaSpaceKey = (comanda) => {
+    if (isTacoDeBirria(comanda)) {
+        return 'tacoDeBirria';
+    }
+    if (isHamburguesaConPapas(comanda)) {
+        return 'Hamburguesa con papas';
+    }
+    if (isAlitasALaBBQConPapas(comanda)) {
+        return 'Alitas a la BBQ con papas';
+    }
+    if (isAlitasALaBBQSinPapas(comanda)) {
+        return 'Alitas a la BBQ sin papas';
+    }
+    if (isAlitasALaBBQ(comanda)) {
+        return 'Alitas a la BBQ';
+    }
+    return comanda?.Platillo || 'defaultComanda';
+};
+
+const getComandaSpace = (comanda, spaceConfig) => {
+    const spaceKey = getComandaSpaceKey(comanda);
+    if (spaceKey === 'tacoDeBirria') {
+        return spaceConfig.tacoDeBirria;
+    }
+    return spaceConfig.platillos[spaceKey] ?? spaceConfig.defaultComanda;
+};
+
+const getSlotUsedSpace = (comandas, spaceConfig) => normalizeColumnSpace(comandas.reduce(
+    (sum, comanda) => sum + getComandaSpace(comanda, spaceConfig),
+    0,
+));
+
+const fitsColumnCapacity = (usedSpace, addedSpace = 0) => (
+    usedSpace + addedSpace <= COLUMN_CAPACITY + MODEL_FIT_TOLERANCE
+);
+
+const normalizeColumnSpace = (space) => (
+    Math.abs(space - COLUMN_CAPACITY) <= MODEL_FIT_TOLERANCE ? COLUMN_CAPACITY : space
+);
+
+const isFullColumnSlot = (slot) => slot.usedSpace >= COLUMN_CAPACITY - MODEL_FIT_TOLERANCE
+    || (slot.comandas.length === 1 && slot.comandas[0].Platillo === 'C Hamburguesa');
+
+const createOrderSlot = (order, comandas, partNumber, totalParts, spaceConfig) => ({
+    orderId: order.orderId,
+    customer: order.customer,
+    origen: order.origen,
+    comandas,
+    total: comandas.reduce((sum, comanda) => sum + (comanda.Precio || 0), 0),
+    usedSpace: getSlotUsedSpace(comandas, spaceConfig),
+    algorithmOverheadSpace: 0,
+    isPartial: totalParts > 1,
+    partNumber: totalParts > 1 ? partNumber : null,
+    totalParts: totalParts > 1 ? totalParts : null,
+});
+
+const splitOrderIntoSlots = (order, spaceConfig) => {
+    const parts = [];
+    let currentPart = [];
+    let currentUsed = 0;
+
+    order.comandas.forEach((comanda) => {
+        const space = getComandaSpace(comanda, spaceConfig);
+        if (fitsColumnCapacity(currentUsed, space)) {
+            currentPart.push(comanda);
+            currentUsed = normalizeColumnSpace(currentUsed + space);
+            return;
+        }
+
+        if (currentPart.length > 0) {
+            parts.push(currentPart);
+        }
+        currentPart = [comanda];
+        currentUsed = space;
+    });
+
+    if (currentPart.length > 0) {
+        parts.push(currentPart);
+    }
+
+    return parts.map((part, partIndex) => createOrderSlot(
+        order,
+        part,
+        partIndex + 1,
+        parts.length,
+        spaceConfig,
+    ));
+};
+
+const buildClassicColumns = (orders, spaceConfig) => {
+    const allSlots = orders.flatMap((order) => splitOrderIntoSlots(order, spaceConfig));
+
+    return {
+        mainColumns: allSlots.slice(0, MAX_MAIN_COLUMNS).map((slot) => ({
+            columnKey: getOrderSlotKey(slot),
+            slots: [slot],
+            usedSpace: slot.usedSpace,
+        })),
+        extraOrders: allSlots.slice(MAX_MAIN_COLUMNS),
+    };
+};
+
+// Fill leftmost available space; each next order starts where the previous left room.
+const buildSequentialFlowColumns = (orders, spaceConfig) => {
+    const columns = [];
+    const extraOrders = [];
+    const additionalOrderOverheadSpace = spaceConfig.additionalOrderHeader;
+
+    const getRemainingSpace = (column) => COLUMN_CAPACITY - column.usedSpace;
+
+    const findLeftmostColumnWithSpace = () => {
+        for (let index = 0; index < columns.length; index += 1) {
+            const column = columns[index];
+            if (column.blockOrderStart) {
+                continue;
+            }
+            if (!column.hasFullSlot && getRemainingSpace(column) > MODEL_FIT_TOLERANCE) {
+                return index;
+            }
+        }
+        return columns.length;
+    };
+
+    const ensureColumn = (index) => {
+        if (!columns[index]) {
+            columns[index] = {
+                columnKey: `flow-col-${index}`,
+                slots: [],
+                usedSpace: 0,
+                hasFullSlot: false,
+            };
+        }
+        return columns[index];
+    };
+
+    const syncColumnKey = (column) => {
+        column.columnKey = column.slots.map(getOrderSlotKey).join('__');
+    };
+
+    const addSlotToColumn = (column, slot, orderFlowSlots) => {
+        const previousSlot = column.slots[column.slots.length - 1];
+        if (previousSlot?.orderId === slot.orderId) {
+            previousSlot.comandas = [...previousSlot.comandas, ...slot.comandas];
+            previousSlot.total += slot.total;
+            previousSlot.usedSpace += slot.usedSpace;
+            return previousSlot;
+        }
+
+        column.slots.push(slot);
+        orderFlowSlots.push(slot);
+        return slot;
+    };
+
+    orders.forEach((order) => {
+        columns.forEach((column) => {
+            column.blockOrderStart = false;
+        });
+
+        const comandas = order.comandas;
+        let comandaIndex = 0;
+        const orderFlowSlots = [];
+
+        while (comandaIndex < comandas.length) {
+            let columnIndex = findLeftmostColumnWithSpace();
+
+            if (columnIndex >= MAX_MAIN_COLUMNS) {
+                const remaining = comandas.slice(comandaIndex);
+                if (remaining.length > 0) {
+                    const overflowSlot = createOrderSlot(order, remaining, null, null, spaceConfig);
+                    if (orderFlowSlots.length > 0) {
+                        overflowSlot.isPartial = true;
+                        overflowSlot.partNumber = orderFlowSlots.length + 1;
+                        overflowSlot.totalParts = orderFlowSlots.length + 1;
+                    }
+                    extraOrders.push(overflowSlot);
+                }
+                break;
+            }
+
+            const column = ensureColumn(columnIndex);
+            const previousSlot = column.slots[column.slots.length - 1];
+            const startsNewOrderInColumn = column.slots.length > 0 && previousSlot?.orderId !== order.orderId;
+            const orderOverheadSpace = startsNewOrderInColumn ? additionalOrderOverheadSpace : 0;
+            const remainingSpace = getRemainingSpace(column) - orderOverheadSpace;
+            const part = [];
+            let partSpace = 0;
+
+            while (comandaIndex < comandas.length) {
+                const comanda = comandas[comandaIndex];
+                const space = getComandaSpace(comanda, spaceConfig);
+
+                if (
+                    part.length === 0
+                    && column.usedSpace > 0
+                    && space > remainingSpace + MODEL_FIT_TOLERANCE
+                ) {
+                    break;
+                }
+
+                const partLimit = remainingSpace;
+
+                if (
+                    partSpace + space <= partLimit + MODEL_FIT_TOLERANCE
+                    || (part.length === 0 && column.usedSpace === 0)
+                ) {
+                    part.push(comanda);
+                    partSpace = normalizeColumnSpace(partSpace + space);
+                    comandaIndex += 1;
+                    continue;
+                }
+
+                break;
+            }
+
+            if (part.length === 0) {
+                if (column.usedSpace > 0 && getRemainingSpace(column) > MODEL_FIT_TOLERANCE) {
+                    // Gap is too small for the next comanda; continue on the next column.
+                    column.blockOrderStart = true;
+                    continue;
+                }
+                break;
+            }
+
+            const slot = createOrderSlot(order, part, null, null, spaceConfig);
+            slot.algorithmOverheadSpace = orderOverheadSpace;
+            const renderedSlot = addSlotToColumn(column, slot, orderFlowSlots);
+
+            column.usedSpace = normalizeColumnSpace(column.usedSpace + slot.usedSpace + orderOverheadSpace);
+            syncColumnKey(column);
+            if (isFullColumnSlot(renderedSlot) || column.usedSpace >= COLUMN_CAPACITY - MODEL_FIT_TOLERANCE) {
+                column.hasFullSlot = true;
+            }
+        }
+
+        if (orderFlowSlots.length > 1) {
+            orderFlowSlots.forEach((slot, index) => {
+                slot.isPartial = true;
+                slot.partNumber = index + 1;
+                slot.totalParts = orderFlowSlots.length;
+            });
+            columns.forEach(syncColumnKey);
+        }
+    });
+
+    return {
+        mainColumns: columns.filter((column) => column.slots.length > 0),
+        extraOrders,
+    };
+};
+
+const CocinaNewFeaturesKitchenBoard = ({modeInterface, Orders, ordersLoaded = true}) => {
+    const bootStartRef = useRef(performance.now());
+    const initialCacheMetricsRef = useRef(null);
+    const cacheRenderLoggedRef = useRef(false);
+    const cacheRenderMsRef = useRef(null);
+    const firstDbFetchStartRef = useRef(null);
+    const firstDbGetLoggedRef = useRef(false);
     const [numOrders, setNumOrders] = useState([]);
-    const [activeComandas, setActiveComandas] = useState([]);
+    const [activeComandas, setActiveComandas] = useState(() => {
+        const cacheStartMs = performance.now();
+        console.log(`${PERF_LOG_PREFIX} antes de evaluar cache`, {
+            sinceBootMs: Math.round(cacheStartMs - bootStartRef.current),
+        });
+        const cachedComandas = loadActiveComandasCache();
+        const cacheEndMs = performance.now();
+        initialCacheMetricsRef.current = {
+            cacheStartMs,
+            cacheEndMs,
+            cachedCount: cachedComandas.length,
+        };
+        console.log(`${PERF_LOG_PREFIX} cache evaluado`, {
+            durationMs: Math.round(cacheEndMs - cacheStartMs),
+            cachedCount: cachedComandas.length,
+            usedCache: cachedComandas.length > 0,
+        });
+        return cachedComandas;
+    });
     const [arrayBebidas, setArrayBebidas] = useState([]);
     const [arrayWaffles, setArrayWaffles] = useState([]);
     const fetchSeqRef = useRef(0);
     const fetchComandasTimerRef = useRef(null);
     const recentlyDeliveredRef = useRef(new Map());
+    const mainGridRef = useRef(null);
+    const heightModalPointerStartedInsideRef = useRef(false);
+    const [spaceConfig, setSpaceConfig] = useState(
+        () => loadKitchenSpaceConfig(DEFAULT_SPACE_CONFIG),
+    );
+    const [spaceConfigDrafts, setSpaceConfigDrafts] = useState({});
+    const [compactColumnsEnabled, setCompactColumnsEnabled] = useState(
+        () => loadCompactColumnsPreference(),
+    );
+    const [heightDebugModalOpen, setHeightDebugModalOpen] = useState(false);
+    const [columnHeightReport, setColumnHeightReport] = useState([]);
+    const [spaceConfigJsonDraft, setSpaceConfigJsonDraft] = useState('');
+    const [spaceConfigJsonMessage, setSpaceConfigJsonMessage] = useState('');
+
+    const toggleCompactColumns = () => {
+        setCompactColumnsEnabled((prev) => {
+            const next = !prev;
+            saveCompactColumnsPreference(next);
+            return next;
+        });
+    };
+
+    const updateSpaceConfig = (updater) => {
+        setSpaceConfig((prev) => {
+            const next = updater(prev);
+            saveKitchenSpaceConfig(next);
+            return next;
+        });
+    };
+
+    const updateSpaceConfigPercent = (field, rawPercent) => {
+        if (!/^\d*\.?\d*$/.test(rawPercent)) {
+            return;
+        }
+
+        const fieldId = getSpaceConfigFieldId(field);
+        setSpaceConfigDrafts((prev) => ({
+            ...prev,
+            [fieldId]: rawPercent,
+        }));
+
+        const percent = rawPercent === '' ? 0 : Number(rawPercent);
+        if (!Number.isFinite(percent)) {
+            return;
+        }
+        const value = Math.max(0, Math.min(percent / 100, 1.5));
+
+        updateSpaceConfig((prev) => {
+            if (field.type === 'platillo') {
+                return {
+                    ...prev,
+                    platillos: {
+                        ...prev.platillos,
+                        [field.key]: value,
+                    },
+                };
+            }
+
+            return {
+                ...prev,
+                [field.key]: value,
+            };
+        });
+    };
+
+    const resetSpaceConfig = () => {
+        setSpaceConfig(DEFAULT_SPACE_CONFIG);
+        setSpaceConfigDrafts({});
+        setSpaceConfigJsonDraft(JSON.stringify(DEFAULT_SPACE_CONFIG, null, 2));
+        setSpaceConfigJsonMessage('Defaults restaurados');
+        saveKitchenSpaceConfig(DEFAULT_SPACE_CONFIG);
+    };
+
+    const syncSpaceConfigJsonDraft = (config = spaceConfig) => {
+        setSpaceConfigJsonDraft(JSON.stringify(config, null, 2));
+        setSpaceConfigJsonMessage('');
+    };
+
+    const copySpaceConfigJson = async () => {
+        const json = JSON.stringify(spaceConfig, null, 2);
+        setSpaceConfigJsonDraft(json);
+        try {
+            await navigator.clipboard.writeText(json);
+            setSpaceConfigJsonMessage('JSON copiado');
+        } catch {
+            setSpaceConfigJsonMessage('JSON listo para copiar manualmente');
+        }
+    };
+
+    const importSpaceConfigJson = () => {
+        try {
+            const parsed = JSON.parse(spaceConfigJsonDraft);
+            if (!parsed || typeof parsed !== 'object') {
+                setSpaceConfigJsonMessage('JSON invalido');
+                return;
+            }
+
+            const nextConfig = {
+                ...DEFAULT_SPACE_CONFIG,
+                ...parsed,
+                platillos: {
+                    ...DEFAULT_SPACE_CONFIG.platillos,
+                    ...(parsed.platillos || {}),
+                },
+            };
+
+            setSpaceConfig(nextConfig);
+            setSpaceConfigDrafts({});
+            saveKitchenSpaceConfig(nextConfig);
+            setSpaceConfigJsonDraft(JSON.stringify(nextConfig, null, 2));
+            setSpaceConfigJsonMessage('JSON aplicado');
+        } catch {
+            setSpaceConfigJsonMessage('JSON invalido');
+        }
+    };
+
+    const getSpaceConfigPercentValue = (field) => {
+        const value = field.type === 'platillo'
+            ? spaceConfig.platillos[field.key]
+            : spaceConfig[field.key];
+        return ((value || 0) * 100).toFixed(1);
+    };
+
+    const getSpaceConfigDraftValue = (field) => {
+        const fieldId = getSpaceConfigFieldId(field);
+        return spaceConfigDrafts[fieldId] ?? getSpaceConfigPercentValue(field);
+    };
+
+    const getSpaceConfigDraftFraction = (field) => {
+        const draftValue = getSpaceConfigDraftValue(field);
+        const percent = draftValue === '' ? 0 : Number(draftValue);
+        return (Number.isFinite(percent) ? percent / 100 : 0).toFixed(3);
+    };
+
+    const buildColumnHeightReport = () => {
+        const grid = mainGridRef.current;
+        if (!grid) {
+            setColumnHeightReport([]);
+            return;
+        }
+
+        const getHeight = (element) => Math.round(element.getBoundingClientRect().height);
+        const getBodyPaddingHeight = (body) => {
+            const bodyStyle = window.getComputedStyle(body);
+            return Math.round(
+                Number.parseFloat(bodyStyle.paddingTop || '0')
+                + Number.parseFloat(bodyStyle.paddingBottom || '0'),
+            );
+        };
+
+        const measuredElements = Array.from(grid.querySelectorAll('[data-height-id]'));
+        const findMeasuredElement = (heightId) => measuredElements.find(
+            (element) => element.dataset.heightId === heightId,
+        );
+        const getMeasuredHeight = (heightId) => {
+            const element = findMeasuredElement(heightId);
+            return element ? getHeight(element) : null;
+        };
+        const getMeasuredBodyPaddingHeight = (heightId) => {
+            const element = findMeasuredElement(heightId);
+            return element ? getBodyPaddingHeight(element) : null;
+        };
+
+        const columns = Array.from(grid.querySelectorAll('.order-column:not(.order-column-empty)'));
+        const nextReport = mainColumns.map((columnModel, columnIndex) => {
+            const column = columns[columnIndex];
+            const elements = [];
+            const addElement = (type, id, label, heightPx, modelSpace = 0, modelNote = '') => {
+                elements.push({ type, id, label, heightPx, modelSpace, modelNote });
+            };
+
+            columnModel.slots.forEach((slot, slotIndex) => {
+                const slotKey = getOrderSlotKey(slot);
+                const headerId = `order-header-${slotKey}`;
+                const bodyId = `order-body-${slotKey}`;
+                const headerModelSpace = slot.algorithmOverheadSpace || 0;
+
+                addElement(
+                    headerModelSpace > 0 ? 'Header extra' : 'Header base',
+                    headerId,
+                    `Header orden #${slot.orderId}${slot.isPartial ? ` (${slot.partNumber}/${slot.totalParts})` : ''}`,
+                    getMeasuredHeight(headerId),
+                    headerModelSpace,
+                    headerModelSpace > 0 ? 'descuenta capacidad' : 'base de columna',
+                );
+
+                addElement(
+                    'Padding body',
+                    bodyId,
+                    `Padding orden #${slot.orderId}${slot.isPartial ? ` (${slot.partNumber}/${slot.totalParts})` : ''}`,
+                    getMeasuredBodyPaddingHeight(bodyId),
+                    0,
+                    slotIndex > 0 ? 'incluido en header extra' : 'base de columna',
+                );
+
+                slot.comandas.forEach((comanda) => {
+                    const comandaSpace = getComandaSpace(comanda, spaceConfig);
+                    const comandaSpaceKey = getComandaSpaceKey(comanda);
+                    addElement(
+                        'Tarjeta comanda',
+                        `comanda-${comanda.ComandaId}`,
+                        `Comanda #${comanda.ComandaId} · Orden #${slot.orderId} · ${getKitchenDisplayPlatilloName(comanda)}`,
+                        getMeasuredHeight(`comanda-${comanda.ComandaId}`),
+                        comandaSpace,
+                        `${comandaSpaceKey}: ${comandaSpace.toFixed(3)} de 1.000`,
+                    );
+                });
+            });
+
+            const totalHeightPx = elements.reduce((sum, element) => sum + (element.heightPx || 0), 0);
+            const columnHeightPx = column ? getHeight(column) : 0;
+            const modelUsedSpace = columnModel.usedSpace ?? elements.reduce(
+                (sum, element) => sum + (element.modelSpace || 0),
+                0,
+            );
+            const modelRemainingSpace = Math.max(COLUMN_CAPACITY - modelUsedSpace, 0);
+
+            return {
+                columnId: column?.dataset.heightId || `column-${columnIndex + 1}`,
+                label: column?.dataset.heightLabel || `Columna ${columnIndex + 1}`,
+                columnHeightPx,
+                totalHeightPx,
+                overflowPx: Math.max(totalHeightPx - columnHeightPx, 0),
+                modelUsedSpace,
+                modelRemainingSpace,
+                modelOverflowSpace: Math.max(modelUsedSpace - COLUMN_CAPACITY, 0),
+                elements,
+            };
+        });
+
+        setColumnHeightReport(nextReport);
+    };
+
+    const openHeightDebugModal = () => {
+        syncSpaceConfigJsonDraft();
+        buildColumnHeightReport();
+        setHeightDebugModalOpen(true);
+    };
+
+    const handleHeightModalOverlayPointerDown = (e) => {
+        heightModalPointerStartedInsideRef.current = e.target !== e.currentTarget;
+    };
+
+    const handleHeightModalOverlayClick = (e) => {
+        if (e.target === e.currentTarget && !heightModalPointerStartedInsideRef.current) {
+            setHeightDebugModalOpen(false);
+        }
+        heightModalPointerStartedInsideRef.current = false;
+    };
+
+    useEffect(() => {
+        if (cacheRenderLoggedRef.current) {
+            return undefined;
+        }
+
+        const frameId = requestAnimationFrame(() => {
+            if (cacheRenderLoggedRef.current) {
+                return;
+            }
+            cacheRenderLoggedRef.current = true;
+            const now = performance.now();
+            cacheRenderMsRef.current = now;
+            const cacheMetrics = initialCacheMetricsRef.current;
+            console.log(`${PERF_LOG_PREFIX} render inicial posterior a cache`, {
+                cachedCount: cacheMetrics?.cachedCount ?? activeComandas.length,
+                cacheEvalToRenderMs: cacheMetrics ? Math.round(now - cacheMetrics.cacheEndMs) : null,
+                sinceBootMs: Math.round(now - bootStartRef.current),
+            });
+        });
+
+        return () => cancelAnimationFrame(frameId);
+    }, []);
 
     // Estado para el menú contextual (comandas individuales)
     const [contextMenu, setContextMenu] = useState({
@@ -89,7 +707,11 @@ const CocinaNewFeaturesKitchenBoard = ({modeInterface, Orders}) => {
         if (comanda?._id) {
             recentlyDeliveredRef.current.set(comanda._id, Date.now());
         }
-        setActiveComandas((prev) => prev.filter((c) => !isSameComanda(c, comanda)));
+        setActiveComandas((prev) => {
+            const next = prev.filter((c) => !isSameComanda(c, comanda));
+            saveActiveComandasCache(next);
+            return next;
+        });
     };
 
     // Marcar comanda como entregada
@@ -140,9 +762,27 @@ const CocinaNewFeaturesKitchenBoard = ({modeInterface, Orders}) => {
 
     const fetchComandasFromOrders = () => {
         const fetchId = ++fetchSeqRef.current;
-        console.log("fetchComandasFromOrders using the next Orders:", Orders);
+        const fetchStartMs = performance.now();
+        if (!ordersLoaded && Orders.length === 0) {
+            console.log(`${PERF_LOG_PREFIX} GET comandas omitido: Orders aun no cargado`, {
+                sinceBootMs: Math.round(fetchStartMs - bootStartRef.current),
+            });
+            return;
+        }
+
         setNumOrders(Orders.length);
         let localOrders = Orders;
+
+        if (localOrders.length > 0 && firstDbFetchStartRef.current == null) {
+            firstDbFetchStartRef.current = fetchStartMs;
+            console.log(`${PERF_LOG_PREFIX} primer GET DB iniciado`, {
+                ordersCount: localOrders.length,
+                sinceBootMs: Math.round(fetchStartMs - bootStartRef.current),
+                sinceCacheRenderMs: cacheRenderMsRef.current == null
+                    ? null
+                    : Math.round(fetchStartMs - cacheRenderMsRef.current),
+            });
+        }
 
         let comandasPromises = localOrders.map(order => {
             return comandasApi.getComandasByOrderId(order.OrderID)
@@ -156,8 +796,7 @@ const CocinaNewFeaturesKitchenBoard = ({modeInterface, Orders}) => {
                     });
                     return res_comandas;
                 })
-                .catch(e => {
-                    console.log(e);
+                .catch(() => {
                     return [];
                 });
         });
@@ -170,13 +809,27 @@ const CocinaNewFeaturesKitchenBoard = ({modeInterface, Orders}) => {
                 comandasResults.flat(),
                 recentlyDeliveredRef,
             );
-            console.log("Todas las comandas activas: ", localActiveComandas);
+            saveActiveComandasCache(localActiveComandas);
             setActiveComandas(localActiveComandas);
+            if (localOrders.length > 0 && !firstDbGetLoggedRef.current) {
+                const fetchEndMs = performance.now();
+                const firstFetchStartMs = firstDbFetchStartRef.current ?? fetchStartMs;
+                firstDbGetLoggedRef.current = true;
+                console.log(`${PERF_LOG_PREFIX} primer GET DB resuelto`, {
+                    ordersCount: localOrders.length,
+                    comandasCount: localActiveComandas.length,
+                    getDurationMs: Math.round(fetchEndMs - firstFetchStartMs),
+                    sinceCacheRenderMs: cacheRenderMsRef.current == null
+                        ? null
+                        : Math.round(fetchEndMs - cacheRenderMsRef.current),
+                    sinceBootMs: Math.round(fetchEndMs - bootStartRef.current),
+                });
+            }
         }).catch(e => {
             if (fetchId !== fetchSeqRef.current) {
                 return;
             }
-            console.log("Error al recuperar comandas: ", e);
+            console.error("Error al recuperar comandas: ", e);
         });
     };
 
@@ -197,7 +850,7 @@ const CocinaNewFeaturesKitchenBoard = ({modeInterface, Orders}) => {
                 clearTimeout(fetchComandasTimerRef.current);
             }
         };
-    }, [Orders]);
+    }, [Orders, ordersLoaded]);
 
     // Separar bebidas y waffles del resto
     const fetchCategorias = () => {
@@ -255,85 +908,33 @@ const CocinaNewFeaturesKitchenBoard = ({modeInterface, Orders}) => {
             .sort((a, b) => Number(a.orderId) - Number(b.orderId));
     }, [activeComandas]);
 
-    // Espacio que ocupa cada platillo como fracción de una columna (1.0 = columna llena).
-    // Fácil extender: añadir más entradas con su fracción.
-    const PLATILLO_COLUMN_SPACE = {
-        Hamburguesa: 1 / 2,
-        Tacos: 1 / 6,
-        'C Hamburguesa': 1, // 100% de la columna; se expande verticalmente a lo que necesite.
-        // Ejemplo futuro: Waffle: 1/4,
-    };
-    const DEFAULT_COLUMN_SPACE = 1 / 3; // Platillos no listados (comportamiento similar a hamburguesa).
-    const getComandaSpace = (comanda) => {
-        if (isTacoDeBirria(comanda)) {
-            return 1 / 4;
+    const { mainColumns, extraOrders } = useMemo(() => {
+        if (!compactColumnsEnabled) {
+            return buildClassicColumns(ordersGrouped, spaceConfig);
         }
-        return PLATILLO_COLUMN_SPACE[comanda.Platillo] ?? DEFAULT_COLUMN_SPACE;
-    };
+        return buildSequentialFlowColumns(ordersGrouped, spaceConfig);
+    }, [ordersGrouped, compactColumnsEnabled, spaceConfig]);
 
-    const { mainOrders, extraOrders } = useMemo(() => {
-        const columnSlots = []; // Cada slot representa una columna
-        const overflow = []; // Comandas que van a "próximas"
-        const COLUMN_CAPACITY = 1.0;
-
-        ordersGrouped.forEach((order) => {
-            // Formar partes: cada parte es un conjunto de comandas cuya suma de espacios <= 1.0
-            const parts = [];
-            let currentPart = [];
-            let currentUsed = 0;
-
-            order.comandas.forEach((comanda) => {
-                const space = getComandaSpace(comanda);
-                if (currentUsed + space <= COLUMN_CAPACITY) {
-                    currentPart.push(comanda);
-                    currentUsed += space;
-                } else {
-                    if (currentPart.length > 0) {
-                        parts.push(currentPart);
-                    }
-                    currentPart = [comanda];
-                    currentUsed = space;
-                }
-            });
-            if (currentPart.length > 0) {
-                parts.push(currentPart);
-            }
-
-            // Asignar cada parte a columnSlots (si < 4) o overflow
-            parts.forEach((part, partIndex) => {
-                const total = part.reduce((sum, c) => sum + (c.Precio || 0), 0);
-                const slot = {
-                    orderId: order.orderId,
-                    customer: order.customer,
-                    origen: order.origen,
-                    comandas: part,
-                    total,
-                    isPartial: parts.length > 1,
-                    partNumber: parts.length > 1 ? partIndex + 1 : null,
-                    totalParts: parts.length > 1 ? parts.length : null
-                };
-                if (columnSlots.length < 4) {
-                    columnSlots.push(slot);
-                } else {
-                    overflow.push(slot);
-                }
-            });
-        });
-
-        return {
-            mainOrders: columnSlots.slice(0, 4),
-            extraOrders: [...columnSlots.slice(4), ...overflow]
-        };
-    }, [ordersGrouped]);
+    useEffect(() => {
+        if (heightDebugModalOpen) {
+            buildColumnHeightReport();
+        }
+    }, [heightDebugModalOpen, mainColumns]);
 
     // Componente para el header con burbujas animadas (tren de burbujas)
     const BubbleTrainHeader = ({ order }) => {
         const bubbleCount = order.comandas.length;
         const maxVisibleBubbles = 4;
         const needsAnimation = bubbleCount > maxVisibleBubbles;
+        const slotKey = getOrderSlotKey(order);
 
         return (
-            <div className="column-header" onContextMenu={(e) => e.preventDefault()}>
+            <div
+                className="column-header"
+                data-height-id={`order-header-${slotKey}`}
+                data-height-label={`Header orden #${order.orderId}${order.isPartial ? ` (${order.partNumber}/${order.totalParts})` : ''}`}
+                onContextMenu={(e) => e.preventDefault()}
+            >
                 <div className="column-header-info">
                     <span className="column-order-number">
                         #{order.orderId}
@@ -376,28 +977,76 @@ const CocinaNewFeaturesKitchenBoard = ({modeInterface, Orders}) => {
 
     // Columna con un solo platillo "C Hamburguesa" expande altura al contenido
     const isExpandHeightColumn = (order) =>
-        order.comandas.length === 1 && order.comandas[0].Platillo === 'C Hamburguesa';
+        order?.comandas?.length === 1 && order.comandas[0].Platillo === 'C Hamburguesa';
 
-    // Renderizar una columna de orden
-    const renderOrderColumn = (order, index) => {
-        const expandHeight = isExpandHeightColumn(order);
+    // Render a main-board column (single order or sequential flow when compact mode is on).
+    const renderOrderColumn = (column) => {
+        if (!column?.slots?.length) {
+            return null;
+        }
+
+        const isFlowColumn = column.slots.length > 1;
+        const expandHeight = !isFlowColumn && isExpandHeightColumn(column.slots[0]);
+
         return (
             <div
-                key={getOrderSlotKey(order)}
-                className={`order-column${expandHeight ? ' order-column--expand-height' : ''}`}
+                key={column.columnKey}
+                className={`order-column${isFlowColumn ? ' order-column--flow' : ''}${expandHeight ? ' order-column--expand-height' : ''}`}
+                data-height-id={`column-${column.columnKey}`}
+                data-height-label={`Columna ${column.columnKey}`}
             >
-                <BubbleTrainHeader order={order} />
-                <div className="order-column-body">
-                    {order.comandas.map((comanda, comandaIndex) => (
-                        <div 
-                            key={comanda.ComandaId}
-                            className="order-column-comanda"
-                            onContextMenu={(e) => handleContextMenu(e, comanda)}
+                {isFlowColumn ? (
+                    <div className="order-column-scroll">
+                        {column.slots.map((order, slotIndex) => (
+                            <div
+                                key={getOrderSlotKey(order)}
+                                className={`order-column-slot${slotIndex > 0 ? ' order-column-slot--continued' : ''}`}
+                                data-height-id={`order-slot-${getOrderSlotKey(order)}`}
+                                data-height-label={`Orden #${order.orderId}${order.isPartial ? ` (${order.partNumber}/${order.totalParts})` : ''}`}
+                            >
+                                <BubbleTrainHeader order={order} />
+                                <div
+                                    className="order-column-body order-column-body--flow"
+                                    data-height-id={`order-body-${getOrderSlotKey(order)}`}
+                                    data-height-label={`Body orden #${order.orderId}${order.isPartial ? ` (${order.partNumber}/${order.totalParts})` : ''}`}
+                                >
+                                    {order.comandas.map((comanda) => (
+                                        <div
+                                            key={comanda.ComandaId}
+                                            className="order-column-comanda"
+                                            data-height-id={`comanda-${comanda.ComandaId}`}
+                                            data-height-label={`Comanda #${comanda.ComandaId} · Orden #${order.orderId} · ${getKitchenDisplayPlatilloName(comanda)}`}
+                                            onContextMenu={(e) => handleContextMenu(e, comanda)}
+                                        >
+                                            <CocinaNewFeaturesComandaCard Comanda={comanda} compact comandaNumber={comanda.ComandaId} />
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                ) : (
+                    <>
+                        <BubbleTrainHeader order={column.slots[0]} />
+                        <div
+                            className="order-column-body"
+                            data-height-id={`order-body-${getOrderSlotKey(column.slots[0])}`}
+                            data-height-label={`Body orden #${column.slots[0].orderId}${column.slots[0].isPartial ? ` (${column.slots[0].partNumber}/${column.slots[0].totalParts})` : ''}`}
                         >
-                            <CocinaNewFeaturesComandaCard Comanda={comanda} compact comandaNumber={comanda.ComandaId} />
+                            {column.slots[0].comandas.map((comanda) => (
+                                <div
+                                    key={comanda.ComandaId}
+                                    className="order-column-comanda"
+                                    data-height-id={`comanda-${comanda.ComandaId}`}
+                                    data-height-label={`Comanda #${comanda.ComandaId} · Orden #${column.slots[0].orderId} · ${getKitchenDisplayPlatilloName(comanda)}`}
+                                    onContextMenu={(e) => handleContextMenu(e, comanda)}
+                                >
+                                    <CocinaNewFeaturesComandaCard Comanda={comanda} compact comandaNumber={comanda.ComandaId} />
+                                </div>
+                            ))}
                         </div>
-                    ))}
-                </div>
+                    </>
+                )}
             </div>
         );
     };
@@ -771,7 +1420,7 @@ const CocinaNewFeaturesKitchenBoard = ({modeInterface, Orders}) => {
     }, [Orders]);
 
     // Verificar si hay contenido
-    const hasMainOrders = mainOrders.length > 0;
+    const hasMainOrders = mainColumns.length > 0;
     const hasExtraOrders = extraOrders.length > 0;
     const hasBebidas = arrayBebidas.length > 0;
     const hasWaffles = arrayWaffles.length > 0;
@@ -780,6 +1429,32 @@ const CocinaNewFeaturesKitchenBoard = ({modeInterface, Orders}) => {
 
     return (
         <div className="cocina-new-layout">
+            <div className="cnf-floating-actions">
+                <button
+                    type="button"
+                    className={`cnf-compact-columns-toggle${compactColumnsEnabled ? ' cnf-compact-columns-toggle--active' : ''}`}
+                    onClick={toggleCompactColumns}
+                    aria-pressed={compactColumnsEnabled}
+                    title="Muestra las órdenes en orden y continúa en el espacio libre de cada columna"
+                >
+                    <span className="cnf-compact-columns-toggle__label">Flujo continuo</span>
+                    <span
+                        className="cnf-compact-columns-toggle__switch"
+                        aria-hidden="true"
+                    >
+                        <span className="cnf-compact-columns-toggle__knob" />
+                    </span>
+                </button>
+                <button
+                    type="button"
+                    className="cnf-height-debug-button"
+                    onClick={openHeightDebugModal}
+                    title="Ver alturas medidas por columna"
+                >
+                    Alturas
+                </button>
+            </div>
+
             {/* Layout principal */}
             <div className="main-layout">
                 {/* Panel lateral izquierdo: Órdenes Próximas + Bebidas + Waffles */}
@@ -794,10 +1469,10 @@ const CocinaNewFeaturesKitchenBoard = ({modeInterface, Orders}) => {
                 {/* Contenido principal: 4 columnas de órdenes */}
                 <div className="content-right">
                     {hasMainOrders ? (
-                        <div className="four-columns-grid">
-                            {mainOrders.map((order, idx) => renderOrderColumn(order, idx))}
+                        <div className="four-columns-grid" ref={mainGridRef}>
+                            {mainColumns.map((column) => renderOrderColumn(column))}
                             {/* Columnas vacías si hay menos de 4 órdenes */}
-                            {Array.from({ length: 4 - mainOrders.length }).map((_, idx) => (
+                            {Array.from({ length: MAX_MAIN_COLUMNS - mainColumns.length }).map((_, idx) => (
                                 <div key={`empty-${idx}`} className="order-column order-column-empty">
                                     <div className="column-header column-header-empty">
                                         <span className="empty-column-text">Sin orden</span>
@@ -866,6 +1541,135 @@ const CocinaNewFeaturesKitchenBoard = ({modeInterface, Orders}) => {
                         >
                             Cancelar
                         </button>
+                    </div>
+                </div>
+            )}
+
+            {heightDebugModalOpen && (
+                <div
+                    className="cnf-height-modal-overlay"
+                    onPointerDown={handleHeightModalOverlayPointerDown}
+                    onClick={handleHeightModalOverlayClick}
+                >
+                    <div className="cnf-height-modal" onClick={(e) => e.stopPropagation()}>
+                        <div className="cnf-height-modal-header">
+                            <div>
+                                <div className="cnf-height-modal-title">Alturas y fracciones por columna</div>
+                                <div className="cnf-height-modal-subtitle">
+                                    Header base: 0% modelo. Header extra: {(spaceConfig.additionalOrderHeader * 100).toFixed(1)}% de columna.
+                                </div>
+                            </div>
+                            <div className="cnf-height-modal-actions">
+                                <button type="button" onClick={buildColumnHeightReport}>Actualizar</button>
+                                <button type="button" onClick={() => setHeightDebugModalOpen(false)}>Cerrar</button>
+                            </div>
+                        </div>
+                        <div className="cnf-height-modal-content">
+                            <aside className="cnf-space-config-panel">
+                                <div className="cnf-space-config-title">Ajustar fracciones</div>
+                                <div className="cnf-space-config-subtitle">
+                                    Se guarda automático en cache y se usa antes que los defaults.
+                                </div>
+                                <div className="cnf-space-config-fields">
+                                    {SPACE_CONFIG_FIELDS.map((field) => {
+                                        const percentValue = getSpaceConfigDraftValue(field);
+                                        return (
+                                            <label key={`${field.type}-${field.key}`} className="cnf-space-config-field">
+                                                <span className="cnf-space-config-label">{field.label}</span>
+                                                <span className="cnf-space-config-control">
+                                                    <input
+                                                        type="text"
+                                                        inputMode="decimal"
+                                                        value={percentValue}
+                                                        onChange={(e) => updateSpaceConfigPercent(field, e.target.value)}
+                                                    />
+                                                    <span>%</span>
+                                                </span>
+                                                <span className="cnf-space-config-fraction">
+                                                    {getSpaceConfigDraftFraction(field)} de 1.000
+                                                </span>
+                                            </label>
+                                        );
+                                    })}
+                                </div>
+                                <button
+                                    type="button"
+                                    className="cnf-space-config-reset"
+                                    onClick={resetSpaceConfig}
+                                >
+                                    Restaurar defaults
+                                </button>
+                                <div className="cnf-space-config-json">
+                                    <div className="cnf-space-config-json-title">Exportar / importar JSON</div>
+                                    <div className="cnf-space-config-json-actions">
+                                        <button type="button" onClick={copySpaceConfigJson}>
+                                            Copiar JSON
+                                        </button>
+                                        <button type="button" onClick={importSpaceConfigJson}>
+                                            Aplicar JSON
+                                        </button>
+                                    </div>
+                                    <textarea
+                                        value={spaceConfigJsonDraft}
+                                        onChange={(e) => {
+                                            setSpaceConfigJsonDraft(e.target.value);
+                                            setSpaceConfigJsonMessage('');
+                                        }}
+                                        spellCheck={false}
+                                    />
+                                    {spaceConfigJsonMessage && (
+                                        <div className="cnf-space-config-json-message">
+                                            {spaceConfigJsonMessage}
+                                        </div>
+                                    )}
+                                </div>
+                            </aside>
+                            <div className="cnf-height-modal-body">
+                                {columnHeightReport.length === 0 ? (
+                                    <div className="cnf-height-empty">No hay columnas visibles para medir.</div>
+                                ) : (
+                                    columnHeightReport.map((column, columnIndex) => (
+                                        <div key={column.columnId} className="cnf-height-column-card">
+                                            <div className="cnf-height-column-header">
+                                                <div>
+                                                    <div className="cnf-height-column-title">Columna {columnIndex + 1}</div>
+                                                    <div className="cnf-height-column-id">{column.columnId}</div>
+                                                </div>
+                                                <div className="cnf-height-column-total">
+                                                    <span>DOM: {column.totalHeightPx}px / {column.columnHeightPx}px</span>
+                                                    <span>Modelo: {(column.modelUsedSpace * 100).toFixed(1)}% usado</span>
+                                                    <span>Libre: {(column.modelRemainingSpace * 100).toFixed(1)}%</span>
+                                                    {column.overflowPx > 0 && (
+                                                        <span className="cnf-height-overflow">DOM +{column.overflowPx}px overflow</span>
+                                                    )}
+                                                    {column.modelOverflowSpace > 0 && (
+                                                        <span className="cnf-height-overflow">Modelo +{(column.modelOverflowSpace * 100).toFixed(1)}%</span>
+                                                    )}
+                                                </div>
+                                            </div>
+                                            <div className="cnf-height-elements">
+                                                {column.elements.map((element, elementIndex) => (
+                                                    <div key={`${element.id}-${elementIndex}`} className="cnf-height-element-row">
+                                                        <div className="cnf-height-element-main">
+                                                            <span className="cnf-height-element-type">{element.type}</span>
+                                                            <span className="cnf-height-element-label">{element.label}</span>
+                                                            <span className="cnf-height-element-id">{element.id}</span>
+                                                            {element.modelNote && (
+                                                                <span className="cnf-height-element-note">{element.modelNote}</span>
+                                                            )}
+                                                        </div>
+                                                        <div className="cnf-height-element-value">
+                                                            <span>{element.heightPx == null ? 'sin medir' : `${element.heightPx}px`}</span>
+                                                            <span>{(element.modelSpace * 100).toFixed(1)}%</span>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+                        </div>
                     </div>
                 </div>
             )}

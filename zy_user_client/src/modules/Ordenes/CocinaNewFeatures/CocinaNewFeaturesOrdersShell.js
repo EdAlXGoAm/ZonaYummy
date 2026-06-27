@@ -15,16 +15,18 @@ const CocinaNewFeaturesOrdersShell = () => {
     const notify = (message) => toast(message);
     const [orders, setOrders] = useState([]);
     const [numOrders, setNumOrders] = useState(0);
+    const [ordersLoaded, setOrdersLoaded] = useState(false);
 
     const fetchOrders = () => {
         ordersApi.getOrdersByOrderCustStatus("InPlace")
         .then(data => {
             setOrders(prevOrders => {return (data);});
             setNumOrders(prevNumOrders => {return data.length;});
+            setOrdersLoaded(true);
         })
         .catch(err => {
-            console.log(err);
             notify(`Error al cargar las comandas: ${err}`);
+            setOrdersLoaded(true);
         });
     };
 
@@ -43,13 +45,12 @@ const CocinaNewFeaturesOrdersShell = () => {
     }, []); // El array vacío asegura que el efecto se ejecute solo una vez al montar el componente
 
     const renderOrders = () => {
-        return (<CocinaNewFeaturesKitchenBoard modeInterface={false} Orders={orders} />)
+        return (<CocinaNewFeaturesKitchenBoard modeInterface={false} Orders={orders} ordersLoaded={ordersLoaded} />)
     };
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
     useEffect(() => { //Socket NewOrder
-        socket.on('NuevaOrdenDesdeServidor', (data) => {
-            console.log("Mensaje: ", data)
+        socket.on('NuevaOrdenDesdeServidor', () => {
             fetchOrders();
         });
 
@@ -60,8 +61,7 @@ const CocinaNewFeaturesOrdersShell = () => {
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
     useEffect(() => { // Socket DelOrder
-        socket.on('OrdenEliminadaDesdeServidor', (data) => {
-            console.log("Mensaje: ", data)
+        socket.on('OrdenEliminadaDesdeServidor', () => {
             fetchOrders();
         });
 
@@ -72,8 +72,7 @@ const CocinaNewFeaturesOrdersShell = () => {
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
     useEffect(() => { // Socket Actualizada
-        socket.on('OrdenActualizadaDesdeServidor', (data) => {
-            console.log("OrdenActualizadaDesdeServidor Mensaje: ", data)
+        socket.on('OrdenActualizadaDesdeServidor', () => {
             fetchOrders();
         });
 
