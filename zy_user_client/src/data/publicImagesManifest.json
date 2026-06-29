@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-06-27T01:15:45.907Z",
-  "total": 218,
+  "generatedAt": "2026-06-29T01:07:04.036Z",
+  "total": 225,
   "folders": [
     {
       "name": "(raíz)",
@@ -27,12 +27,20 @@
       "name": "icons",
       "items": [
         {
+          "publicPath": "icons/arizonaloco.png",
+          "url": "/icons/arizonaloco.png"
+        },
+        {
           "publicPath": "icons/avena.png",
           "url": "/icons/avena.png"
         },
         {
           "publicPath": "icons/bananasplit.png",
           "url": "/icons/bananasplit.png"
+        },
+        {
+          "publicPath": "icons/birriaramen.png",
+          "url": "/icons/birriaramen.png"
         },
         {
           "publicPath": "icons/ca14f.png",
@@ -231,8 +239,24 @@
           "url": "/icons/nena.png"
         },
         {
+          "publicPath": "icons/palelokas.png",
+          "url": "/icons/palelokas.png"
+        },
+        {
           "publicPath": "icons/pan.png",
           "url": "/icons/pan.png"
+        },
+        {
+          "publicPath": "icons/pizza.png",
+          "url": "/icons/pizza.png"
+        },
+        {
+          "publicPath": "icons/plato_birria.png",
+          "url": "/icons/plato_birria.png"
+        },
+        {
+          "publicPath": "icons/pozole.png",
+          "url": "/icons/pozole.png"
         },
         {
           "publicPath": "icons/sangria.png",
@@ -261,6 +285,15 @@
         {
           "publicPath": "icons/whatsapp.png",
           "url": "/icons/whatsapp.png"
+        }
+      ]
+    },
+    {
+      "name": "Icons",
+      "items": [
+        {
+          "publicPath": "Icons/gelatina.png",
+          "url": "/Icons/gelatina.png"
         }
       ]
     },
