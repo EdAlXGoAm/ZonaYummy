@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import './adminPage.css';
 import AddPlatilloForm from '../modules/Platillos/AddPlatilloFormModule';
 import AddProductoForm from '../modules/Insumos/AddProductoModule';
@@ -17,6 +17,26 @@ const AdminPage = () => {
     const [editPlatilloCategoria, setEditPlatilloCategoria] = useState('');
     const [isModalProductoOpen, setIsModalProductoOpen] = useState(false);
     const [activeTab, setActiveTab] = useState('platillos'); // 'platillos' | 'productos'
+    const platilloOverlayMouseDownRef = useRef(false);
+    const refreshPlatillosListRef = useRef(null);
+
+    const registerPlatillosListRefresh = useCallback((refreshFn) => {
+        refreshPlatillosListRef.current = refreshFn;
+    }, []);
+
+    const handlePlatilloSaved = useCallback(() => {
+        refreshPlatillosListRef.current?.();
+    }, []);
+
+    const handlePlatilloOverlayMouseDown = (e) => {
+        platilloOverlayMouseDownRef.current = e.target === e.currentTarget;
+    };
+    const handlePlatilloOverlayClick = (e) => {
+        if (e.target === e.currentTarget && platilloOverlayMouseDownRef.current) {
+            closePlatilloModal();
+        }
+        platilloOverlayMouseDownRef.current = false;
+    };
 
     const openPlatilloModal = (platilloId = null, categoria = '') => {
         setEditPlatilloId(platilloId);
@@ -133,12 +153,17 @@ const AdminPage = () => {
                         <AddPlatilloForm 
                             mode="list" 
                             onEditRequest={openPlatilloModal}
+                            onRegisterListRefresh={registerPlatillosListRefresh}
                         />
                     </div>
 
                     {/* Modal con formulario de Agregar/Editar Platillo */}
                     {isModalPlatilloOpen && (
-                        <div className="modal-overlay" onClick={closePlatilloModal}>
+                        <div
+                            className="modal-overlay"
+                            onMouseDown={handlePlatilloOverlayMouseDown}
+                            onClick={handlePlatilloOverlayClick}
+                        >
                             <div className="modal-platillo-content" onClick={(e) => e.stopPropagation()}>
                                 <div className="modal-header">
                                     <h2>{editPlatilloId ? 'Editar Platillo' : 'Agregar Nuevo Platillo'}</h2>
@@ -150,6 +175,7 @@ const AdminPage = () => {
                                         editPlatilloId={editPlatilloId}
                                         initialCategoria={editPlatilloCategoria}
                                         onClose={closePlatilloModal}
+                                        onSaved={handlePlatilloSaved}
                                     />
                                 </div>
                             </div>

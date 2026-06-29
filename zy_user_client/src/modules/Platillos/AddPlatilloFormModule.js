@@ -112,7 +112,9 @@ const AddPlatilloForm = ({
     onEditRequest, // callback cuando se hace clic en editar desde la lista
     editPlatilloId = null, // ID del platillo a editar (para cargar desde afuera)
     initialCategoria = '',
-    onPlatillosUpdate // callback para sincronizar la lista externa
+    onPlatillosUpdate, // callback para sincronizar la lista externa
+    onRegisterListRefresh, // exposes fetchPlatillos to parent (list mode)
+    onSaved, // called after successful add/update
 }) => {
     const [platillo, setPlatillo] = useState(createEmptyPlatillo());
     const [platillosList, setPlatillosList] = useState([]);
@@ -121,6 +123,7 @@ const AddPlatilloForm = ({
     const [jsonDraft, setJsonDraft] = useState(JSON.stringify(createEmptyPlatillo(), null, 2));
     const [jsonIsDirty, setJsonIsDirty] = useState(false);
     const [jsonError, setJsonError] = useState('');
+    const [movingPlatilloId, setMovingPlatilloId] = useState(null);
     const jsonLineNumbersRef = useRef(null);
     const platilloJson = useMemo(() => JSON.stringify(platillo, null, 2), [platillo]);
     const jsonLineNumbers = useMemo(
@@ -145,36 +148,53 @@ const AddPlatilloForm = ({
         : setButtonAction("Agregar")
     }
 
+    const platillosMaxId = useMemo(() => {
+        if (!platillosList.length) return 0;
+        return Math.max(...platillosList.map((p) => Number(p.PlatilloId) || 0));
+    }, [platillosList]);
+
     const fetchPlatilloId = () => {
         platillosApi.getLastPlatilloId()
-        .then(data => {
-            // Asignar ${data + 1}
-            setPlatillo(prevPlatillo => {
-                const newPlatillo = { ...prevPlatillo, PlatilloId: data + 1 };
-                    return newPlatillo;
-            })
-        })
-    }
+        .then((data) => {
+            const nextId = Math.max(Number(data) || 0, platillosMaxId) + 1;
+            setPlatillo((prevPlatillo) => ({ ...prevPlatillo, PlatilloId: nextId }));
+        });
+    };
 
     useEffect(() => {
-        // Solo obtener nuevo ID si NO estamos editando un platillo existente
+        // Only suggest a new ID when creating, not when editing an existing platillo
         if (editPlatilloId === null || editPlatilloId === undefined) {
             fetchPlatilloId();
         }
-    },[editPlatilloId]);
+    }, [editPlatilloId, platillosMaxId]);
+
+    const showList = mode === "list" || mode === "both";
+    const showForm = mode === "form" || mode === "both";
 
     const fetchPlatillos = () => {
+        const scrollY = showList ? window.scrollY : null;
         platillosApi.getPlatillos()
         .then(data => {
-            setPlatillosList(prevPlatillosList => {
-                return data;
-            });
-            // Notificar a componente padre si existe callback
+            setPlatillosList(data);
             if (onPlatillosUpdate) {
                 onPlatillosUpdate(data);
             }
+            if (scrollY !== null) {
+                requestAnimationFrame(() => {
+                    window.scrollTo(0, scrollY);
+                });
+            }
         })
     };
+
+    useEffect(() => {
+        if (!onRegisterListRefresh || !showList) {
+            return undefined;
+        }
+        onRegisterListRefresh(fetchPlatillos);
+        return () => onRegisterListRefresh(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [onRegisterListRefresh, showList]);
 
     useEffect (() => {
         fetchPlatillos();
@@ -239,18 +259,78 @@ const AddPlatilloForm = ({
         return platillosList.some(platillo => parseInt(platillo.PlatilloId) === id);
     };
 
+    const getNextAvailablePlatilloId = (currentId, direction) => {
+        const current = Number(currentId);
+        if (!Number.isFinite(current)) return null;
+
+        const occupied = new Set(
+            platillosList
+                .map((platillo) => Number(platillo.PlatilloId))
+                .filter((id) => Number.isFinite(id) && id !== current),
+        );
+
+        if (direction === 'forward') {
+            let candidate = current + 1;
+            while (occupied.has(candidate)) {
+                candidate += 1;
+            }
+            return candidate;
+        }
+
+        let candidate = current - 1;
+        while (candidate >= 1 && occupied.has(candidate)) {
+            candidate -= 1;
+        }
+        return candidate >= 1 && !occupied.has(candidate) ? candidate : null;
+    };
+
+    const handleMovePlatilloId = (platilloData, direction) => {
+        const currentId = Number(platilloData?.PlatilloId);
+        const nextId = getNextAvailablePlatilloId(currentId, direction);
+        if (!Number.isFinite(currentId) || !Number.isFinite(nextId)) {
+            alert(direction === 'backward'
+                ? 'No hay un ID disponible hacia atras.'
+                : 'No se pudo calcular el siguiente ID.');
+            return;
+        }
+
+        const confirmMove = window.confirm(
+            `Mover "${platilloData.NombrePlatillo || 'platillo'}" del ID #${currentId} al #${nextId}?`,
+        );
+        if (!confirmMove) return;
+
+        setMovingPlatilloId(currentId);
+        platillosApi.movePlatilloId(currentId, nextId)
+            .then(() => {
+                fetchPlatillos();
+            })
+            .catch((err) => {
+                const msg = err.response?.data?.error || err.message || 'Error al mover el ID';
+                alert(msg);
+            })
+            .finally(() => {
+                setMovingPlatilloId(null);
+            });
+    };
+
     // Función para crear un array mezclado de platillos y botones de IDs faltantes
     const createPlatillosWithButtons = (platillos) => {
         if (platillos.length === 0) return [];
-        
+
         const result = [];
+
+        const pushGapButton = (id) => {
+            if (!platilloIdExists(id)) {
+                result.push({ type: 'button', id });
+            }
+        };
         
         const firstId = parseInt(platillos[0].PlatilloId) || 0;
         const lastId = parseInt(platillos[platillos.length - 1].PlatilloId) || 0;
         
         // Agregar botón antes del primer platillo si el ID anterior no existe
-        if (firstId > 1 && !platilloIdExists(firstId - 1)) {
-            result.push({ type: 'button', id: firstId - 1 });
+        if (firstId > 1) {
+            pushGapButton(firstId - 1);
         }
         
         // Agregar el primer platillo
@@ -263,12 +343,9 @@ const AddPlatilloForm = ({
             
             // Si hay IDs faltantes entre ellos, agregar solo el siguiente al primero y el anterior al segundo
             if (currentId - prevId > 1) {
-                // Botón inmediatamente después del primero (prevId + 1)
-                result.push({ type: 'button', id: prevId + 1 });
-                
-                // Si hay más de un ID faltante, agregar también el inmediatamente antes del segundo (currentId - 1)
+                pushGapButton(prevId + 1);
                 if (currentId - prevId > 2) {
-                    result.push({ type: 'button', id: currentId - 1 });
+                    pushGapButton(currentId - 1);
                 }
             }
             
@@ -277,9 +354,7 @@ const AddPlatilloForm = ({
         }
         
         // Agregar botón después del último platillo si el ID siguiente no existe
-        if (!platilloIdExists(lastId + 1)) {
-            result.push({ type: 'button', id: lastId + 1 });
-        }
+        pushGapButton(lastId + 1);
         
         return result;
     };
@@ -988,25 +1063,27 @@ const AddPlatilloForm = ({
             });
     };
 
+    const handleSubmitSuccess = (message) => {
+        alert(message);
+        onSaved?.();
+        if (onClose) {
+            onClose();
+            return;
+        }
+        fetchResetPlatillo();
+        fetchPlatillos();
+        handleToggleButtonAction();
+    };
+
     const handleSubmit = (e) => {
         e.preventDefault();
         
         if (buttonAction === "Agregar") {
             platillosApi.addPlatillo(platillo)
-            .then(() =>{
-                alert("Platillo agregado correctamente");
-                fetchResetPlatillo();
-                fetchPlatillos();
-                handleToggleButtonAction();
-            })
+            .then(() => handleSubmitSuccess("Platillo agregado correctamente"))
         } else if (buttonAction === "Actualizar") {
             platillosApi.updatePlatillo(platillo)
-            .then(() => {
-                alert("Platillo actualizado correctamente");
-                fetchResetPlatillo();
-                fetchPlatillos();
-                handleToggleButtonAction();
-            })
+            .then(() => handleSubmitSuccess("Platillo actualizado correctamente"))
         }
     };
 
@@ -1089,9 +1166,6 @@ const AddPlatilloForm = ({
         };
     }, []);
 
-    const showList = mode === "list" || mode === "both";
-    const showForm = mode === "form" || mode === "both";
-
     return (
         <div className="row" ref={containerRef}><div className="col-12">
             {/* Grid de Platillos agrupados por Categoría */}
@@ -1131,7 +1205,30 @@ const AddPlatilloForm = ({
                                         <div key={item.data.PlatilloId} className="col-12 col-sm-6 col-md-4 col-lg-2 platillo-card-wrapper">
                                             <div className="platillo-card">
                                                 <div className="platillo-card-header">
-                                                    <span className="platillo-id">#{item.data.PlatilloId}</span>
+                                                    <div className="platillo-id-controls">
+                                                        <button
+                                                            type="button"
+                                                            className="platillo-id-move-btn"
+                                                            title="Mover al ID disponible anterior"
+                                                            disabled={
+                                                                movingPlatilloId === Number(item.data.PlatilloId)
+                                                                || getNextAvailablePlatilloId(item.data.PlatilloId, 'backward') == null
+                                                            }
+                                                            onClick={() => handleMovePlatilloId(item.data, 'backward')}
+                                                        >
+                                                            ←
+                                                        </button>
+                                                        <span className="platillo-id">#{item.data.PlatilloId}</span>
+                                                        <button
+                                                            type="button"
+                                                            className="platillo-id-move-btn"
+                                                            title="Mover al siguiente ID disponible"
+                                                            disabled={movingPlatilloId === Number(item.data.PlatilloId)}
+                                                            onClick={() => handleMovePlatilloId(item.data, 'forward')}
+                                                        >
+                                                            →
+                                                        </button>
+                                                    </div>
                                                     <span
                                                         className={`platillo-disponibilidad platillo-disponibilidad--toggle ${getDisponibilidadClass(item.data.Disponibilidad)}`}
                                                         title="Doble clic: 0 ↔ -1 (si hay stock, pasa a 0)"

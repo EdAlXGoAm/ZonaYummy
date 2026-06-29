@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const BorradoSolicitud = require('../models/borradoSolicitudModel');
 const Comanda = require('../models/comandaModel');
+const { notifyComandaDeleted } = require('../realtime');
 
 const isPlaceholderComandaId = (id) => {
     const value = String(id ?? '');
@@ -81,6 +82,8 @@ exports.procederBorrado = async (req, res) => {
         solicitud.status = 'approved';
         solicitud.processedAt = new Date();
         await solicitud.save();
+
+        notifyComandaDeleted(solicitud);
 
         res.json({
             success: true,

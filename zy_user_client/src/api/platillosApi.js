@@ -60,7 +60,17 @@ const platillosApi = {
             console.log("platillosAPI error: ", error);
             throw error;
         }
-    }
+    },
+
+    movePlatilloId : async (currentId, newId) => {
+        try {
+            const response = await Axios.post(`${baseURL}/moveId/`, { currentId, newId });
+            return response.data;
+        } catch (error) {
+            console.log("platillosAPI error: ", error);
+            throw error;
+        }
+    },
 }
 
 export default platillosApi;

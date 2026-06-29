@@ -96,6 +96,9 @@ const io = socketIo(server, {
     }
 });
 
+const realtime = require('./realtime');
+realtime.attachIo(io);
+
 io.on('connection', (socket) => {
     console.log('Nuevo cliente conectado');
 
@@ -125,6 +128,9 @@ io.on('connection', (socket) => {
     });
     socket.on('SolicitudBorradoDesdeCliente', (data) => {
         socket.broadcast.emit('SolicitudBorradoDesdeServidor', data);
+    });
+    socket.on('BorradoAprobadoDesdeCliente', (data) => {
+        socket.broadcast.emit('BorradoAprobadoDesdeServidor', data);
     });
 
     socket.on('disconnect', () => {

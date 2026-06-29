@@ -12,6 +12,7 @@ import MeseroComandaSlot from './MeseroComandaSlot';
 import MeseroCobroJsonModal from './MeseroCobroJsonModal';
 import comandasApi from './../../../api/comandasApi';
 import borradosApi from './../../../api/borradosApi';
+import { filterComandasAfterBorrado } from '../borradoSyncUtils';
 import ordersApi from './../../../api/ordersApi';
 import io from 'socket.io-client';
 import { faCheck } from '@fortawesome/free-solid-svg-icons';
@@ -227,8 +228,7 @@ const MeseroOrderPanel = ({modeInterface, iInterface, OrderID, DeleteOrder, hand
                     Origen,
                 };
             });
-            setComandas(normalizeComandasList(cachedComandas));
-            updateCuentaTotalOrder(cachedComandas, cachedOrder);
+            fetchComandas(cachedOrder);
             ordersApi.getOrderV2(OrderID)
                 .then((data) => {
                     setOrderV2(data);
@@ -546,6 +546,44 @@ const MeseroOrderPanel = ({modeInterface, iInterface, OrderID, DeleteOrder, hand
         });
     };
 
+    const scheduleFetchComandas = useCallback((order) => {
+        if (fetchComandasTimerRef.current) {
+            clearTimeout(fetchComandasTimerRef.current);
+        }
+        fetchComandasTimerRef.current = setTimeout(() => {
+            fetchComandasTimerRef.current = null;
+            fetchComandas(order);
+        }, 200);
+    }, []);
+
+    const applyAuthorizedDeletion = useCallback((payload) => {
+        if (Number(payload?.OrderID) !== Number(OrderID)) {
+            return false;
+        }
+        let removed = false;
+        setComandas((prev) => {
+            const next = normalizeComandasList(filterComandasAfterBorrado(prev, payload));
+            if (next.length === prev.length) {
+                return prev;
+            }
+            removed = true;
+            const currentOrder = orderRef.current;
+            if (currentOrder?.OrderID) {
+                updateCuentaTotalOrder(next, currentOrder);
+            }
+            return next;
+        });
+        if (removed) {
+            notify(`Eliminación autorizada: ${payload?.Platillo || 'comanda'}`);
+        }
+        return removed;
+    }, [OrderID, notify, updateCuentaTotalOrder]);
+
+    const applyAuthorizedDeletionRef = useRef(applyAuthorizedDeletion);
+    applyAuthorizedDeletionRef.current = applyAuthorizedDeletion;
+    const scheduleFetchComandasRef = useRef(scheduleFetchComandas);
+    scheduleFetchComandasRef.current = scheduleFetchComandas;
+
     useEffect(() => {
         fetchOrder();
     },[]);
@@ -625,8 +663,13 @@ const MeseroOrderPanel = ({modeInterface, iInterface, OrderID, DeleteOrder, hand
         };
         const onDeleteComanda = (data) => {
             if (matchesComandaMsg(data?.msg)) {
-                if (shouldSkipRemoteFetch()) return;
                 scheduleFetchOrder();
+            }
+        };
+        const onBorradoAprobado = (payload) => {
+            const removed = applyAuthorizedDeletionRef.current(payload);
+            if (!removed) {
+                scheduleFetchComandasRef.current(orderRef.current);
             }
         };
 
@@ -634,12 +677,14 @@ const MeseroOrderPanel = ({modeInterface, iInterface, OrderID, DeleteOrder, hand
         socket.on('NuevaComandaDesdeServidor', onNuevaComanda);
         socket.on('UpdateComandaDesdeServidor', onUpdateComanda);
         socket.on('DeleteComandaDesdeServidor', onDeleteComanda);
+        socket.on('BorradoAprobadoDesdeServidor', onBorradoAprobado);
 
         return () => {
             socket.off('OrdenActualizadaDesdeServidor', onOrdenActualizada);
             socket.off('NuevaComandaDesdeServidor', onNuevaComanda);
             socket.off('UpdateComandaDesdeServidor', onUpdateComanda);
             socket.off('DeleteComandaDesdeServidor', onDeleteComanda);
+            socket.off('BorradoAprobadoDesdeServidor', onBorradoAprobado);
         };
     }, [OrderID]);
 
@@ -658,16 +703,6 @@ const MeseroOrderPanel = ({modeInterface, iInterface, OrderID, DeleteOrder, hand
         Notas: "",
         Details: platillo,
     });
-
-    const scheduleFetchComandas = useCallback((order) => {
-        if (fetchComandasTimerRef.current) {
-            clearTimeout(fetchComandasTimerRef.current);
-        }
-        fetchComandasTimerRef.current = setTimeout(() => {
-            fetchComandasTimerRef.current = null;
-            fetchComandas(order);
-        }, 200);
-    }, []);
 
     const persistNewComandas = useCallback((newComandas) => {
         if (!newComandas.length) return;

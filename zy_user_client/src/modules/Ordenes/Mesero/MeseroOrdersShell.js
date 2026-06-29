@@ -13,6 +13,7 @@ import {
     fetchComandasGroupedByOrder,
     parseOrderIdFromComandaSocketMsg,
 } from './meseroComandasCache';
+import { filterComandasAfterBorrado } from '../borradoSyncUtils';
 
 import OrdenesCocina from './../MeseroPage/OrdenesCocinaComponent';
 import Counter30To0 from '../Global/CounterComponent';
@@ -549,6 +550,26 @@ const MeseroOrdersShell = ({ modeInterface }) => {
             }
             scheduleFetchOrders();
         };
+        const onBorradoAprobado = (payload) => {
+            const orderId = Number(payload?.OrderID);
+            if (!Number.isFinite(orderId)) {
+                return;
+            }
+            setComandasByOrder((prev) => {
+                const key = orderId;
+                const current = prev[key] ?? prev[String(key)] ?? [];
+                if (!Array.isArray(current) || current.length === 0) {
+                    return prev;
+                }
+                const nextComandas = filterComandasAfterBorrado(current, payload);
+                if (nextComandas.length === current.length) {
+                    return prev;
+                }
+                return { ...prev, [key]: nextComandas };
+            });
+            scheduleSyncComandaForOrder(orderId);
+            scheduleSyncOrderFromServer(orderId);
+        };
         const onComandaChanged = (data) => {
             const orderId = parseOrderIdFromComandaSocketMsg(data?.msg);
             if (orderId) {
@@ -562,6 +583,7 @@ const MeseroOrdersShell = ({ modeInterface }) => {
         socket.on('OrdenEliminadaDesdeServidor', onOrdenEliminada);
         socket.on('OrdenActualizadaDesdeServidor', onOrdenActualizada);
         socket.on('DeleteComandaDesdeServidor', onDeleteComanda);
+        socket.on('BorradoAprobadoDesdeServidor', onBorradoAprobado);
         socket.on('NuevaComandaDesdeServidor', onComandaChanged);
         socket.on('UpdateComandaDesdeServidor', onComandaChanged);
 
@@ -570,6 +592,7 @@ const MeseroOrdersShell = ({ modeInterface }) => {
             socket.off('OrdenEliminadaDesdeServidor', onOrdenEliminada);
             socket.off('OrdenActualizadaDesdeServidor', onOrdenActualizada);
             socket.off('DeleteComandaDesdeServidor', onDeleteComanda);
+            socket.off('BorradoAprobadoDesdeServidor', onBorradoAprobado);
             socket.off('NuevaComandaDesdeServidor', onComandaChanged);
             socket.off('UpdateComandaDesdeServidor', onComandaChanged);
         };

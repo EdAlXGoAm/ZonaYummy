@@ -2,6 +2,10 @@ import './AutorizacionBorradosPage.css';
 import React, { useCallback, useEffect, useState } from 'react';
 import io from 'socket.io-client';
 import borradosApi from '../api/borradosApi';
+import {
+    buildBorradoAprobadoPayload,
+    buildComandaDeleteSocketMsg,
+} from '../modules/Ordenes/borradoSyncUtils';
 
 const socket = io(`${process.env.REACT_APP_API_URL}`);
 
@@ -44,6 +48,13 @@ const AutorizacionBorradosPage = () => {
         return () => socket.off('SolicitudBorradoDesdeServidor', onNuevaSolicitud);
     }, [cargarSolicitudes]);
 
+    const emitBorradoAprobado = (solicitud) => {
+        const payload = buildBorradoAprobadoPayload(solicitud);
+        socket.emit('DeleteComandaDesdeCliente', { msg: buildComandaDeleteSocketMsg(solicitud) });
+        socket.emit('OrdenActualizadaDesdeCliente', { msg: solicitud.OrderID });
+        socket.emit('BorradoAprobadoDesdeCliente', payload);
+    };
+
     const handleProceder = async (solicitud) => {
         const confirmar = window.confirm(
             `¿Proceder con el borrado de "${solicitud.Platillo}" del pedido #${solicitud.OrderID}?`,
@@ -53,9 +64,7 @@ const AutorizacionBorradosPage = () => {
         setProcesandoId(solicitud._id);
         try {
             const result = await borradosApi.procederBorrado(solicitud._id);
-            const deleteMsg = `Delete-${solicitud.OrderID}-${solicitud.Platillo || ''}`;
-            socket.emit('DeleteComandaDesdeCliente', { msg: deleteMsg });
-            socket.emit('OrdenActualizadaDesdeCliente', { msg: solicitud.OrderID });
+            emitBorradoAprobado(result?.solicitud || solicitud);
             setSolicitudes((prev) => prev.filter((s) => s._id !== solicitud._id));
             if (result?.alreadyDeleted) {
                 alert('La comanda ya no existía en la base de datos. Solicitud cerrada.');

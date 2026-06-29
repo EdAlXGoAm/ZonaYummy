@@ -173,6 +173,35 @@
     font-size: 0.85rem;
 }
 
+.platillo-id-controls {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.platillo-id-move-btn {
+    width: 24px;
+    height: 24px;
+    border: 1px solid #ced4da;
+    border-radius: 6px;
+    background: #fff;
+    color: #495057;
+    font-size: 0.85rem;
+    line-height: 1;
+    padding: 0;
+    cursor: pointer;
+}
+
+.platillo-id-move-btn:hover:not(:disabled) {
+    background: #e9ecef;
+    border-color: #adb5bd;
+}
+
+.platillo-id-move-btn:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+}
+
 .platillo-disponibilidad {
     font-size: 0.75rem;
     font-weight: 600;

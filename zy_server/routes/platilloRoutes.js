@@ -20,4 +20,6 @@ router.delete('/delete/:id', platilloController.deletePlatillo);
 // Ruta para obtener el ultimo ID de todos los platillos
 router.get('/getLastPlatilloId/', platilloController.getLastPlatilloId);
 
+router.post('/moveId/', platilloController.movePlatilloId);
+
 module.exports = router;

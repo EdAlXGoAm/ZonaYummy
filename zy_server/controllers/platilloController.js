@@ -58,15 +58,40 @@ exports.deletePlatillo = (req, res) => {
 };
 
 exports.getLastPlatilloId = (req, res) => {
-  Platillo.find()
-    .then((platillos) => {
-      if (platillos.length === 0) {
-        console.log("No hay platillos disponibles para mostrar.");
+  Platillo.findOne()
+    .sort({ PlatilloId: -1 })
+    .select('PlatilloId')
+    .then((platillo) => {
+      if (!platillo) {
         return res.json(0);
       }
-      else {
-        console.log("Last platillo Id: ", platillos[platillos.length - 1].PlatilloId)
-        return res.json(platillos[platillos.length - 1].PlatilloId)
-      }
+      return res.json(platillo.PlatilloId);
     })
-}
+    .catch((err) => res.status(400).json("Error: " + err));
+};
+
+exports.movePlatilloId = (req, res) => {
+  const currentId = Number(req.body?.currentId);
+  const newId = Number(req.body?.newId);
+
+  if (!Number.isFinite(currentId) || !Number.isFinite(newId) || currentId === newId) {
+    return res.status(400).json({ error: 'IDs invalidos' });
+  }
+
+  Platillo.findOne({ PlatilloId: newId })
+    .then((conflict) => {
+      if (conflict) {
+        return res.status(409).json({ error: 'El ID destino ya esta en uso' });
+      }
+      return Platillo.findOne({ PlatilloId: currentId });
+    })
+    .then((platillo) => {
+      if (!platillo) {
+        return res.status(404).json({ error: 'Platillo no encontrado' });
+      }
+      platillo.PlatilloId = newId;
+      return platillo.save();
+    })
+    .then((platillo) => res.json({ success: true, platillo }))
+    .catch((err) => res.status(400).json({ error: err.message }));
+};
