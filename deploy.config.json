@@ -1,0 +1,14 @@
+{
+  "localProjects": [
+    "edalxgoam_components"
+  ],
+  "requiredPublic": [],
+  "keepReleases": 2,
+  "sourceSubdir": "zy_user_client",
+  "outputDir": "build",
+  "webRoot": "/var/www/old_zonayummy/build",
+  "publicMode": "native",
+  "publicTemplates": [
+    "index.html"
+  ]
+}

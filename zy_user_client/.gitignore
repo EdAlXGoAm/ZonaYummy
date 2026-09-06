@@ -23,8 +23,14 @@ yarn-debug.log*
 yarn-error.log*
 
 # lock files
-package-lock.json
 yarn.lock
 
 # generated at prestart/prebuild from public/
 src/data/publicImagesManifest.json
+__pycache__/
+
+*.tsbuildinfo
+
+/public/**/*.apk
+
+/public/*.apk
